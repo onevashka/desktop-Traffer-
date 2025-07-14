@@ -1,0 +1,36 @@
+/* Основной фон и рамка консоли */
+LogConsole, QTextEdit {
+    background-color: #1a1a2e;
+    border: none;
+    border-radius: 8px;
+}
+
+/* Моноширинный шрифт и отступы */
+QTextEdit {
+    padding: 12px;
+    font-family: "Fira Code", "Consolas", monospace;
+    font-size: 13px;
+    color: #e0e0e0;
+    line-height: 1.4em;
+}
+
+/* Стилизация вертикального скролл-бара */
+QScrollBar:vertical {
+    background: #16213e;
+    width: 8px;
+    margin: 12px 0 12px 0;
+    border-radius: 4px;
+}
+QScrollBar::handle:vertical {
+    background: #3f3f74;
+    min-height: 20px;
+    border-radius: 4px;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+/* Подсветка текущей строки по hover */
+QTextEdit:hover {
+    background-color: #1f1f3d;
+}
