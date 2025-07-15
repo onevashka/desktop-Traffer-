@@ -6,7 +6,7 @@ from telethon.errors import SessionRevokedError, AuthKeyUnregisteredError, UserD
 from.utils import load_json_data
 from loguru import logger
 
-class TelegramAccountClient:
+class Account:
     """
     Обёртка над Telethon TelegramClient для одного аккаунта.
     При создании указываем пути к .session и API-данные.

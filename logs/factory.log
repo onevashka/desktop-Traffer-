@@ -29,3 +29,5 @@
 2025-07-15 13:41:25.782 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
 2025-07-15 13:44:52.996 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
 2025-07-15 13:44:53.110 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 13:46:52.113 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-15 13:46:52.240 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
