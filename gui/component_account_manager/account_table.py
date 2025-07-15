@@ -176,7 +176,11 @@ class AccountTableWidget(QWidget):
         header_layout.addStretch()
 
         # Размещаем в заголовке
-        QTimer.singleShot(100, lambda: self._place_header_checkbox(header_widget))
+        timer = QTimer(self)
+        timer.setSingleShot(True)
+        timer.setInterval(200)
+        timer.timeout.connect(lambda: self._place_header_checkbox(header_widget))
+        timer.start()
 
     def _place_header_checkbox(self, widget):
         """Размещает чекбокс в заголовке"""

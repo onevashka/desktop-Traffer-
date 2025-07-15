@@ -31,3 +31,187 @@
 2025-07-15 13:44:53.110 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
 2025-07-15 13:46:52.113 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
 2025-07-15 13:46:52.240 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 19:28:01.740 | INFO     | __main__:async_main:20 - 📁 Структура папок создана
+2025-07-15 19:28:01.740 | INFO     | src.accounts.manager:init_account_manager:276 - 🎯 Инициализация AccountManager...
+2025-07-15 19:28:01.740 | INFO     | src.accounts.manager:__init__:55 - 📋 AccountManager создан
+2025-07-15 19:28:01.740 | INFO     | src.accounts.manager:scan_all_folders:62 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-15 19:28:01.741 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/active: 0 аккаунтов
+2025-07-15 19:28:01.741 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-15 19:28:01.742 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-15 19:28:01.742 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-15 19:28:01.743 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/registration: 0 аккаунтов
+2025-07-15 19:28:01.743 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-15 19:28:01.743 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-15 19:28:01.744 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-15 19:28:01.744 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-15 19:28:01.744 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-15 19:28:01.744 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-15 19:28:01.744 | INFO     | src.accounts.manager:scan_all_folders:81 - ✅ Полная загрузка завершена! Трафик: 0, Продажи: 0, Всего: 0
+2025-07-15 19:28:01.745 | INFO     | src.accounts.manager:init_account_manager:278 - ✅ AccountManager готов!
+2025-07-15 19:28:01.745 | INFO     | __main__:async_main:25 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-15 19:28:02.165 | INFO     | __main__:async_main:32 - 📋 Консоль логов открыта
+2025-07-15 19:28:02.370 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-15 19:28:02.519 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 19:28:02.540 | INFO     | __main__:async_main:36 - 🖥️  Главное окно открыто
+2025-07-15 19:28:02.544 | INFO     | __main__:async_main:38 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-15 19:29:09.477 | INFO     | __main__:async_main:21 - 📋 Консоль логов открыта
+2025-07-15 19:29:09.482 | INFO     | __main__:async_main:25 - 📁 Структура папок создана
+2025-07-15 19:29:09.483 | INFO     | src.accounts.manager:init_account_manager:276 - 🎯 Инициализация AccountManager...
+2025-07-15 19:29:09.484 | INFO     | src.accounts.manager:__init__:55 - 📋 AccountManager создан
+2025-07-15 19:29:09.484 | INFO     | src.accounts.manager:scan_all_folders:62 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-15 19:29:09.486 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/active: 0 аккаунтов
+2025-07-15 19:29:09.487 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-15 19:29:09.488 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-15 19:29:09.488 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-15 19:29:09.489 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/registration: 0 аккаунтов
+2025-07-15 19:29:09.490 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-15 19:29:09.491 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-15 19:29:09.492 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-15 19:29:09.492 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-15 19:29:09.494 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-15 19:29:09.496 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-15 19:29:09.496 | INFO     | src.accounts.manager:scan_all_folders:81 - ✅ Полная загрузка завершена! Трафик: 0, Продажи: 0, Всего: 0
+2025-07-15 19:29:09.497 | INFO     | src.accounts.manager:init_account_manager:278 - ✅ AccountManager готов!
+2025-07-15 19:29:09.498 | INFO     | __main__:async_main:30 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-15 19:29:09.665 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-15 19:29:09.806 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 19:29:09.831 | INFO     | __main__:async_main:37 - 🖥️  Главное окно открыто
+2025-07-15 19:29:09.832 | INFO     | __main__:async_main:39 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-15 19:29:53.425 | INFO     | __main__:async_main:21 - 📋 Консоль логов открыта
+2025-07-15 19:29:54.426 | INFO     | __main__:async_main:27 - 📁 Структура папок создана
+2025-07-15 19:29:54.427 | INFO     | src.accounts.manager:init_account_manager:276 - 🎯 Инициализация AccountManager...
+2025-07-15 19:29:54.427 | INFO     | src.accounts.manager:__init__:55 - 📋 AccountManager создан
+2025-07-15 19:29:54.428 | INFO     | src.accounts.manager:scan_all_folders:62 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-15 19:29:54.429 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/active: 0 аккаунтов
+2025-07-15 19:29:54.429 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-15 19:29:54.430 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-15 19:29:54.430 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-15 19:29:54.431 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/registration: 0 аккаунтов
+2025-07-15 19:29:54.431 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-15 19:29:54.432 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-15 19:29:54.433 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-15 19:29:54.433 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-15 19:29:54.434 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-15 19:29:54.435 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-15 19:29:54.435 | INFO     | src.accounts.manager:scan_all_folders:81 - ✅ Полная загрузка завершена! Трафик: 0, Продажи: 0, Всего: 0
+2025-07-15 19:29:54.436 | INFO     | src.accounts.manager:init_account_manager:278 - ✅ AccountManager готов!
+2025-07-15 19:29:54.436 | INFO     | __main__:async_main:32 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-15 19:29:54.591 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-15 19:29:54.705 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 19:29:54.722 | INFO     | __main__:async_main:39 - 🖥️  Главное окно открыто
+2025-07-15 19:29:54.724 | INFO     | __main__:async_main:41 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-15 19:31:34.504 | INFO     | __main__:async_main:21 - 📋 Консоль логов открыта
+2025-07-15 19:31:35.505 | INFO     | __main__:async_main:27 - 📁 Структура папок создана
+2025-07-15 19:31:35.506 | INFO     | src.accounts.manager:init_account_manager:276 - 🎯 Инициализация AccountManager...
+2025-07-15 19:31:35.506 | INFO     | src.accounts.manager:__init__:55 - 📋 AccountManager создан
+2025-07-15 19:31:35.507 | INFO     | src.accounts.manager:scan_all_folders:62 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-15 19:31:35.507 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/active: 0 аккаунтов
+2025-07-15 19:31:35.508 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-15 19:31:35.509 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-15 19:31:35.509 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-15 19:31:35.510 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/registration: 0 аккаунтов
+2025-07-15 19:31:35.511 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-15 19:31:35.511 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-15 19:31:35.512 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-15 19:31:35.512 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-15 19:31:35.513 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-15 19:31:35.515 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-15 19:31:35.515 | INFO     | src.accounts.manager:scan_all_folders:81 - ✅ Полная загрузка завершена! Трафик: 0, Продажи: 0, Всего: 0
+2025-07-15 19:31:35.516 | INFO     | src.accounts.manager:init_account_manager:278 - ✅ AccountManager готов!
+2025-07-15 19:31:35.516 | INFO     | __main__:async_main:32 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-15 19:31:35.654 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-15 19:31:35.780 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 19:31:35.798 | INFO     | __main__:async_main:39 - 🖥️  Главное окно открыто
+2025-07-15 19:31:35.799 | INFO     | __main__:async_main:41 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-15 19:34:03.527 | INFO     | __main__:async_main:21 - 📋 Консоль логов открыта
+2025-07-15 19:34:04.538 | INFO     | __main__:async_main:27 - 📁 Структура папок создана
+2025-07-15 19:34:04.538 | INFO     | src.accounts.manager:init_account_manager:276 - 🎯 Инициализация AccountManager...
+2025-07-15 19:34:04.539 | INFO     | src.accounts.manager:__init__:55 - 📋 AccountManager создан
+2025-07-15 19:34:04.539 | INFO     | src.accounts.manager:scan_all_folders:62 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-15 19:34:04.540 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/active: 0 аккаунтов
+2025-07-15 19:34:04.541 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-15 19:34:04.541 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-15 19:34:04.542 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-15 19:34:04.542 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/registration: 0 аккаунтов
+2025-07-15 19:34:04.543 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-15 19:34:04.544 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-15 19:34:04.544 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-15 19:34:04.545 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-15 19:34:04.545 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-15 19:34:04.547 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-15 19:34:04.547 | INFO     | src.accounts.manager:scan_all_folders:81 - ✅ Полная загрузка завершена! Трафик: 0, Продажи: 0, Всего: 0
+2025-07-15 19:34:04.548 | INFO     | src.accounts.manager:init_account_manager:278 - ✅ AccountManager готов!
+2025-07-15 19:34:04.548 | INFO     | __main__:async_main:32 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-15 19:34:04.691 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-15 19:34:04.812 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 19:34:04.826 | INFO     | __main__:async_main:39 - 🖥️  Главное окно открыто
+2025-07-15 19:34:04.828 | INFO     | __main__:async_main:41 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-15 19:35:57.570 | INFO     | __main__:async_main:21 - 📋 Консоль логов открыта
+2025-07-15 19:35:58.566 | INFO     | __main__:async_main:27 - 📁 Структура папок создана
+2025-07-15 19:35:58.567 | INFO     | src.accounts.manager:init_account_manager:276 - 🎯 Инициализация AccountManager...
+2025-07-15 19:35:58.567 | INFO     | src.accounts.manager:__init__:55 - 📋 AccountManager создан
+2025-07-15 19:35:58.568 | INFO     | src.accounts.manager:scan_all_folders:62 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-15 19:35:58.569 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/active: 0 аккаунтов
+2025-07-15 19:35:58.569 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-15 19:35:58.570 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-15 19:35:58.571 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-15 19:35:58.572 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/registration: 0 аккаунтов
+2025-07-15 19:35:58.572 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-15 19:35:58.573 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-15 19:35:58.573 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-15 19:35:58.574 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-15 19:35:58.575 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-15 19:35:58.577 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-15 19:35:58.577 | INFO     | src.accounts.manager:scan_all_folders:81 - ✅ Полная загрузка завершена! Трафик: 0, Продажи: 0, Всего: 0
+2025-07-15 19:35:58.578 | INFO     | src.accounts.manager:init_account_manager:278 - ✅ AccountManager готов!
+2025-07-15 19:35:58.579 | INFO     | __main__:async_main:32 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-15 19:35:58.718 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-15 19:35:58.849 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 19:35:58.870 | INFO     | __main__:async_main:39 - 🖥️  Главное окно открыто
+2025-07-15 19:35:58.871 | INFO     | __main__:async_main:41 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-15 19:38:10.714 | INFO     | __main__:async_main:25 - 📋 Консоль логов открыта
+2025-07-15 19:38:11.719 | INFO     | __main__:async_main:31 - 📁 Структура папок создана
+2025-07-15 19:38:11.720 | INFO     | src.accounts.manager:init_account_manager:276 - 🎯 Инициализация AccountManager...
+2025-07-15 19:38:11.721 | INFO     | src.accounts.manager:__init__:55 - 📋 AccountManager создан
+2025-07-15 19:38:11.721 | INFO     | src.accounts.manager:scan_all_folders:62 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-15 19:38:11.722 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/active: 0 аккаунтов
+2025-07-15 19:38:11.722 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-15 19:38:11.723 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-15 19:38:11.723 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-15 19:38:11.723 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/registration: 0 аккаунтов
+2025-07-15 19:38:11.725 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-15 19:38:11.726 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-15 19:38:11.726 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-15 19:38:11.727 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-15 19:38:11.727 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-15 19:38:11.729 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-15 19:38:11.729 | INFO     | src.accounts.manager:scan_all_folders:81 - ✅ Полная загрузка завершена! Трафик: 0, Продажи: 0, Всего: 0
+2025-07-15 19:38:11.730 | INFO     | src.accounts.manager:init_account_manager:278 - ✅ AccountManager готов!
+2025-07-15 19:38:11.730 | INFO     | __main__:async_main:36 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-15 19:38:11.876 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-15 19:38:12.029 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 19:38:12.051 | INFO     | __main__:async_main:43 - 🖥️  Главное окно открыто
+2025-07-15 19:38:12.052 | INFO     | __main__:async_main:45 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-15 19:38:49.177 | INFO     | __main__:async_main:27 - 📋 Консоль логов открыта
+2025-07-15 19:38:50.188 | INFO     | __main__:async_main:33 - 📁 Структура папок создана
+2025-07-15 19:38:50.189 | INFO     | src.accounts.manager:init_account_manager:276 - 🎯 Инициализация AccountManager...
+2025-07-15 19:38:50.189 | INFO     | src.accounts.manager:__init__:55 - 📋 AccountManager создан
+2025-07-15 19:38:50.190 | INFO     | src.accounts.manager:scan_all_folders:62 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-15 19:38:50.191 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/active: 0 аккаунтов
+2025-07-15 19:38:50.191 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-15 19:38:50.192 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-15 19:38:50.193 | DEBUG    | src.accounts.manager:scan_all_folders:71 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-15 19:38:50.193 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/registration: 0 аккаунтов
+2025-07-15 19:38:50.194 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-15 19:38:50.195 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-15 19:38:50.195 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-15 19:38:50.196 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-15 19:38:50.196 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-15 19:38:50.198 | DEBUG    | src.accounts.manager:scan_all_folders:78 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-15 19:38:50.198 | INFO     | src.accounts.manager:scan_all_folders:81 - ✅ Полная загрузка завершена! Трафик: 0, Продажи: 0, Всего: 0
+2025-07-15 19:38:50.199 | INFO     | src.accounts.manager:init_account_manager:278 - ✅ AccountManager готов!
+2025-07-15 19:38:50.199 | INFO     | __main__:async_main:38 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-15 19:38:50.351 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-15 19:38:50.472 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-15 19:38:50.489 | INFO     | __main__:async_main:45 - 🖥️  Главное окно открыто
+2025-07-15 19:38:50.490 | INFO     | __main__:async_main:47 - 🚀 Приложение desktop-Traffer готово к работе!
