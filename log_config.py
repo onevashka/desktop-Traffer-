@@ -1,4 +1,4 @@
-# TeleCRM/log_config.py
+# desktop-Traffer/log_config.py
 from loguru import logger
 import sys
 

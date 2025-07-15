@@ -27,7 +27,7 @@ class LogConsole(QWidget):
         # — Убираем только прозрачность, возвращаем нормальную рамку ОС —
         # (Удалены setWindowFlags и WA_TranslucentBackground)
 
-        self.setWindowTitle("TeleCRM — Консоль логов")
+        self.setWindowTitle("desktop Traffer — Консоль логов")
         self.resize(800, 300)
 
         # — Подгружаем внешний QSS для консоли —

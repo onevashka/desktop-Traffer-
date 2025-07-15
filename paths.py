@@ -1,12 +1,13 @@
-# TeleCRM/core/paths.py
+# desktop Traffer/core/paths.py
 """
-Центральный менеджер путей для TeleCRM
+Центральный менеджер путей для desktop Traffer
 Простые переменные с путями к папкам и файлам
 """
 
 import os
 import sys
 from pathlib import Path
+from loguru import logger
 
 # Получаем путь к исполняемому файлу (или к директории с main.py)
 if getattr(sys, 'frozen', False):
@@ -26,15 +27,24 @@ else:
         BASE_PATH = Path.cwd()
 
 # Главная рабочая папка рядом с exe/проектом
-WORK_FOLDER = BASE_PATH / "Для работы"
+WORK_TRAFFER_FOLDER = BASE_PATH / "Для работы"
+WORK_SALES_FOLDER = BASE_PATH / "Продажи"
 
 # Основные папки для аккаунтов
-DEAD_FOLDER = BASE_PATH / "Мертвые"
-FROZEN_FOLDER = BASE_PATH / "Замороженные"
-INVALID_FORMAT_FOLDER = BASE_PATH / "Неверный формат"
-READY_FOR_SALE_FOLDER = BASE_PATH / "Готовые для продажи"
+WORK_ACCOUNTS_TRAFFER_FOLDER = WORK_TRAFFER_FOLDER / "Аккаунты"
+DEAD_TRAFFER_FOLDER = WORK_TRAFFER_FOLDER / "Мертвые"
+FROZEN_TRAFFER_FOLDER = WORK_TRAFFER_FOLDER / "Замороженные"
+INVALID_TRAFFER_FORMAT_FOLDER = WORK_TRAFFER_FOLDER / "Неверный формат"
+DEAD_SALES_FOLDER = WORK_SALES_FOLDER / "Мертвые"
+FROZEN_SALES_FOLDER = WORK_SALES_FOLDER / "Замороженные"
+INVALID_SALES_FORMAT_FOLDER = WORK_SALES_FOLDER / "Неверный формат"
+
+READY_FOR_SALE_FOLDER = WORK_SALES_FOLDER / "Готовые для продажи"
+MIDDLE_ACCOUNTS_FOLDER = WORK_SALES_FOLDER / "Средние"
+
 
 # Подпапки в "Готовые для продажи"
+WORK_ACCOUNTS_SALE_FOLDER = WORK_SALES_FOLDER / "Регистарция"
 TDATA_FOLDER = READY_FOR_SALE_FOLDER / "Тдата"
 SESSIONS_JSON_FOLDER = READY_FOR_SALE_FOLDER / "Сессии+json"
 
@@ -43,13 +53,20 @@ PROXY_FILE = BASE_PATH / "прокси.txt"
 
 # Список всех папок для создания
 ALL_FOLDERS = [
-    WORK_FOLDER,
-    DEAD_FOLDER,
-    FROZEN_FOLDER,
-    INVALID_FORMAT_FOLDER,
+    WORK_TRAFFER_FOLDER,
+    WORK_SALES_FOLDER,
+    DEAD_TRAFFER_FOLDER,
+    FROZEN_TRAFFER_FOLDER,
+    INVALID_TRAFFER_FORMAT_FOLDER,
+    DEAD_SALES_FOLDER,
+    FROZEN_SALES_FOLDER,
+    INVALID_SALES_FORMAT_FOLDER,
     READY_FOR_SALE_FOLDER,
+    MIDDLE_ACCOUNTS_FOLDER,
     TDATA_FOLDER,
-    SESSIONS_JSON_FOLDER
+    SESSIONS_JSON_FOLDER,
+    WORK_ACCOUNTS_SALE_FOLDER,
+    WORK_ACCOUNTS_TRAFFER_FOLDER
 ]
 
 # Список всех файлов для создания
@@ -73,11 +90,5 @@ def ensure_folder_structure():
             if not file.exists():
                 file.touch()
     except PermissionError as e:
-        print(f"Ошибка прав доступа: {e}")
-        print(f"Пытаемся создать в: {BASE_PATH}")
-
-
-if __name__ == "__main__":
-    print(f"Base path: {BASE_PATH}")
-    print(f"Work folder: {WORK_FOLDER}")
-    ensure_folder_structure()
+        logger.error(f"Ошибка прав доступа: {e}")
+        logger.error(f"Пытаемся создать в: {BASE_PATH}")
