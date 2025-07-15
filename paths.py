@@ -26,15 +26,15 @@ else:
     else:
         BASE_PATH = Path.cwd()
 
-# Главная рабочая папка рядом с exe/проектом
+#--------------- Для работы, Траффер ---------------
 WORK_TRAFFER_FOLDER = BASE_PATH / "Для работы"
-WORK_SALES_FOLDER = BASE_PATH / "Продажи"
-
-# Основные папки для аккаунтов
 WORK_ACCOUNTS_TRAFFER_FOLDER = WORK_TRAFFER_FOLDER / "Аккаунты"
 DEAD_TRAFFER_FOLDER = WORK_TRAFFER_FOLDER / "Мертвые"
 FROZEN_TRAFFER_FOLDER = WORK_TRAFFER_FOLDER / "Замороженные"
 INVALID_TRAFFER_FORMAT_FOLDER = WORK_TRAFFER_FOLDER / "Неверный формат"
+
+#--------------- Продажи ---------------
+WORK_SALES_FOLDER = BASE_PATH / "Продажи"
 DEAD_SALES_FOLDER = WORK_SALES_FOLDER / "Мертвые"
 FROZEN_SALES_FOLDER = WORK_SALES_FOLDER / "Замороженные"
 INVALID_SALES_FORMAT_FOLDER = WORK_SALES_FOLDER / "Неверный формат"
@@ -47,6 +47,8 @@ MIDDLE_ACCOUNTS_FOLDER = WORK_SALES_FOLDER / "Средние"
 WORK_ACCOUNTS_SALE_FOLDER = WORK_SALES_FOLDER / "Регистарция"
 TDATA_FOLDER = READY_FOR_SALE_FOLDER / "Тдата"
 SESSIONS_JSON_FOLDER = READY_FOR_SALE_FOLDER / "Сессии+json"
+
+#----------------------------------------
 
 # Файлы
 PROXY_FILE = BASE_PATH / "прокси.txt"

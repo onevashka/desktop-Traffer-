@@ -11,7 +11,8 @@ dependencies = [
     "pyside6 (>=6.9.1,<7.0.0)",
     "loguru (>=0.7.3,<0.8.0)",
     "qasync (>=0.27.1,<0.28.0)",
-    "telethon @ git+https://github.com/LonamiWebs/Telethon.git@7d0fadea291ad0a67f6c4f9d57e84457a6a1b853"
+    "telethon @ git+https://github.com/LonamiWebs/Telethon.git@7d0fadea291ad0a67f6c4f9d57e84457a6a1b853",
+    "phonenumbers (>=9.0.9,<10.0.0)"
 ]
 
 
