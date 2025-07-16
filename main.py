@@ -17,42 +17,57 @@ from gui.main_window import MainWindow
 from src.accounts.manager import init_account_manager
 from loguru import logger
 
-
 log_console = None
-main_win    = None
+main_win = None
 
 
 def qt_message_handler(mode, context, message):
     if "Unknown property" not in message:
         print(f"Qt: {message}")
 
+
 async def async_main():
     """Асинхронная инициализация приложения"""
 
     global log_console, main_win
 
-    # 3. Создаем и показываем GUI
+    # 1. Создаем и показываем консоль логов
     log_console = LogConsole()
     log_console.show()
     logger.info("📋 Консоль логов открыта")
 
     await asyncio.sleep(1)
 
-    # 1. Создаем структуру папок
+    # 2. Создаем структуру папок
     ensure_folder_structure()
     logger.info("📁 Структура папок создана")
 
-    # 2. Инициализируем AccountManager (теперь асинхронно)
-    try:
-        await init_account_manager()
-        logger.info("✅ AccountManager инициализирован с полной загрузкой аккаунтов")
-    except Exception as e:
-        logger.error(f"❌ Ошибка инициализации AccountManager: {e}")
-
-
+    # 3. Создаем главное окно СНАЧАЛА
     main_win = MainWindow()
     main_win.show()
     logger.info("🖥️  Главное окно открыто")
+
+    # 4. ТЕПЕРЬ инициализируем AccountManager (после создания окна)
+    try:
+        logger.info("🎯 Начинаем инициализацию AccountManager...")
+
+        # Показываем уведомление о начале загрузки (теперь окно уже есть)
+        from gui.notifications import show_info
+        show_info("Инициализация", "Загружаем аккаунты...")
+
+        await init_account_manager()
+        logger.info("✅ AccountManager инициализирован с полной загрузкой аккаунтов")
+
+        # Показываем уведомление об успешной загрузке
+        from gui.notifications import show_success
+        show_success("Загрузка завершена", "Аккаунты успешно загружены")
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка инициализации AccountManager: {e}")
+
+        # Показываем ошибку (окно уже есть)
+        from gui.notifications import show_error
+        show_error("Ошибка инициализации", f"Не удалось загрузить аккаунты: {e}")
 
     logger.info("🚀 Приложение desktop-Traffer готово к работе!")
 

@@ -3,7 +3,7 @@ from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QPushButton, QLabel, QFrame, QStackedWidget, QSizePolicy
 )
-from PySide6.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve
+from PySide6.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve, QTimer
 from PySide6.QtGui import QFont, QIcon
 from gui.account_manager import AccountManagerTab
 from log_config import logger
@@ -37,6 +37,51 @@ class MainWindow(QMainWindow):
         self._switch_to_accounts()
 
         logger.debug("MainWindow with sidebar initialized")
+
+        # ВАЖНО: Инициализируем уведомления ПОСЛЕ полного создания окна
+        QTimer.singleShot(100, self._init_notifications)
+
+    def _init_notifications(self):
+        """Инициализирует систему уведомлений после создания окна"""
+        try:
+            from gui.notifications import init_notification_manager
+            self.notification_manager = init_notification_manager(self)
+            logger.debug("✅ Система уведомлений инициализирована")
+
+            # Показываем приветственное уведомление
+            QTimer.singleShot(500, self.show_app_ready_notification)
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка инициализации уведомлений: {e}")
+
+    def show_app_ready_notification(self):
+        """Показывает уведомление о готовности приложения"""
+        try:
+            from gui.notifications import show_success
+            show_success(
+                "Приложение готово",
+                "desktop-Traffer успешно запущен!"
+            )
+        except Exception as e:
+            logger.error(f"❌ Ошибка показа уведомления: {e}")
+
+    def show_navigation_info(self, section_name: str):
+        """Показывает информацию о переключении разделов"""
+        try:
+            from gui.notifications import show_info
+
+            if section_name == "accounts":
+                show_info(
+                    "Менеджер аккаунтов",
+                    "Управление Telegram аккаунтами"
+                )
+            elif section_name == "modules":
+                show_info(
+                    "Модули автоматизации",
+                    "Раздел находится в разработке"
+                )
+        except Exception as e:
+            logger.error(f"❌ Ошибка показа навигационного уведомления: {e}")
 
     def _create_sidebar(self):
         """Создание левого сайдбара"""
@@ -286,10 +331,16 @@ class MainWindow(QMainWindow):
         self.stacked_widget.setCurrentIndex(0)
         self._update_nav_buttons("accounts")
 
+        # Показываем информацию только при первом переходе
+        if not hasattr(self, '_accounts_visited'):
+            self._accounts_visited = True
+            QTimer.singleShot(300, lambda: self.show_navigation_info("accounts"))
+
     def _switch_to_modules(self):
         """Переключение на модули"""
         self.stacked_widget.setCurrentIndex(1)
         self._update_nav_buttons("modules")
+        QTimer.singleShot(300, lambda: self.show_navigation_info("modules"))
 
     def _update_nav_buttons(self, active_key):
         """Обновление стилей навигационных кнопок"""
@@ -317,3 +368,37 @@ class MainWindow(QMainWindow):
                         background: rgba(255, 255, 255, 0.1);
                     }
                 """)
+
+    # Методы для тестирования уведомлений
+    def test_notifications(self):
+        """Тестирует все типы уведомлений"""
+        try:
+            from gui.notifications import show_success, show_error, show_warning, show_info
+
+            show_info("Тест 1", "Информационное уведомление")
+            QTimer.singleShot(1000, lambda: show_success("Тест 2", "Успешное выполнение"))
+            QTimer.singleShot(2000, lambda: show_warning("Тест 3", "Предупреждение"))
+            QTimer.singleShot(3000, lambda: show_error("Тест 4", "Ошибка системы"))
+        except Exception as e:
+            logger.error(f"❌ Ошибка тестирования уведомлений: {e}")
+
+    def _clear_notifications(self):
+        """Очищает все уведомления"""
+        try:
+            if hasattr(self, 'notification_manager'):
+                self.notification_manager.clear_all()
+                from gui.notifications import show_info
+                show_info("Система", "Все уведомления очищены")
+        except Exception as e:
+            logger.error(f"❌ Ошибка очистки уведомлений: {e}")
+
+    # Обработка событий окна
+    def resizeEvent(self, event):
+        """Обработка изменения размера окна"""
+        super().resizeEvent(event)
+        # Уведомления автоматически обновят позицию через eventFilter
+
+    def moveEvent(self, event):
+        """Обработка перемещения окна"""
+        super().moveEvent(event)
+        # Уведомления автоматически обновят позицию через eventFilter

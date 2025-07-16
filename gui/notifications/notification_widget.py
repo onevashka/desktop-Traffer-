@@ -1,5 +1,5 @@
 """
-Виджет уведомления - красивый и современный
+Виджет уведомления - привязанный к главному окну (ИСПРАВЛЕНО)
 """
 
 from PySide6.QtWidgets import (
@@ -7,14 +7,14 @@ from PySide6.QtWidgets import (
     QGraphicsOpacityEffect, QGraphicsDropShadowEffect
 )
 from PySide6.QtCore import (
-    Qt, QPropertyAnimation, QEasingCurve, QTimer,
+    Qt, QPropertyAnimation, QEasingCurve, QTimer, QEvent,
     QRect, Signal, QParallelAnimationGroup
 )
 from PySide6.QtGui import QFont, QPixmap, QPainter, QColor
 
 
 class NotificationWidget(QWidget):
-    """Современный виджет уведомления"""
+    """Современный виджет уведомления привязанный к главному окну"""
 
     # Сигналы
     clicked = Signal()
@@ -26,15 +26,18 @@ class NotificationWidget(QWidget):
     WARNING = "warning"
     INFO = "info"
 
-    def __init__(self, title, message, notification_type=INFO, duration=4000, parent=None):
-        super().__init__(parent)
+    def __init__(self, title, message, notification_type=INFO, duration=4000, main_window=None):
+        super().__init__(main_window)  # Устанавливаем главное окно как родителя
 
         self.notification_type = notification_type
         self.duration = duration
         self.is_closing = False
+        self.main_window = main_window
 
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        # Устанавливаем флаги для overlay поверх главного окна
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_ShowWithoutActivating)  # Не активируем окно при показе
         self.setFixedSize(400, 100)
 
         # Создаем UI
@@ -42,9 +45,52 @@ class NotificationWidget(QWidget):
         self._setup_animations()
         self._apply_styles()
 
+        # Отслеживаем изменения главного окна
+        if main_window:
+            main_window.installEventFilter(self)
+
         # Автозакрытие
         if duration > 0:
             QTimer.singleShot(duration, self.animate_out)
+
+    def eventFilter(self, obj, event):
+        """Отслеживаем события главного окна"""
+        if obj == self.main_window:
+            # ИСПРАВЛЕНО: Правильное обращение к типам событий
+            if event.type() == QEvent.Type.Resize:
+                # При изменении размера главного окна, обновляем позицию
+                QTimer.singleShot(50, self._update_position_on_resize)
+            elif event.type() == QEvent.Type.Move:
+                # При перемещении главного окна, двигаем уведомление
+                QTimer.singleShot(50, self._update_position_on_move)
+            elif event.type() == QEvent.Type.Close:
+                # Если главное окно закрывается, закрываем уведомление
+                self.animate_out()
+        return super().eventFilter(obj, event)
+
+    def _update_position_on_resize(self):
+        """Обновляет позицию при изменении размера главного окна"""
+        if self.main_window and not self.is_closing:
+            # Запрашиваем у менеджера пересчет позиций
+            try:
+                from .notification_manager import get_notification_manager
+                manager = get_notification_manager()
+                if manager:
+                    manager.update_positions()
+            except Exception as e:
+                print(f"Ошибка обновления позиций: {e}")
+
+    def _update_position_on_move(self):
+        """Обновляет позицию при перемещении главного окна"""
+        if self.main_window and not self.is_closing:
+            # Запрашиваем у менеджера пересчет позиций
+            try:
+                from .notification_manager import get_notification_manager
+                manager = get_notification_manager()
+                if manager:
+                    manager.update_positions()
+            except Exception as e:
+                print(f"Ошибка обновления позиций: {e}")
 
     def _create_ui(self, title, message):
         """Создает интерфейс уведомления"""
@@ -213,7 +259,7 @@ class NotificationWidget(QWidget):
 
     def show_at_position(self, x, y):
         """Показывает уведомление в указанной позиции с анимацией"""
-        # Начальная позиция (справа за экраном)
+        # Начальная позиция (справа за экраном относительно главного окна)
         start_rect = QRect(x + 50, y, self.width(), self.height())
         end_rect = QRect(x, y, self.width(), self.height())
 

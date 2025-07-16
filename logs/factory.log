@@ -763,3 +763,891 @@
 2025-07-16 13:17:41.304 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
 2025-07-16 13:17:41.305 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
 2025-07-16 13:17:41.305 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:06:35.502 | INFO     | __main__:async_main:37 - 📋 Консоль логов открыта
+2025-07-16 14:06:36.515 | INFO     | __main__:async_main:43 - 📁 Структура папок создана
+2025-07-16 14:06:36.516 | INFO     | src.accounts.manager:init_account_manager:353 - 🎯 Инициализация AccountManager...
+2025-07-16 14:06:36.517 | INFO     | src.accounts.manager:__init__:51 - 📋 AccountManager создан с раздельными хранилищами
+2025-07-16 14:06:36.518 | INFO     | src.accounts.manager:scan_all_folders:66 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-16 14:06:36.519 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:06:36.520 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:06:36.521 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:06:36.525 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:06:36.526 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:06:36.527 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:06:36.528 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:06:36.528 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/active: 2 аккаунтов
+2025-07-16 14:06:36.529 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:06:36.530 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:36.532 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:06:36.533 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-16 14:06:36.534 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:06:36.534 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:36.535 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:06:36.536 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-16 14:06:36.536 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:06:36.537 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:36.538 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:06:36.538 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-16 14:06:36.539 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-16 14:06:36.540 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:06:36.541 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:06:36.542 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:06:36.543 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:06:36.543 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:06:36.544 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Регистарция: загружено 2 аккаунтов
+2025-07-16 14:06:36.544 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/registration: 2 аккаунтов
+2025-07-16 14:06:36.545 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-16 14:06:36.546 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:36.547 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Тдата: загружено 0 аккаунтов
+2025-07-16 14:06:36.547 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-16 14:06:36.548 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-16 14:06:36.549 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:36.550 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-16 14:06:36.550 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-16 14:06:36.551 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-16 14:06:36.552 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:36.553 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-16 14:06:36.553 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-16 14:06:36.554 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-16 14:06:36.555 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:36.555 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:06:36.555 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-16 14:06:36.556 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-16 14:06:36.557 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:36.557 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:06:36.558 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-16 14:06:36.559 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-16 14:06:36.560 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:36.561 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:06:36.561 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-16 14:06:36.562 | INFO     | src.accounts.manager:scan_all_folders:86 - ✅ Полная загрузка завершена! Трафик: 2, Продажи: 2, Всего: 4
+2025-07-16 14:06:36.562 | INFO     | src.accounts.manager:init_account_manager:355 - ✅ AccountManager готов!
+2025-07-16 14:06:36.563 | INFO     | __main__:async_main:48 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-16 14:06:36.645 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-16 14:06:36.695 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-16 14:06:36.711 | INFO     | __main__:async_main:55 - 🖥️  Главное окно открыто
+2025-07-16 14:06:36.712 | INFO     | __main__:async_main:57 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-16 14:06:51.479 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:06:51.480 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:06:51.480 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:06:51.481 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:06:51.482 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:06:51.482 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:06:51.482 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:06:51.488 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:06:51.489 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:06:51.489 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:51.490 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:06:51.491 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:06:51.492 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:51.492 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:06:51.493 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:06:51.493 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:51.494 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:06:51.494 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:06:58.166 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:06:58.167 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:06:58.168 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:06:58.169 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:06:58.170 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:06:58.170 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:06:58.171 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:06:58.172 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:06:58.173 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:06:58.174 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:58.175 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:06:58.175 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:06:58.176 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:58.177 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:06:58.177 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:06:58.178 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:06:58.179 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:06:58.180 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:07:04.314 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:07:04.315 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:07:04.315 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:07:04.316 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:07:04.317 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:07:04.318 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:07:04.318 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:07:04.319 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:07:04.319 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:07:04.320 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:07:04.320 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:07:04.321 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:07:04.322 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:07:04.322 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:07:04.323 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:07:04.323 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:07:04.324 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:07:04.325 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:08:46.296 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:08:46.296 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:08:46.297 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:08:46.298 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:08:46.298 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:08:46.299 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:08:46.299 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:08:46.300 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:08:46.300 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:08:46.301 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:08:46.301 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:08:46.302 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:08:46.303 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:08:46.303 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:08:46.304 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:08:46.304 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:08:46.304 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:08:46.306 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:12:43.638 | INFO     | __main__:async_main:37 - 📋 Консоль логов открыта
+2025-07-16 14:12:44.633 | INFO     | __main__:async_main:43 - 📁 Структура папок создана
+2025-07-16 14:12:44.633 | INFO     | src.accounts.manager:init_account_manager:353 - 🎯 Инициализация AccountManager...
+2025-07-16 14:12:44.635 | INFO     | src.accounts.manager:__init__:51 - 📋 AccountManager создан с раздельными хранилищами
+2025-07-16 14:12:44.635 | INFO     | src.accounts.manager:scan_all_folders:66 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-16 14:12:44.635 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:12:44.636 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:12:44.637 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:12:44.641 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:12:44.641 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:12:44.642 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:12:44.643 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:12:44.643 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/active: 2 аккаунтов
+2025-07-16 14:12:44.644 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:12:44.645 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:44.646 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:12:44.646 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-16 14:12:44.647 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:12:44.648 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:44.649 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:12:44.649 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-16 14:12:44.650 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:12:44.650 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:44.651 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:12:44.651 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-16 14:12:44.652 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-16 14:12:44.653 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:12:44.653 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:12:44.653 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:12:44.654 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:12:44.655 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:12:44.655 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Регистарция: загружено 2 аккаунтов
+2025-07-16 14:12:44.656 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/registration: 2 аккаунтов
+2025-07-16 14:12:44.656 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-16 14:12:44.657 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:44.657 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Тдата: загружено 0 аккаунтов
+2025-07-16 14:12:44.658 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-16 14:12:44.658 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-16 14:12:44.659 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:44.659 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-16 14:12:44.660 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-16 14:12:44.661 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-16 14:12:44.661 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:44.662 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-16 14:12:44.663 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-16 14:12:44.664 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-16 14:12:44.664 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:44.665 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:12:44.665 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-16 14:12:44.666 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-16 14:12:44.666 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:44.667 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:12:44.668 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-16 14:12:44.668 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-16 14:12:44.669 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:44.669 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:12:44.670 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-16 14:12:44.670 | INFO     | src.accounts.manager:scan_all_folders:86 - ✅ Полная загрузка завершена! Трафик: 2, Продажи: 2, Всего: 4
+2025-07-16 14:12:44.671 | INFO     | src.accounts.manager:init_account_manager:355 - ✅ AccountManager готов!
+2025-07-16 14:12:44.671 | INFO     | __main__:async_main:48 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-16 14:12:44.732 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-16 14:12:44.779 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-16 14:12:44.797 | INFO     | __main__:async_main:55 - 🖥️  Главное окно открыто
+2025-07-16 14:12:44.798 | INFO     | __main__:async_main:57 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-16 14:12:56.002 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:12:56.002 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:12:56.003 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:12:56.004 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:12:56.005 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:12:56.005 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:12:56.006 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:12:56.006 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:12:56.007 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:12:56.008 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:56.008 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:12:56.009 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:12:56.009 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:56.010 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:12:56.010 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:12:56.011 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:56.011 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:12:56.012 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:12:56.841 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:12:56.842 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:12:56.843 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:12:56.843 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:12:56.845 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:12:56.846 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:12:56.846 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:12:56.847 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:12:56.848 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:12:56.848 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:56.849 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:12:56.849 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:12:56.850 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:56.850 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:12:56.851 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:12:56.852 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:56.852 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:12:56.853 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:12:57.355 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:12:57.356 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:12:57.357 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:12:57.357 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:12:57.358 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:12:57.359 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:12:57.359 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:12:57.359 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:12:57.360 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:12:57.360 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:57.361 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:12:57.361 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:12:57.362 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:57.362 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:12:57.363 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:12:57.363 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:12:57.363 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:12:57.363 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:15:29.254 | INFO     | __main__:async_main:37 - 📋 Консоль логов открыта
+2025-07-16 14:15:30.264 | INFO     | __main__:async_main:43 - 📁 Структура папок создана
+2025-07-16 14:15:30.307 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-16 14:15:30.341 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-16 14:15:30.372 | INFO     | __main__:async_main:48 - 🖥️  Главное окно открыто
+2025-07-16 14:15:30.373 | INFO     | __main__:async_main:52 - 🎯 Начинаем инициализацию AccountManager...
+2025-07-16 14:15:30.374 | INFO     | src.accounts.manager:init_account_manager:353 - 🎯 Инициализация AccountManager...
+2025-07-16 14:15:30.375 | INFO     | src.accounts.manager:__init__:51 - 📋 AccountManager создан с раздельными хранилищами
+2025-07-16 14:15:30.376 | INFO     | src.accounts.manager:scan_all_folders:66 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-16 14:15:30.376 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:15:30.378 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:15:30.378 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:15:30.382 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:15:30.383 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:15:30.385 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:15:30.386 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:15:30.387 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/active: 2 аккаунтов
+2025-07-16 14:15:30.388 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:15:30.389 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:15:30.391 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:15:30.392 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-16 14:15:30.393 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:15:30.393 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:15:30.394 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:15:30.395 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-16 14:15:30.396 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:15:30.397 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:15:30.398 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:15:30.399 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-16 14:15:30.400 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-16 14:15:30.400 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:15:30.401 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:15:30.402 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:15:30.403 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:15:30.405 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:15:30.405 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Регистарция: загружено 2 аккаунтов
+2025-07-16 14:15:30.406 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/registration: 2 аккаунтов
+2025-07-16 14:15:30.406 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-16 14:15:30.407 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:15:30.408 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Тдата: загружено 0 аккаунтов
+2025-07-16 14:15:30.408 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-16 14:15:30.409 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-16 14:15:30.410 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:15:30.410 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-16 14:15:30.411 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-16 14:15:30.412 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-16 14:15:30.412 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:15:30.413 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-16 14:15:30.413 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-16 14:15:30.413 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-16 14:15:30.414 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:15:30.414 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:15:30.415 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-16 14:15:30.417 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-16 14:15:30.418 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:15:30.419 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:15:30.419 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-16 14:15:30.420 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-16 14:15:30.420 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:15:30.421 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:15:30.421 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-16 14:15:30.422 | INFO     | src.accounts.manager:scan_all_folders:86 - ✅ Полная загрузка завершена! Трафик: 2, Продажи: 2, Всего: 4
+2025-07-16 14:15:30.422 | INFO     | src.accounts.manager:init_account_manager:355 - ✅ AccountManager готов!
+2025-07-16 14:15:30.423 | INFO     | __main__:async_main:59 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-16 14:15:30.423 | INFO     | __main__:async_main:72 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-16 14:15:30.482 | DEBUG    | gui.main_window:_init_notifications:49 - ✅ Система уведомлений инициализирована
+2025-07-16 14:15:30.672 | ERROR    | gui.main_window:show_navigation_info:84 - ❌ Ошибка показа навигационного уведомления: Error calling Python override of QWidget::eventFilter(): 'PySide6.QtCore.QChildEvent' object has no attribute 'Resize'
+2025-07-16 14:15:30.972 | ERROR    | gui.main_window:show_app_ready_notification:66 - ❌ Ошибка показа уведомления: <method-wrapper '__init__' of NotificationWidget object at 0x0000013BCAD1B980> returned NULL without setting an exception
+2025-07-16 14:15:35.800 | ERROR    | gui.handlers.table_handlers:handle_refresh_action:125 - ❌ Ошибка обработки обновления: Error calling Python override of QWidget::eventFilter(): 'PySide6.QtCore.QChildEvent' object has no attribute 'Resize'
+2025-07-16 14:15:36.879 | ERROR    | gui.handlers.table_handlers:handle_refresh_action:125 - ❌ Ошибка обработки обновления: <method-wrapper '__init__' of NotificationWidget object at 0x0000013BCACEF140> returned NULL without setting an exception
+2025-07-16 14:15:56.916 | ERROR    | gui.handlers.table_handlers:handle_refresh_action:125 - ❌ Ошибка обработки обновления: Error calling Python override of QWidget::eventFilter(): 'PySide6.QtCore.QChildEvent' object has no attribute 'Resize'
+2025-07-16 14:17:18.780 | INFO     | __main__:async_main:37 - 📋 Консоль логов открыта
+2025-07-16 14:17:19.794 | INFO     | __main__:async_main:43 - 📁 Структура папок создана
+2025-07-16 14:17:19.840 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-16 14:17:19.872 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-16 14:17:19.888 | INFO     | __main__:async_main:48 - 🖥️  Главное окно открыто
+2025-07-16 14:17:19.891 | INFO     | __main__:async_main:52 - 🎯 Начинаем инициализацию AccountManager...
+2025-07-16 14:17:19.892 | INFO     | src.accounts.manager:init_account_manager:353 - 🎯 Инициализация AccountManager...
+2025-07-16 14:17:19.893 | INFO     | src.accounts.manager:__init__:51 - 📋 AccountManager создан с раздельными хранилищами
+2025-07-16 14:17:19.893 | INFO     | src.accounts.manager:scan_all_folders:66 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-16 14:17:19.894 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:17:19.895 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:17:19.896 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:17:19.900 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:17:19.901 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:17:19.902 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:17:19.903 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:17:19.904 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/active: 2 аккаунтов
+2025-07-16 14:17:19.904 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:17:19.906 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:19.906 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:17:19.906 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-16 14:17:19.907 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:17:19.908 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:19.909 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:17:19.909 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-16 14:17:19.910 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:17:19.911 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:19.911 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:17:19.912 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-16 14:17:19.912 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-16 14:17:19.913 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:17:19.913 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:17:19.914 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:17:19.915 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:17:19.915 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:17:19.916 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Регистарция: загружено 2 аккаунтов
+2025-07-16 14:17:19.917 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/registration: 2 аккаунтов
+2025-07-16 14:17:19.917 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-16 14:17:19.918 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:19.919 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Тдата: загружено 0 аккаунтов
+2025-07-16 14:17:19.919 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-16 14:17:19.920 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-16 14:17:19.920 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:19.921 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-16 14:17:19.921 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-16 14:17:19.922 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-16 14:17:19.922 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:19.923 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-16 14:17:19.923 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-16 14:17:19.924 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-16 14:17:19.925 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:19.925 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:17:19.925 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-16 14:17:19.925 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-16 14:17:19.926 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:19.926 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:17:19.927 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-16 14:17:19.927 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-16 14:17:19.928 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:19.928 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:17:19.929 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-16 14:17:19.930 | INFO     | src.accounts.manager:scan_all_folders:86 - ✅ Полная загрузка завершена! Трафик: 2, Продажи: 2, Всего: 4
+2025-07-16 14:17:19.931 | INFO     | src.accounts.manager:init_account_manager:355 - ✅ AccountManager готов!
+2025-07-16 14:17:19.931 | INFO     | __main__:async_main:59 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-16 14:17:19.932 | INFO     | __main__:async_main:72 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-16 14:17:19.978 | DEBUG    | gui.main_window:_init_notifications:49 - ✅ Система уведомлений инициализирована
+2025-07-16 14:17:26.345 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:17:26.346 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:17:26.347 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:17:26.347 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:17:26.348 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:17:26.349 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:17:26.349 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:17:26.350 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:17:26.350 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:17:26.351 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:26.352 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:17:26.352 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:17:26.353 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:26.353 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:17:26.353 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:17:26.355 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:26.355 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:17:26.355 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:17:28.043 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:17:28.044 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:17:28.046 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:17:28.046 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:17:28.047 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:17:28.048 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:17:28.048 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:17:28.049 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:17:28.049 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:17:28.050 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:28.050 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:17:28.050 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:17:28.052 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:28.053 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:17:28.053 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:17:28.054 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:28.054 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:17:28.054 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:17:28.700 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:17:28.701 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:17:28.701 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:17:28.702 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:17:28.703 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:17:28.703 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:17:28.704 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:17:28.705 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:17:28.705 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:17:28.706 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:28.706 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:17:28.707 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:17:28.707 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:28.708 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:17:28.708 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:17:28.708 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:28.709 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:17:28.709 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:17:39.631 | INFO     | __main__:async_main:37 - 📋 Консоль логов открыта
+2025-07-16 14:17:40.627 | INFO     | __main__:async_main:43 - 📁 Структура папок создана
+2025-07-16 14:17:40.673 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-16 14:17:40.706 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-16 14:17:40.724 | INFO     | __main__:async_main:48 - 🖥️  Главное окно открыто
+2025-07-16 14:17:40.725 | INFO     | __main__:async_main:52 - 🎯 Начинаем инициализацию AccountManager...
+2025-07-16 14:17:40.726 | INFO     | src.accounts.manager:init_account_manager:353 - 🎯 Инициализация AccountManager...
+2025-07-16 14:17:40.727 | INFO     | src.accounts.manager:__init__:51 - 📋 AccountManager создан с раздельными хранилищами
+2025-07-16 14:17:40.728 | INFO     | src.accounts.manager:scan_all_folders:66 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-16 14:17:40.729 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:17:40.730 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:17:40.732 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:17:40.735 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:17:40.737 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:17:40.737 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:17:40.739 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:17:40.739 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/active: 2 аккаунтов
+2025-07-16 14:17:40.740 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:17:40.741 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:40.741 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:17:40.741 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-16 14:17:40.742 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:17:40.743 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:40.744 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:17:40.744 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-16 14:17:40.746 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:17:40.747 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:40.747 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:17:40.748 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-16 14:17:40.748 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-16 14:17:40.749 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:17:40.750 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:17:40.750 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:17:40.751 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:17:40.752 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:17:40.752 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Регистарция: загружено 2 аккаунтов
+2025-07-16 14:17:40.752 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/registration: 2 аккаунтов
+2025-07-16 14:17:40.753 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-16 14:17:40.754 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:40.754 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Тдата: загружено 0 аккаунтов
+2025-07-16 14:17:40.754 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-16 14:17:40.756 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-16 14:17:40.757 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:40.758 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-16 14:17:40.758 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-16 14:17:40.759 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-16 14:17:40.759 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:40.760 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-16 14:17:40.760 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-16 14:17:40.760 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-16 14:17:40.761 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:40.761 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:17:40.762 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-16 14:17:40.762 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-16 14:17:40.763 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:40.764 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:17:40.764 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-16 14:17:40.765 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-16 14:17:40.765 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:17:40.766 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:17:40.766 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-16 14:17:40.766 | INFO     | src.accounts.manager:scan_all_folders:86 - ✅ Полная загрузка завершена! Трафик: 2, Продажи: 2, Всего: 4
+2025-07-16 14:17:40.767 | INFO     | src.accounts.manager:init_account_manager:355 - ✅ AccountManager готов!
+2025-07-16 14:17:40.767 | INFO     | __main__:async_main:59 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-16 14:17:40.768 | INFO     | __main__:async_main:72 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-16 14:17:40.814 | DEBUG    | gui.main_window:_init_notifications:49 - ✅ Система уведомлений инициализирована
+2025-07-16 14:19:02.181 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:19:02.182 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:19:02.183 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:19:02.183 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:19:02.185 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:19:02.185 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:19:02.186 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:19:02.186 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:19:02.187 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:19:02.188 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:02.188 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:19:02.189 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:19:02.189 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:02.190 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:19:02.190 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:19:02.191 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:02.191 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:19:02.192 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:19:08.431 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: sales
+2025-07-16 14:19:08.431 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-16 14:19:08.432 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:19:08.433 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:19:08.433 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:19:08.435 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:19:08.435 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:19:08.436 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Регистарция: загружено 2 аккаунтов
+2025-07-16 14:19:08.437 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-16 14:19:08.437 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:08.438 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Тдата: загружено 0 аккаунтов
+2025-07-16 14:19:08.438 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-16 14:19:08.439 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:08.439 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-16 14:19:08.440 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-16 14:19:08.440 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:08.441 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-16 14:19:08.442 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-16 14:19:08.442 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:08.443 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:19:08.443 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-16 14:19:08.444 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:08.444 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:19:08.445 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-16 14:19:08.445 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:08.446 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:19:08.446 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория sales обновлена: 2 аккаунтов
+2025-07-16 14:19:56.617 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:19:56.618 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:19:56.619 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:19:56.620 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:19:56.621 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:19:56.621 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:19:56.622 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:19:56.622 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:19:56.623 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:19:56.623 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:56.623 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:19:56.625 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:19:56.625 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:56.626 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:19:56.626 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:19:56.627 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:19:56.628 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:19:56.628 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 14:21:07.792 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 14:21:07.793 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 14:21:07.793 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 14:21:07.794 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 14:21:07.795 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12036460034 | Vapemeds | +12036460034
+2025-07-16 14:21:07.796 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 14:21:07.796 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 14:21:07.797 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 2 аккаунтов
+2025-07-16 14:21:07.797 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 14:21:07.798 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:21:07.798 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 14:21:07.799 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 14:21:07.800 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:21:07.800 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 14:21:07.801 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 14:21:07.801 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 14:21:07.802 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 14:21:07.802 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 2 аккаунтов
+2025-07-16 16:06:15.819 | INFO     | src.accounts.operations.delete_operations:_delete_single_account:101 - 🗑️  Удаляем аккаунт +12036460034 из traffic
+2025-07-16 16:06:15.823 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:102 -    Session: C:\desktop-Traffer\Для работы\Аккаунты\+12036460034.session
+2025-07-16 16:06:15.824 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:103 -    JSON: C:\desktop-Traffer\Для работы\Аккаунты\+12036460034.json
+2025-07-16 16:06:15.825 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:110 -    ✅ Session файл удален
+2025-07-16 16:06:15.826 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:115 -    ✅ JSON файл удален
+2025-07-16 16:06:15.827 | INFO     | src.accounts.operations.delete_operations:_delete_single_account:120 - ✅ Аккаунт +12036460034 удален (2 файлов)
+2025-07-16 16:06:22.092 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 16:06:22.094 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 16:06:22.095 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 1
+2025-07-16 16:06:22.096 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:06:22.097 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:06:22.098 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 1 аккаунтов
+2025-07-16 16:06:22.098 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 16:06:22.099 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:22.100 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:06:22.100 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 16:06:22.101 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:22.101 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:06:22.102 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 16:06:22.102 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:22.103 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:06:22.103 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 1 аккаунтов
+2025-07-16 16:06:27.317 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 16:06:27.318 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 16:06:27.319 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 1
+2025-07-16 16:06:27.320 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:06:27.321 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:06:27.322 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 1 аккаунтов
+2025-07-16 16:06:27.322 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 16:06:27.324 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:27.325 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:06:27.326 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 16:06:27.327 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:27.327 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:06:27.328 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 16:06:27.329 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:27.330 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:06:27.330 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 1 аккаунтов
+2025-07-16 16:06:27.603 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 16:06:27.603 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 16:06:27.604 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 1
+2025-07-16 16:06:27.605 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:06:27.605 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:06:27.606 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 1 аккаунтов
+2025-07-16 16:06:27.607 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 16:06:27.607 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:27.608 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:06:27.608 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 16:06:27.609 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:27.609 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:06:27.610 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 16:06:27.611 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:27.611 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:06:27.611 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 1 аккаунтов
+2025-07-16 16:06:56.457 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 16:06:56.458 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 16:06:56.459 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 1
+2025-07-16 16:06:56.460 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:06:56.460 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:06:56.461 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 1 аккаунтов
+2025-07-16 16:06:56.461 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 16:06:56.462 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:56.463 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:06:56.463 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 16:06:56.464 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:56.464 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:06:56.464 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 16:06:56.465 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:06:56.465 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:06:56.465 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 1 аккаунтов
+2025-07-16 16:15:05.511 | INFO     | __main__:async_main:37 - 📋 Консоль логов открыта
+2025-07-16 16:15:06.516 | INFO     | __main__:async_main:43 - 📁 Структура папок создана
+2025-07-16 16:15:06.571 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-16 16:15:06.604 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-16 16:15:06.619 | INFO     | __main__:async_main:48 - 🖥️  Главное окно открыто
+2025-07-16 16:15:06.620 | INFO     | __main__:async_main:52 - 🎯 Начинаем инициализацию AccountManager...
+2025-07-16 16:15:06.626 | INFO     | src.accounts.manager:init_account_manager:353 - 🎯 Инициализация AccountManager...
+2025-07-16 16:15:06.628 | INFO     | src.accounts.manager:__init__:51 - 📋 AccountManager создан с раздельными хранилищами
+2025-07-16 16:15:06.628 | INFO     | src.accounts.manager:scan_all_folders:66 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-16 16:15:06.629 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 16:15:06.629 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 1
+2025-07-16 16:15:06.630 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:15:06.644 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:15:06.645 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 1 аккаунтов
+2025-07-16 16:15:06.646 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/active: 1 аккаунтов
+2025-07-16 16:15:06.647 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 16:15:06.648 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:06.648 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:15:06.648 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-16 16:15:06.649 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 16:15:06.650 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:06.650 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:15:06.650 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-16 16:15:06.651 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 16:15:06.652 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:06.652 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:15:06.652 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-16 16:15:06.653 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-16 16:15:06.654 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 16:15:06.655 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 16:15:06.655 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12036460034 | Vapemeds | +12036460034
+2025-07-16 16:15:06.656 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:15:06.657 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:15:06.657 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Регистарция: загружено 2 аккаунтов
+2025-07-16 16:15:06.658 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/registration: 2 аккаунтов
+2025-07-16 16:15:06.658 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-16 16:15:06.659 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:06.660 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Тдата: загружено 0 аккаунтов
+2025-07-16 16:15:06.660 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-16 16:15:06.661 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-16 16:15:06.661 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:06.662 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-16 16:15:06.662 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-16 16:15:06.662 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-16 16:15:06.664 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:06.664 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-16 16:15:06.665 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-16 16:15:06.666 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-16 16:15:06.667 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:06.667 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:15:06.668 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-16 16:15:06.668 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-16 16:15:06.669 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:06.670 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:15:06.670 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-16 16:15:06.671 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-16 16:15:06.672 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:06.672 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:15:06.674 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-16 16:15:06.674 | INFO     | src.accounts.manager:scan_all_folders:86 - ✅ Полная загрузка завершена! Трафик: 1, Продажи: 2, Всего: 3
+2025-07-16 16:15:06.675 | INFO     | src.accounts.manager:init_account_manager:355 - ✅ AccountManager готов!
+2025-07-16 16:15:06.675 | INFO     | __main__:async_main:59 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-16 16:15:06.676 | INFO     | __main__:async_main:72 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-16 16:15:06.734 | DEBUG    | gui.main_window:_init_notifications:49 - ✅ Система уведомлений инициализирована
+2025-07-16 16:15:30.107 | INFO     | src.accounts.operations.update_operations:refresh_category:60 - 🔄 Начинаем обновление категории: traffic
+2025-07-16 16:15:30.107 | DEBUG    | src.accounts.operations.update_operations:refresh_category:77 - 📊 Очищено хранилище traffic, было 1 аккаунтов
+2025-07-16 16:15:30.108 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 16:15:30.108 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 1
+2025-07-16 16:15:30.109 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:15:30.109 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:15:30.110 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 1 аккаунтов
+2025-07-16 16:15:30.110 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 traffic/active: 1 аккаунтов
+2025-07-16 16:15:30.111 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 16:15:30.111 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:30.112 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:15:30.112 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 traffic/dead: 0 аккаунтов
+2025-07-16 16:15:30.112 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 16:15:30.114 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:30.114 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:15:30.115 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 traffic/frozen: 0 аккаунтов
+2025-07-16 16:15:30.115 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 16:15:30.116 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:30.117 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:15:30.117 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 traffic/invalid: 0 аккаунтов
+2025-07-16 16:15:30.118 | INFO     | src.accounts.operations.update_operations:refresh_category:86 - ✅ Категория traffic обновлена: 1 → 1 (+0)
+2025-07-16 16:15:30.121 | INFO     | gui.handlers.table_handlers:_refresh_table_data:107 - 📊 Обновляем данные таблицы для категории: traffic
+2025-07-16 16:15:30.138 | INFO     | gui.handlers.table_handlers:_refresh_table_data:115 - ✅ Таблица обновлена, показано 1 аккаунтов
+2025-07-16 16:15:30.138 | INFO     | gui.handlers.table_handlers:_refresh_parent_statistics:135 - 📊 Обновляем статистику в родительском компоненте
+2025-07-16 16:15:30.139 | INFO     | gui.component_account_manager.traffic_accounts:refresh_data:79 - 🔄 Обновляем данные трафика...
+2025-07-16 16:15:30.139 | DEBUG    | gui.component_account_manager.traffic_accounts:refresh_data:83 - 📊 Новая статистика: [('Активных аккаунтов', '1', '#10B981'), ('Мертвых', '0', '#EF4444'), ('Замороженных', '0', '#F59E0B'), ('Неверный формат', '0', '#6B7280')]
+2025-07-16 16:15:30.140 | DEBUG    | gui.component_account_manager.traffic_accounts:refresh_data:89 -    📊 Обновлен элемент 0: Активных аккаунтов = 1
+2025-07-16 16:15:30.140 | DEBUG    | gui.component_account_manager.traffic_accounts:refresh_data:93 - 📋 Новые данные таблицы: 1 строк
+2025-07-16 16:15:30.142 | INFO     | gui.component_account_manager.traffic_accounts:refresh_data:97 - ✅ Данные трафика обновлены через update_table_data
+2025-07-16 16:15:34.224 | INFO     | src.accounts.operations.update_operations:refresh_category:60 - 🔄 Начинаем обновление категории: sales
+2025-07-16 16:15:34.225 | DEBUG    | src.accounts.operations.update_operations:refresh_category:77 - 📊 Очищено хранилище sales, было 2 аккаунтов
+2025-07-16 16:15:34.226 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-16 16:15:34.227 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 16:15:34.228 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 16:15:34.228 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12036460034 | Vapemeds | +12036460034
+2025-07-16 16:15:34.229 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:15:34.229 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:15:34.230 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Регистарция: загружено 2 аккаунтов
+2025-07-16 16:15:34.230 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 sales/registration: 2 аккаунтов
+2025-07-16 16:15:34.231 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-16 16:15:34.231 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:34.232 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Тдата: загружено 0 аккаунтов
+2025-07-16 16:15:34.232 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 sales/ready_tdata: 0 аккаунтов
+2025-07-16 16:15:34.234 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-16 16:15:34.234 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:34.235 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-16 16:15:34.235 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 sales/ready_sessions: 0 аккаунтов
+2025-07-16 16:15:34.236 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-16 16:15:34.236 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:34.236 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-16 16:15:34.237 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 sales/middle: 0 аккаунтов
+2025-07-16 16:15:34.237 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-16 16:15:34.238 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:34.238 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:15:34.238 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 sales/dead: 0 аккаунтов
+2025-07-16 16:15:34.239 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-16 16:15:34.239 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:34.239 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:15:34.240 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 sales/frozen: 0 аккаунтов
+2025-07-16 16:15:34.240 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-16 16:15:34.241 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:15:34.241 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:15:34.241 | DEBUG    | src.accounts.operations.update_operations:refresh_category:84 -    📁 sales/invalid: 0 аккаунтов
+2025-07-16 16:15:34.242 | INFO     | src.accounts.operations.update_operations:refresh_category:86 - ✅ Категория sales обновлена: 2 → 2 (+0)
+2025-07-16 16:15:34.244 | INFO     | gui.handlers.table_handlers:_refresh_table_data:107 - 📊 Обновляем данные таблицы для категории: sales
+2025-07-16 16:15:34.247 | INFO     | gui.handlers.table_handlers:_refresh_table_data:115 - ✅ Таблица обновлена, показано 2 аккаунтов
+2025-07-16 16:15:34.248 | INFO     | gui.handlers.table_handlers:_refresh_parent_statistics:135 - 📊 Обновляем статистику в родительском компоненте
+2025-07-16 16:15:34.248 | INFO     | gui.component_account_manager.sales_accounts:refresh_data:79 - 🔄 Обновляем данные продаж...
+2025-07-16 16:15:34.249 | DEBUG    | gui.component_account_manager.sales_accounts:refresh_data:83 - 📊 Новая статистика: [('Регистрация', '2', '#3B82F6'), ('📁 TData', '0', '#10B981'), ('📄 Session+JSON', '0', '#059669'), ('Средних', '0', '#8B5CF6'), ('Замороженных', '0', '#F59E0B'), ('Мертвых', '0', '#EF4444')]
+2025-07-16 16:15:34.249 | DEBUG    | gui.component_account_manager.sales_accounts:refresh_data:89 -    📊 Обновлен элемент 0: Регистрация = 2
+2025-07-16 16:15:34.250 | DEBUG    | gui.component_account_manager.sales_accounts:refresh_data:93 - 📋 Новые данные таблицы: 2 строк
+2025-07-16 16:15:34.251 | INFO     | gui.component_account_manager.sales_accounts:refresh_data:97 - ✅ Данные продаж обновлены через update_table_data
+2025-07-16 16:23:18.180 | INFO     | __main__:async_main:37 - 📋 Консоль логов открыта
+2025-07-16 16:23:19.190 | INFO     | __main__:async_main:43 - 📁 Структура папок создана
+2025-07-16 16:23:19.202 | DEBUG    | gui.component_account_manager.traffic_accounts:_create_components:53 - 📊 Создаем компоненты трафика, статистика: [('Не загружено', '0', '#EF4444')]
+2025-07-16 16:23:19.204 | DEBUG    | gui.component_account_manager.traffic_accounts:_create_components:60 - 📋 Создаем таблицу трафика, данных: 0 строк
+2025-07-16 16:23:19.221 | DEBUG    | gui.component_account_manager.sales_accounts:_create_components:53 - 📊 Создаем компоненты продаж, статистика: [('Не загружено', '0', '#EF4444')]
+2025-07-16 16:23:19.222 | DEBUG    | gui.component_account_manager.sales_accounts:_create_components:60 - 📋 Создаем таблицу продаж, данных: 0 строк
+2025-07-16 16:23:19.242 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-16 16:23:19.275 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-16 16:23:19.288 | INFO     | __main__:async_main:48 - 🖥️  Главное окно открыто
+2025-07-16 16:23:19.289 | INFO     | __main__:async_main:52 - 🎯 Начинаем инициализацию AccountManager...
+2025-07-16 16:23:19.291 | INFO     | src.accounts.manager:init_account_manager:353 - 🎯 Инициализация AccountManager...
+2025-07-16 16:23:19.292 | INFO     | src.accounts.manager:__init__:51 - 📋 AccountManager создан с раздельными хранилищами
+2025-07-16 16:23:19.293 | INFO     | src.accounts.manager:scan_all_folders:66 - 🔍 Начинаем полное сканирование и загрузку аккаунтов...
+2025-07-16 16:23:19.294 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 16:23:19.295 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 1
+2025-07-16 16:23:19.296 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:23:19.299 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:23:19.300 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 1 аккаунтов
+2025-07-16 16:23:19.301 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/active: 1 аккаунтов
+2025-07-16 16:23:19.301 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 16:23:19.303 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:19.303 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:23:19.304 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-16 16:23:19.304 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 16:23:19.304 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:19.305 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:23:19.305 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-16 16:23:19.306 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 16:23:19.306 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:19.307 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:23:19.307 | DEBUG    | src.accounts.manager:scan_all_folders:76 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-16 16:23:19.308 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-16 16:23:19.308 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 2
+2025-07-16 16:23:19.309 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12036460034] Имя session актуально: '+12036460034'
+2025-07-16 16:23:19.309 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12036460034 | Vapemeds | +12036460034
+2025-07-16 16:23:19.310 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:23:19.311 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в sales: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:23:19.311 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Регистарция: загружено 2 аккаунтов
+2025-07-16 16:23:19.312 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/registration: 2 аккаунтов
+2025-07-16 16:23:19.312 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-16 16:23:19.314 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:19.315 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Тдата: загружено 0 аккаунтов
+2025-07-16 16:23:19.315 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_tdata: 0 аккаунтов
+2025-07-16 16:23:19.316 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-16 16:23:19.316 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:19.317 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-16 16:23:19.317 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-16 16:23:19.317 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-16 16:23:19.318 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:19.319 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-16 16:23:19.319 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-16 16:23:19.320 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-16 16:23:19.320 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:19.321 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:23:19.321 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-16 16:23:19.322 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-16 16:23:19.322 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:19.323 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:23:19.323 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-16 16:23:19.324 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-16 16:23:19.324 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:19.324 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:23:19.325 | DEBUG    | src.accounts.manager:scan_all_folders:83 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-16 16:23:19.326 | INFO     | src.accounts.manager:scan_all_folders:86 - ✅ Полная загрузка завершена! Трафик: 1, Продажи: 2, Всего: 3
+2025-07-16 16:23:19.326 | INFO     | src.accounts.manager:init_account_manager:355 - ✅ AccountManager готов!
+2025-07-16 16:23:19.327 | INFO     | __main__:async_main:59 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-16 16:23:19.327 | INFO     | __main__:async_main:72 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-16 16:23:19.387 | DEBUG    | gui.main_window:_init_notifications:49 - ✅ Система уведомлений инициализирована
+2025-07-16 16:23:24.903 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: traffic
+2025-07-16 16:23:24.904 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-16 16:23:24.905 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 1
+2025-07-16 16:23:24.905 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12103291462] Имя session актуально: '+12103291462'
+2025-07-16 16:23:24.906 | DEBUG    | src.accounts.manager:_scan_folder:144 -   ✅ Загружен в traffic: +12103291462 | Jon Morse | +12103291462
+2025-07-16 16:23:24.906 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Аккаунты: загружено 1 аккаунтов
+2025-07-16 16:23:24.907 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-16 16:23:24.908 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:24.908 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-16 16:23:24.908 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-16 16:23:24.909 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:24.909 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-16 16:23:24.910 | DEBUG    | src.accounts.manager:_scan_folder:97 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-16 16:23:24.910 | DEBUG    | src.accounts.manager:_scan_folder:111 - 📁 Найдено .session файлов: 0
+2025-07-16 16:23:24.911 | DEBUG    | src.accounts.manager:_scan_folder:156 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-16 16:23:24.911 | INFO     | src.accounts.operations.update_operations:refresh_category:79 - ✅ Категория traffic обновлена: 1 аккаунтов
+2025-07-16 16:23:24.915 | INFO     | gui.handlers.table_handlers:_on_manual_refresh_complete:407 - 🔄 Полное обновление родительского компонента
+2025-07-16 16:23:24.915 | INFO     | gui.component_account_manager.traffic_accounts:refresh_data:83 - 🔄 Обновляем данные трафика...
+2025-07-16 16:23:24.916 | DEBUG    | gui.component_account_manager.traffic_accounts:refresh_data:87 - 📊 Новая статистика: [('Активных аккаунтов', '1', '#10B981'), ('Мертвых', '0', '#EF4444'), ('Замороженных', '0', '#F59E0B'), ('Неверный формат', '0', '#6B7280')]
+2025-07-16 16:23:24.916 | DEBUG    | gui.component_account_manager.traffic_accounts:refresh_data:93 -    📊 Обновлен элемент 0: Активных аккаунтов = 1
+2025-07-16 16:23:24.917 | DEBUG    | gui.component_account_manager.traffic_accounts:refresh_data:97 - 📋 Новые данные таблицы: 1 строк
+2025-07-16 16:23:24.918 | INFO     | gui.component_account_manager.traffic_accounts:refresh_data:102 - ✅ Данные трафика обновлены через update_table_data

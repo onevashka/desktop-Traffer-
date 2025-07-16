@@ -361,3 +361,80 @@ QPushButton {
     animation-duration: 0.15s;
     animation-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
 }
+
+/* Дополнения для gui/style/light.qss */
+
+/* ────────────────────────────────────────────────────────────────────────────────────────── */
+/* 🔔 УВЕДОМЛЕНИЯ */
+/* ────────────────────────────────────────────────────────────────────────────────────────── */
+
+/* Контейнер уведомления */
+QWidget#NotificationContainer {
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+}
+
+/* Заголовок уведомления */
+QLabel#NotificationTitle {
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    padding: 0;
+}
+
+/* Текст уведомления */
+QLabel#NotificationMessage {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    font-weight: 400;
+    margin: 0;
+    padding: 0;
+}
+
+/* Кнопка закрытия уведомления */
+QPushButton#NotificationCloseButton {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 15px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 16px;
+    font-weight: bold;
+}
+
+QPushButton#NotificationCloseButton:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+}
+
+QPushButton#NotificationCloseButton:pressed {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Цветовые темы для разных типов уведомлений */
+
+/* Успех */
+QWidget#NotificationContainer[notificationType="success"] {
+    border-left: 4px solid #10B981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+/* Ошибка */
+QWidget#NotificationContainer[notificationType="error"] {
+    border-left: 4px solid #EF4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Предупреждение */
+QWidget#NotificationContainer[notificationType="warning"] {
+    border-left: 4px solid #F59E0B;
+    background: rgba(245, 158, 11, 0.1);
+}
+
+/* Информация */
+QWidget#NotificationContainer[notificationType="info"] {
+    border-left: 4px solid #3B82F6;
+    background: rgba(59, 130, 246, 0.1);
+}
