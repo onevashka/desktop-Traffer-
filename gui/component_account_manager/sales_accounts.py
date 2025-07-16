@@ -1,12 +1,13 @@
-# TeleCRM/gui/components/sales_accounts.py
+# gui/component_account_manager/sales_accounts.py - ПОЛНАЯ ЗАМЕНА ФАЙЛА
 """
-Компонент для работы с аккаунтами продаж (только для организации)
+Компонент для работы с аккаунтами продаж - с реальными данными
 """
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 from gui.component_account_manager.account_stats import AccountStatsWidget
 from gui.component_account_manager.account_table import AccountTableWidget
 from gui.component_account_manager.loading_animation import LoadingAnimationWidget
+from src.accounts.manager import get_sales_stats, get_table_data
 
 
 class SalesAccountsTab(QWidget):
@@ -45,43 +46,21 @@ class SalesAccountsTab(QWidget):
     def _create_components(self):
         """Создание компонентов вкладки продаж"""
 
-        # Расширенная статистика с детализацией форматов
-        sales_stats = [
-            ("Регистрация", "0", "#3B82F6"),
-            ("📁 TData", "0", "#10B981"),
-            ("📄 Session+JSON", "0", "#059669"),
-            ("Средних", "0", "#8B5CF6"),
-            ("Замороженных", "0", "#F59E0B"),
-            ("Мертвых", "0", "#EF4444")
-        ]
+        # ИЗМЕНЕНО: Получаем реальную статистику из AccountManager
+        sales_stats = get_sales_stats()
 
         self.stats_widget = AccountStatsWidget(sales_stats)
         self.main_content_layout.addWidget(self.stats_widget)
 
-        # Таблица аккаунтов продаж
+        # ИЗМЕНЕНО: Таблица аккаунтов продаж с реальными данными
         table_config = {
             'title': '💰 Склад аккаунтов для продажи',
             'add_button_text': '+ Добавить на склад',
-            'demo_data': self._get_sales_demo_data()
+            'demo_data': get_table_data("sales", limit=50)  # Вместо демо-данных!
         }
 
         self.table_widget = AccountTableWidget(table_config)
         self.main_content_layout.addWidget(self.table_widget)
-
-    def _get_sales_demo_data(self):
-        """Демо данные для аккаунтов продаж"""
-        return [
-            ["1", "@premium_acc_001", "RU", "156", "Готов", "Владимир П.", "✅"],
-            ["2", "@quality_user_002", "US", "234", "В обработке", "Jessica Brown", "❌"],
-            ["3", "@verified_acc_003", "DE", "89", "Готов", "Klaus Schmidt", "✅"],
-            ["4", "@aged_account_004", "FR", "345", "Готов", "Antoine Moreau", "❌"],
-            ["5", "@high_trust_005", "UK", "278", "Проверка", "Oliver Smith", "✅"],
-            ["6", "@premium_user_006", "IT", "167", "Готов", "Giuseppe Rossi", "❌"],
-            ["7", "@quality_acc_007", "ES", "198", "Готов", "Carmen Rodriguez", "✅"],
-            ["8", "@verified_user_008", "CA", "145", "В обработке", "Michael Johnson", "❌"],
-            ["9", "@aged_premium_009", "AU", "267", "Готов", "Rebecca Taylor", "✅"],
-            ["10", "@trust_account_010", "NL", "134", "Готов", "Pieter de Vries", "❌"],
-        ]
 
     def _show_main_content(self):
         """Показывает основной контент после загрузки"""
@@ -93,6 +72,13 @@ class SalesAccountsTab(QWidget):
         self.table_widget.animate_appearance()
 
     def refresh_data(self):
-        """Обновляет данные аккаунтов продаж"""
-        # TODO: Здесь будет загрузка реальных данных из склада
-        pass
+        """НОВОЕ: Обновляет данные аккаунтов продаж"""
+        # Обновляем статистику
+        new_stats = get_sales_stats()
+        for i, (title, value, color) in enumerate(new_stats):
+            self.stats_widget.update_stat(i, value)
+
+        # Обновляем таблицу
+        new_data = get_table_data("sales", limit=50)
+        if hasattr(self.table_widget, 'update_table_data'):
+            self.table_widget.update_table_data(new_data)

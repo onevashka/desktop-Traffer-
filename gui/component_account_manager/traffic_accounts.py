@@ -1,12 +1,13 @@
-# TeleCRM/gui/components/traffic_accounts.py
+# gui/component_account_manager/traffic_accounts.py - ПОЛНАЯ ЗАМЕНА ФАЙЛА
 """
-Компонент для работы с аккаунтами трафика
+Компонент для работы с аккаунтами трафика - с реальными данными
 """
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 from gui.component_account_manager.account_stats import AccountStatsWidget
 from gui.component_account_manager.account_table import AccountTableWidget
 from gui.component_account_manager.loading_animation import LoadingAnimationWidget
+from src.accounts.manager import get_traffic_stats, get_table_data
 
 
 class TrafficAccountsTab(QWidget):
@@ -45,41 +46,21 @@ class TrafficAccountsTab(QWidget):
     def _create_components(self):
         """Создание компонентов вкладки"""
 
-        # Статистика для трафика (пока статичные данные)
-        traffic_stats = [
-            ("Активных аккаунтов", "0", "#10B981"),
-            ("Мертвых", "0", "#EF4444"),
-            ("Замороженных", "0", "#F59E0B"),
-            ("Неверный формат", "0", "#6B7280")
-        ]
+        # ИЗМЕНЕНО: Получаем реальную статистику из AccountManager
+        traffic_stats = get_traffic_stats()
 
         self.stats_widget = AccountStatsWidget(traffic_stats)
         self.main_content_layout.addWidget(self.stats_widget)
 
-        # Таблица аккаунтов
+        # ИЗМЕНЕНО: Таблица аккаунтов с реальными данными
         table_config = {
             'title': '🚀 Аккаунты для трафика',
             'add_button_text': '+ Добавить аккаунт',
-            'demo_data': self._get_traffic_demo_data()
+            'demo_data': get_table_data("traffic", limit=50)  # Вместо демо-данных!
         }
 
         self.table_widget = AccountTableWidget(table_config)
         self.main_content_layout.addWidget(self.table_widget)
-
-    def _get_traffic_demo_data(self):
-        """Демо данные для аккаунтов трафика"""
-        return [
-            ["1", "@traffic_user_1", "RU", "23", "2 мин назад", "Алексей Т.", "✅"],
-            ["2", "@promo_account", "US", "45", "10 мин назад", "Mike Johnson", "❌"],
-            ["3", "@marketing_bot", "DE", "12", "1 час назад", "Hans Weber", "✅"],
-            ["4", "@ads_manager", "FR", "67", "3 часа назад", "Pierre Dubois", "❌"],
-            ["5", "@content_creator", "UK", "34", "5 часов назад", "Emma Wilson", "✅"],
-            ["6", "@traffic_gen", "IT", "89", "1 день назад", "Marco Rossi", "❌"],
-            ["7", "@seo_specialist", "ES", "56", "2 дня назад", "Carlos Garcia", "✅"],
-            ["8", "@affiliate_pro", "CA", "78", "3 дня назад", "John Smith", "❌"],
-            ["9", "@media_buyer", "AU", "45", "1 неделя назад", "Sarah Connor", "✅"],
-            ["10", "@conversion_opt", "NL", "23", "2 недели назад", "Jan van Berg", "❌"],
-        ]
 
     def _show_main_content(self):
         """Показывает основной контент после загрузки"""
@@ -91,6 +72,13 @@ class TrafficAccountsTab(QWidget):
         self.table_widget.animate_appearance()
 
     def refresh_data(self):
-        """Обновляет данные аккаунтов трафика"""
-        # TODO: Здесь будет загрузка реальных данных
-        pass
+        """НОВОЕ: Обновляет данные аккаунтов трафика"""
+        # Обновляем статистику
+        new_stats = get_traffic_stats()
+        for i, (title, value, color) in enumerate(new_stats):
+            self.stats_widget.update_stat(i, value)
+
+        # Обновляем таблицу
+        new_data = get_table_data("traffic", limit=50)
+        if hasattr(self.table_widget, 'update_table_data'):
+            self.table_widget.update_table_data(new_data)

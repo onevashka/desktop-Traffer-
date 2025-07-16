@@ -27,7 +27,10 @@ class Account:
         self.json_path = json_path
         self.account_data: dict = load_json_data(self.json_path)
         self.proxy: ProxyTelethon | None = None
-        self.name = session_path.stem
+
+        self._sync_session_name()
+
+        self.name = self.account_data.get("session")
 
         self.client = None
 
@@ -76,7 +79,7 @@ class Account:
             return False
 
 
-    async def stop(self) -> bool:
+    async def disconnect(self) -> bool:
         """
         Останавливает клиент.
         """
@@ -87,20 +90,41 @@ class Account:
             logger.error(f"Ошибка при отключении аккаунта: {e}")
             return False
 
+    def _sync_session_name(self):
+        """
+        Проверяет и синхронизирует переменную 'session' в JSON с именем файла.
+        """
+        actual_name = self.session_path.stem  # Чистое имя файла без расширения
+        json_session_name = self.account_data.get('session', '')
+
+        # Проверяем: есть ли переменная session в JSON
+        if 'session' not in self.account_data:
+            # Нет переменной - создаем с актуальным именем
+            logger.debug(f"➕ [{actual_name}] Добавляем переменную 'session': '{actual_name}'")
+            # НЕ ОБНОВЛЯЕМ self.account_data здесь - только через update_json
+            self.update_json(session=actual_name)
+
+        elif json_session_name != actual_name:
+            # Есть переменная, но имя не совпадает - обновляем
+            logger.debug(f"🔄 [{actual_name}] Обновляем 'session': '{json_session_name}' -> '{actual_name}'")
+            # НЕ ОБНОВЛЯЕМ self.account_data здесь - только через update_json
+            self.update_json(session=actual_name)
+
+        else:
+            # Все в порядке - имена совпадают
+            logger.debug(f"✅ [{actual_name}] Имя session актуально: '{actual_name}'")
+
     async def get_info(self) -> dict:
         """
-        Возвращает словарь со следующими полями:
-          - full_name: first_name + last_name
-          - session_name: имя файла .session (из JSON или по session_path)
-          - phone: ровно из JSON (без добавления '+')
-          - geo: двухбуквенный ISO‑код страны по телефону
+        Возвращает словарь с информацией об аккаунте.
+        Использует актуальное имя session из JSON.
         """
         first = self.account_data.get('first_name', '') or ''
         last = self.account_data.get('last_name', '') or ''
         full_name = (first + ' ' + last).strip()
 
-        sess_field = self.account_data.get('session', '')
-        session_name = Path(sess_field).stem if sess_field else self.session_path.stem
+        # Берем имя session из JSON (уже синхронизированное)
+        session_name = self.account_data.get('session', self.name)
 
         raw_phone = (self.account_data.get('phone', '') or '').strip()
 
@@ -111,6 +135,7 @@ class Account:
         geo = ''
         if parse_phone:
             try:
+                import phonenumbers
                 pn = phonenumbers.parse(parse_phone, None)
                 geo = phonenumbers.region_code_for_number(pn) or ''
             except Exception:
@@ -118,7 +143,7 @@ class Account:
 
         return {
             'full_name': full_name,
-            'session_name': session_name,
+            'session_name': session_name,  # Актуальное имя из JSON
             'phone': raw_phone,
             'geo': geo
         }

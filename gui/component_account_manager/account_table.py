@@ -2,13 +2,16 @@
 """
 Компонент таблицы аккаунтов
 """
-
+from typing import List
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTableWidget, QTableWidgetItem,
     QPushButton, QLabel, QHeaderView, QApplication, QGraphicsOpacityEffect
 )
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve
 from PySide6.QtGui import QColor
+
+from gui.handlers import TableActionHandler
+
 
 
 class AccountTableWidget(QWidget):
@@ -95,6 +98,35 @@ class AccountTableWidget(QWidget):
         actions_layout.addWidget(self.add_btn)
 
         layout.addWidget(actions_container)
+
+        self.action_handler = TableActionHandler(self)
+
+        self.delete_btn.clicked.connect(self.action_handler.handle_delete_action)
+        self.update_btn.clicked.connect(self.action_handler.handle_refresh_action)
+        self.move_btn.clicked.connect(self.action_handler.handle_move_action)
+
+    def get_selected_account_names(self) -> List[str]:
+        """Возвращает список имен выбранных аккаунтов"""
+        selected_rows = self.get_selected_rows()
+        account_names = []
+
+        for row in selected_rows:
+            # Берем имя из колонки "📱 Аккаунт" (индекс 2)
+            item = self.table.item(row, 2)
+            if item:
+                account_name = item.text()
+                account_names.append(account_name)
+
+        return account_names
+
+    def get_table_category(self) -> str:
+        """Определяет категорию таблицы по заголовку"""
+        title = self.config.get('title', '').lower()
+
+        if 'трафик' in title:
+            return 'traffic'
+        elif 'продаж' in title:
+            return 'sales'
 
     def _create_table(self, layout):
         """Создает таблицу"""
@@ -292,6 +324,19 @@ class AccountTableWidget(QWidget):
 
         self.last_clicked_row = None
 
+    def refresh_data(self):
+        """Простое обновление данных таблицы"""
+        try:
+            category = self.get_table_category()
+            if category:
+                from src.accounts.manager import get_table_data
+                new_data = get_table_data(category, limit=50)
+                self.config['demo_data'] = new_data
+                if hasattr(self, '_fill_table_data'):
+                    self._fill_table_data()
+        except Exception as e:
+            print(f"❌ Ошибка refresh_data: {e}")
+
     def _toggle_all_checkboxes(self):
         """Переключает все чекбоксы"""
         master_checked = self.master_checkbox.isChecked()
@@ -360,3 +405,106 @@ class AccountTableWidget(QWidget):
                 if checkbox and checkbox.isChecked():
                     selected.append(row)
         return selected
+
+    def update_table_data(self, new_data):
+        """Обновляет данные в таблице"""
+        from PySide6.QtWidgets import QWidget, QHBoxLayout, QPushButton, QTableWidgetItem
+        from PySide6.QtCore import Qt
+        from PySide6.QtGui import QColor
+
+        # Очищаем текущие данные
+        self.table.clearContents()
+        self.table.setRowCount(len(new_data))
+
+        if len(new_data) == 0:
+            # Если нет данных, показываем заглушку
+            placeholder_item = QTableWidgetItem("Нет аккаунтов для отображения")
+            placeholder_item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+            self.table.setItem(0, 1, placeholder_item)
+            self.table.setSpan(0, 1, 1, 7)  # Объединяем ячейки
+            return
+
+        # Заполняем новыми данными
+        for row, data in enumerate(new_data):
+            # Чекбокс (такой же как в оригинальном методе)
+            checkbox_container = QWidget()
+            checkbox_layout = QHBoxLayout(checkbox_container)
+            checkbox_layout.setContentsMargins(0, 0, 0, 0)
+
+            checkbox = QPushButton()
+            checkbox.setObjectName("RowCheckbox")
+            checkbox.setCheckable(True)
+            checkbox.setFixedSize(24, 24)
+            checkbox.setStyleSheet("""
+                QPushButton#RowCheckbox {
+                    background: rgba(255, 255, 255, 0.1);
+                    border: 2px solid rgba(255, 255, 255, 0.4);
+                    border-radius: 6px;
+                }
+                QPushButton#RowCheckbox:checked {
+                    background: #3B82F6;
+                    border: 2px solid #3B82F6;
+                }
+                QPushButton#RowCheckbox:hover {
+                    border: 2px solid #3B82F6;
+                    background: rgba(59, 130, 246, 0.3);
+                }
+            """)
+            checkbox.clicked.connect(lambda checked, r=row: self._handle_checkbox_click(r, checked))
+
+            checkbox_layout.addStretch()
+            checkbox_layout.addWidget(checkbox)
+            checkbox_layout.addStretch()
+
+            self.table.setCellWidget(row, 0, checkbox_container)
+
+            # Остальные данные
+            for col, value in enumerate(data, 1):
+                item = QTableWidgetItem(str(value))
+                item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+
+                # Стиль для номеров
+                if col == 1:
+                    font = item.font()
+                    font.setBold(True)
+                    font.setPointSize(12)
+                    item.setFont(font)
+                    item.setForeground(QColor("#3B82F6"))
+
+                # Стиль для статуса (колонка 5 - это "📊 Статус")
+                if col == 5:
+                    status_text = str(value)
+                    if "Активный" in status_text or "готов" in status_text:
+                        item.setForeground(QColor("#10B981"))  # Зеленый
+                    elif "Мертвый" in status_text:
+                        item.setForeground(QColor("#EF4444"))  # Красный
+                    elif "Заморожен" in status_text:
+                        item.setForeground(QColor("#F59E0B"))  # Оранжевый
+                    elif "Неверный" in status_text:
+                        item.setForeground(QColor("#6B7280"))  # Серый
+                    else:
+                        item.setForeground(QColor("#8B5CF6"))  # Фиолетовый
+
+                # Стиль для премиум статуса (последняя колонка)
+                if col == len(data):
+                    if value == "✅":
+                        item.setForeground(QColor("#00FF00"))
+                        font = item.font()
+                        font.setBold(True)
+                        font.setPointSize(18)
+                        item.setFont(font)
+                    elif value == "❌":
+                        item.setForeground(QColor("#FF0000"))
+                        font = item.font()
+                        font.setBold(True)
+                        font.setPointSize(18)
+                        item.setFont(font)
+
+                self.table.setItem(row, col, item)
+
+        # Сбрасываем главный чекбокс
+        if hasattr(self, 'master_checkbox'):
+            self.master_checkbox.setChecked(False)
+
+        # Обновляем last_clicked_row
+        self.last_clicked_row = None

@@ -1,0 +1,278 @@
+"""
+Виджет уведомления - красивый и современный
+"""
+
+from PySide6.QtWidgets import (
+    QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton,
+    QGraphicsOpacityEffect, QGraphicsDropShadowEffect
+)
+from PySide6.QtCore import (
+    Qt, QPropertyAnimation, QEasingCurve, QTimer,
+    QRect, Signal, QParallelAnimationGroup
+)
+from PySide6.QtGui import QFont, QPixmap, QPainter, QColor
+
+
+class NotificationWidget(QWidget):
+    """Современный виджет уведомления"""
+
+    # Сигналы
+    clicked = Signal()
+    closed = Signal()
+
+    # Типы уведомлений
+    SUCCESS = "success"
+    ERROR = "error"
+    WARNING = "warning"
+    INFO = "info"
+
+    def __init__(self, title, message, notification_type=INFO, duration=4000, parent=None):
+        super().__init__(parent)
+
+        self.notification_type = notification_type
+        self.duration = duration
+        self.is_closing = False
+
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setFixedSize(400, 100)
+
+        # Создаем UI
+        self._create_ui(title, message)
+        self._setup_animations()
+        self._apply_styles()
+
+        # Автозакрытие
+        if duration > 0:
+            QTimer.singleShot(duration, self.animate_out)
+
+    def _create_ui(self, title, message):
+        """Создает интерфейс уведомления"""
+        # Основной контейнер
+        self.container = QWidget()
+        self.container.setObjectName("NotificationContainer")
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.container)
+
+        # Layout контейнера
+        container_layout = QHBoxLayout(self.container)
+        container_layout.setContentsMargins(20, 15, 20, 15)
+        container_layout.setSpacing(15)
+
+        # Иконка
+        self.icon_label = QLabel()
+        self.icon_label.setFixedSize(24, 24)
+        self.icon_label.setAlignment(Qt.AlignCenter)
+        self._set_icon()
+
+        # Текстовый контент
+        text_widget = QWidget()
+        text_layout = QVBoxLayout(text_widget)
+        text_layout.setContentsMargins(0, 0, 0, 0)
+        text_layout.setSpacing(5)
+
+        # Заголовок
+        self.title_label = QLabel(title)
+        self.title_label.setObjectName("NotificationTitle")
+
+        # Сообщение
+        self.message_label = QLabel(message)
+        self.message_label.setObjectName("NotificationMessage")
+        self.message_label.setWordWrap(True)
+
+        text_layout.addWidget(self.title_label)
+        text_layout.addWidget(self.message_label)
+
+        # Кнопка закрытия
+        self.close_button = QPushButton("×")
+        self.close_button.setObjectName("NotificationCloseButton")
+        self.close_button.setFixedSize(30, 30)
+        self.close_button.clicked.connect(self.animate_out)
+
+        # Сборка layout
+        container_layout.addWidget(self.icon_label)
+        container_layout.addWidget(text_widget, 1)
+        container_layout.addWidget(self.close_button)
+
+        # Тень
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(20)
+        shadow.setXOffset(0)
+        shadow.setYOffset(5)
+        shadow.setColor(QColor(0, 0, 0, 100))
+        self.container.setGraphicsEffect(shadow)
+
+    def _set_icon(self):
+        """Устанавливает иконку в зависимости от типа"""
+        icons = {
+            self.SUCCESS: "✅",
+            self.ERROR: "❌",
+            self.WARNING: "⚠️",
+            self.INFO: "ℹ️"
+        }
+
+        icon_text = icons.get(self.notification_type, "ℹ️")
+        self.icon_label.setText(icon_text)
+        self.icon_label.setStyleSheet("font-size: 20px;")
+
+    def _apply_styles(self):
+        """Применяет стили в зависимости от типа"""
+        # Базовые стили
+        base_style = """
+            QWidget#NotificationContainer {
+                background: rgba(30, 30, 30, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                backdrop-filter: blur(10px);
+            }
+
+            QLabel#NotificationTitle {
+                color: #FFFFFF;
+                font-size: 14px;
+                font-weight: 600;
+                margin: 0;
+                padding: 0;
+            }
+
+            QLabel#NotificationMessage {
+                color: rgba(255, 255, 255, 0.8);
+                font-size: 12px;
+                font-weight: 400;
+                margin: 0;
+                padding: 0;
+            }
+
+            QPushButton#NotificationCloseButton {
+                background: rgba(255, 255, 255, 0.1);
+                border: none;
+                border-radius: 15px;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 16px;
+                font-weight: bold;
+            }
+
+            QPushButton#NotificationCloseButton:hover {
+                background: rgba(255, 255, 255, 0.2);
+                color: #FFFFFF;
+            }
+
+            QPushButton#NotificationCloseButton:pressed {
+                background: rgba(255, 255, 255, 0.3);
+            }
+        """
+
+        # Цветовые схемы для разных типов
+        type_styles = {
+            self.SUCCESS: """
+                QWidget#NotificationContainer {
+                    border-left: 4px solid #10B981;
+                    background: rgba(16, 185, 129, 0.1);
+                }
+            """,
+            self.ERROR: """
+                QWidget#NotificationContainer {
+                    border-left: 4px solid #EF4444;
+                    background: rgba(239, 68, 68, 0.1);
+                }
+            """,
+            self.WARNING: """
+                QWidget#NotificationContainer {
+                    border-left: 4px solid #F59E0B;
+                    background: rgba(245, 158, 11, 0.1);
+                }
+            """,
+            self.INFO: """
+                QWidget#NotificationContainer {
+                    border-left: 4px solid #3B82F6;
+                    background: rgba(59, 130, 246, 0.1);
+                }
+            """
+        }
+
+        # Применяем стили
+        full_style = base_style + type_styles.get(self.notification_type, type_styles[self.INFO])
+        self.setStyleSheet(full_style)
+
+    def _setup_animations(self):
+        """Настраивает анимации"""
+        # Эффект прозрачности
+        self.opacity_effect = QGraphicsOpacityEffect()
+        self.opacity_effect.setOpacity(0.0)
+        self.setGraphicsEffect(self.opacity_effect)
+
+        # Анимации
+        self.opacity_animation = QPropertyAnimation(self.opacity_effect, b"opacity")
+        self.slide_animation = QPropertyAnimation(self, b"geometry")
+
+        # Группа анимаций
+        self.animation_group = QParallelAnimationGroup()
+        self.animation_group.addAnimation(self.opacity_animation)
+        self.animation_group.addAnimation(self.slide_animation)
+
+    def show_at_position(self, x, y):
+        """Показывает уведомление в указанной позиции с анимацией"""
+        # Начальная позиция (справа за экраном)
+        start_rect = QRect(x + 50, y, self.width(), self.height())
+        end_rect = QRect(x, y, self.width(), self.height())
+
+        self.setGeometry(start_rect)
+        self.show()
+
+        # Настройка анимации появления
+        self.opacity_animation.setDuration(300)
+        self.opacity_animation.setStartValue(0.0)
+        self.opacity_animation.setEndValue(1.0)
+        self.opacity_animation.setEasingCurve(QEasingCurve.OutCubic)
+
+        self.slide_animation.setDuration(300)
+        self.slide_animation.setStartValue(start_rect)
+        self.slide_animation.setEndValue(end_rect)
+        self.slide_animation.setEasingCurve(QEasingCurve.OutCubic)
+
+        # Запускаем анимацию
+        self.animation_group.start()
+
+    def animate_out(self):
+        """Анимация исчезновения"""
+        if self.is_closing:
+            return
+
+        self.is_closing = True
+
+        # Конечная позиция (вправо за экран)
+        current_rect = self.geometry()
+        end_rect = QRect(
+            current_rect.x() + 50,
+            current_rect.y(),
+            current_rect.width(),
+            current_rect.height()
+        )
+
+        # Настройка анимации исчезновения
+        self.opacity_animation.setDuration(250)
+        self.opacity_animation.setStartValue(1.0)
+        self.opacity_animation.setEndValue(0.0)
+        self.opacity_animation.setEasingCurve(QEasingCurve.InCubic)
+
+        self.slide_animation.setDuration(250)
+        self.slide_animation.setStartValue(current_rect)
+        self.slide_animation.setEndValue(end_rect)
+        self.slide_animation.setEasingCurve(QEasingCurve.InCubic)
+
+        # После анимации закрываем виджет
+        self.animation_group.finished.connect(self._on_animation_finished)
+        self.animation_group.start()
+
+    def _on_animation_finished(self):
+        """Вызывается после завершения анимации"""
+        self.closed.emit()
+        self.close()
+        self.deleteLater()
+
+    def mousePressEvent(self, event):
+        """Обработка клика по уведомлению"""
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)

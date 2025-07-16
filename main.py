@@ -1,8 +1,14 @@
+import os
+
+# Отключаем Qt предупреждения
+os.environ['QT_LOGGING_RULES'] = '*.debug=false'
+
 import sys
 import asyncio
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import qInstallMessageHandler
 from qasync import QEventLoop
 
 from paths import ensure_folder_structure
@@ -15,6 +21,10 @@ from loguru import logger
 log_console = None
 main_win    = None
 
+
+def qt_message_handler(mode, context, message):
+    if "Unknown property" not in message:
+        print(f"Qt: {message}")
 
 async def async_main():
     """Асинхронная инициализация приложения"""
@@ -49,6 +59,7 @@ async def async_main():
 
 def main():
     app = QApplication(sys.argv)
+    qInstallMessageHandler(qt_message_handler)
 
     # Загружаем тему
     style_file = Path("gui/style/light.qss")
