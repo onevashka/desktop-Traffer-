@@ -205,7 +205,7 @@ class AccountManager:
         Args:
             category: "traffic" или "sales"
             status: конкретный статус (папка) или None для всех
-            limit: максимальное количество записей
+            limit: максимальное количество записей, -1 для всех данных
         """
 
         # Выбираем правильное хранилище
@@ -226,11 +226,15 @@ class AccountManager:
         else:
             category_accounts = list(accounts_storage.values())
 
-        # Ограничиваем количество
-        category_accounts = category_accounts[:limit]
+        # Сортируем по имени для стабильного порядка
+        category_accounts.sort(key=lambda x: x.name)
+
+        # Ограничиваем количество только если limit > 0
+        if limit > 0:
+            category_accounts = category_accounts[:limit]
 
         table_data = []
-        for i, account_data in enumerate(category_accounts, 1):
+        for account_data in category_accounts:
             info = account_data.info
 
             # Определяем статус для отображения
@@ -248,18 +252,77 @@ class AccountManager:
             # Формируем строку таблицы с реальными данными
             session_name = info.get('session_name', account_data.name)
 
+            # Правильный формат данных для новой структуры таблицы
             row = [
-                str(i),  # Номер
-                session_name,  # Чистое имя файла
+                session_name,  # Название аккаунта
                 info.get('geo', '?'),  # Гео из номера телефона
                 "?",  # Дней создан (пока заглушка)
                 status_display,  # Статус аккаунта
                 info.get('full_name', '?') or '?',  # Полное имя
+                info.get('phone', '?') or '?',  # Телефон
                 "❓"  # Премиум (пока заглушка)
             ]
             table_data.append(row)
 
+        logger.debug(f"📊 Получены данные для {category}/{status}: {len(table_data)} записей (limit={limit})")
         return table_data
+
+    def get_paginated_data(self, category: str, status: str = None, page: int = 1, per_page: int = 10) -> dict:
+        """
+        Возвращает данные с пагинацией
+
+        Args:
+            category: "traffic" или "sales"
+            status: конкретный статус (папка) или None для всех
+            page: номер страницы (начиная с 1)
+            per_page: количество записей на странице
+
+        Returns:
+            dict: {
+                'data': List[List[str]],  # Данные для текущей страницы
+                'total_items': int,       # Общее количество записей
+                'total_pages': int,       # Общее количество страниц
+                'current_page': int,      # Текущая страница
+                'per_page': int,          # Записей на странице
+                'has_next': bool,         # Есть ли следующая страница
+                'has_prev': bool          # Есть ли предыдущая страница
+            }
+        """
+
+        # Получаем все данные
+        all_data = self.get_table_data(category, status, limit=-1)
+        total_items = len(all_data)
+
+        # Рассчитываем пагинацию
+        if per_page <= 0:
+            per_page = total_items or 1
+
+        total_pages = max(1, (total_items + per_page - 1) // per_page) if total_items > 0 else 1
+
+        # Корректируем номер страницы
+        if page < 1:
+            page = 1
+        elif page > total_pages:
+            page = total_pages
+
+        # Получаем данные для текущей страницы
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        page_data = all_data[start_idx:end_idx]
+
+        result = {
+            'data': page_data,
+            'total_items': total_items,
+            'total_pages': total_pages,
+            'current_page': page,
+            'per_page': per_page,
+            'has_next': page < total_pages,
+            'has_prev': page > 1
+        }
+
+        logger.debug(
+            f"📄 Пагинация {category}/{status}: страница {page}/{total_pages}, показано {len(page_data)} из {total_items}")
+        return result
 
     # НОВЫЕ МЕТОДЫ для поддержки папок
     def get_default_status(self, category: str) -> str:
@@ -437,7 +500,6 @@ def get_table_data(category: str, status: str = None, limit: int = 50) -> List[L
         return _account_manager.get_table_data(category, status, limit)
     return []
 
-
 def get_default_status(category: str) -> str:
     """Возвращает статус по умолчанию для категории"""
     global _account_manager
@@ -509,3 +571,18 @@ async def refresh_category(category: str) -> int:
     if _account_manager:
         return await _account_manager.refresh_category(category)
     return 0
+
+def get_paginated_data(category: str, status: str = None, page: int = 1, per_page: int = 10) -> dict:
+    """Быстрое получение данных с пагинацией"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.get_paginated_data(category, status, page, per_page)
+    return {
+        'data': [],
+        'total_items': 0,
+        'total_pages': 1,
+        'current_page': 1,
+        'per_page': per_page,
+        'has_next': False,
+        'has_prev': False
+    }

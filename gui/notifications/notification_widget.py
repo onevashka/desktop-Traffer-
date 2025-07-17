@@ -1,16 +1,18 @@
 """
-Виджет уведомления - привязанный к главному окну (ИСПРАВЛЕНО)
+Виджет уведомления - привязанный к главному окну (ИСПРАВЛЕННАЯ ВЕРСИЯ)
 """
 
 from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton,
-    QGraphicsOpacityEffect, QGraphicsDropShadowEffect
+    QGraphicsOpacityEffect, QGraphicsDropShadowEffect, QApplication
 )
 from PySide6.QtCore import (
     Qt, QPropertyAnimation, QEasingCurve, QTimer, QEvent,
-    QRect, Signal, QParallelAnimationGroup
+    QRect, Signal, QParallelAnimationGroup, QSize
 )
-from PySide6.QtGui import QFont, QPixmap, QPainter, QColor
+from PySide6.QtGui import QFont, QPixmap, QPainter, QColor, QScreen
+from loguru import logger
+
 
 
 class NotificationWidget(QWidget):
@@ -34,11 +36,19 @@ class NotificationWidget(QWidget):
         self.is_closing = False
         self.main_window = main_window
 
+        # ИСПРАВЛЕНО: Настройка размеров окна
+        self.notification_width = 400
+        self.notification_height = 100
+
         # Устанавливаем флаги для overlay поверх главного окна
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_ShowWithoutActivating)  # Не активируем окно при показе
-        self.setFixedSize(400, 100)
+
+        # ИСПРАВЛЕНО: Более мягкая настройка размеров
+        self.setMinimumSize(QSize(self.notification_width, self.notification_height))
+        self.setMaximumSize(QSize(self.notification_width, self.notification_height))
+        self.resize(self.notification_width, self.notification_height)
 
         # Создаем UI
         self._create_ui(title, message)
@@ -78,7 +88,7 @@ class NotificationWidget(QWidget):
                 if manager:
                     manager.update_positions()
             except Exception as e:
-                print(f"Ошибка обновления позиций: {e}")
+                logger.error(f"Ошибка обновления позиций: {e}")
 
     def _update_position_on_move(self):
         """Обновляет позицию при перемещении главного окна"""
@@ -90,7 +100,7 @@ class NotificationWidget(QWidget):
                 if manager:
                     manager.update_positions()
             except Exception as e:
-                print(f"Ошибка обновления позиций: {e}")
+                logger.error(f"Ошибка обновления позиций: {e}")
 
     def _create_ui(self, title, message):
         """Создает интерфейс уведомления"""
@@ -257,13 +267,34 @@ class NotificationWidget(QWidget):
         self.animation_group.addAnimation(self.opacity_animation)
         self.animation_group.addAnimation(self.slide_animation)
 
+    def _get_safe_position(self, x, y):
+        """Получает безопасную позицию для уведомления в пределах экрана"""
+        # Получаем геометрию экрана
+        screen = QApplication.primaryScreen()
+        screen_geometry = screen.availableGeometry()
+
+        # Корректируем позицию чтобы уведомление не выходило за пределы экрана
+        safe_x = min(x, screen_geometry.width() - self.notification_width)
+        safe_y = min(y, screen_geometry.height() - self.notification_height)
+
+        # Минимальные отступы от краев
+        safe_x = max(safe_x, 10)
+        safe_y = max(safe_y, 10)
+
+        return safe_x, safe_y
+
     def show_at_position(self, x, y):
         """Показывает уведомление в указанной позиции с анимацией"""
-        # Начальная позиция (справа за экраном относительно главного окна)
-        start_rect = QRect(x + 50, y, self.width(), self.height())
-        end_rect = QRect(x, y, self.width(), self.height())
+        # ИСПРАВЛЕНО: Получаем безопасную позицию
+        safe_x, safe_y = self._get_safe_position(x, y)
 
-        self.setGeometry(start_rect)
+        # Начальная позиция (справа за экраном)
+        start_x = safe_x + 50
+        start_rect = QRect(start_x, safe_y, self.notification_width, self.notification_height)
+        end_rect = QRect(safe_x, safe_y, self.notification_width, self.notification_height)
+
+        # ИСПРАВЛЕНО: Устанавливаем позицию через move() вместо setGeometry()
+        self.move(start_x, safe_y)
         self.show()
 
         # Настройка анимации появления
@@ -322,3 +353,22 @@ class NotificationWidget(QWidget):
         if event.button() == Qt.LeftButton:
             self.clicked.emit()
         super().mousePressEvent(event)
+
+    def moveEvent(self, event):
+        """ИСПРАВЛЕНО: Переопределяем moveEvent для отладки"""
+        super().moveEvent(event)
+        # Логируем только если есть проблемы с позиционированием
+        # logger.debug(f"Notification moved to: {event.pos()}")
+
+    def resizeEvent(self, event):
+        """ИСПРАВЛЕНО: Переопределяем resizeEvent для отладки"""
+        super().resizeEvent(event)
+        # Логируем только если есть проблемы с размерами
+        # logger.debug(f"Notification resized to: {event.size()}")
+
+    def showEvent(self, event):
+        """ИСПРАВЛЕНО: Переопределяем showEvent"""
+        super().showEvent(event)
+        # Убеждаемся что размеры корректны
+        if self.size() != QSize(self.notification_width, self.notification_height):
+            self.resize(self.notification_width, self.notification_height)

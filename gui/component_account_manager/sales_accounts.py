@@ -54,7 +54,7 @@ class SalesAccountsTab(QWidget):
         sales_stats = get_sales_stats()
         logger.debug(f"📊 Создаем компоненты продаж, статистика: {sales_stats}")
 
-        # ОБНОВЛЕНО: Добавляем ключи статусов для кликабельности
+        # Добавляем ключи статусов для кликабельности
         stats_with_keys = [
             (title, value, color, status_key) for (title, value, color), status_key in zip(
                 sales_stats,
@@ -68,7 +68,8 @@ class SalesAccountsTab(QWidget):
         self.main_content_layout.addWidget(self.stats_widget)
 
         # Таблица аккаунтов с реальными данными для текущей папки
-        table_data = get_table_data(self.category, self.current_status, limit=50)
+        # ИСПРАВЛЕНО: Получаем ВСЕ данные для пагинации (без лимита)
+        table_data = get_table_data(self.category, self.current_status, limit=-1)
         logger.debug(f"📋 Создаем таблицу продаж, данных: {len(table_data)} строк")
 
         table_config = {
@@ -99,9 +100,16 @@ class SalesAccountsTab(QWidget):
             folder_name = get_status_display_name(self.category, status_key)
             count = get_folder_status_count(self.category, status_key)
 
+            # Добавляем информацию о пагинации в уведомление
+            pag_info = ""
+            if hasattr(self.table_widget, 'get_pagination_info'):
+                pag_data = self.table_widget.get_pagination_info()
+                if pag_data['total_pages'] > 1:
+                    pag_info = f"\n📄 Страница 1/{pag_data['total_pages']}"
+
             show_info(
                 "Переключение папки",
-                f"Показана папка: {folder_name}\nАккаунтов: {count}"
+                f"Показана папка: {folder_name}\nАккаунтов: {count}{pag_info}"
             )
         except Exception as e:
             logger.error(f"❌ Ошибка показа уведомления: {e}")
@@ -131,7 +139,16 @@ class SalesAccountsTab(QWidget):
                     logger.debug(f"   📊 Обновлен элемент {i}: {title} = {value}")
 
             # Обновляем таблицу для текущей папки
-            self.table_widget.refresh_data()
+            # ИСПРАВЛЕНО: Получаем ВСЕ данные для пагинации
+            new_table_data = get_table_data(self.category, self.current_status, limit=-1)
+            self.table_widget.update_table_data(new_table_data)
+
+            # Логируем информацию о пагинации
+            if hasattr(self.table_widget, 'get_pagination_info'):
+                pag_info = self.table_widget.get_pagination_info()
+                logger.info(
+                    f"📄 Пагинация продаж: {pag_info['current_page']}/{pag_info['total_pages']}, всего {pag_info['total_items']}")
+
             logger.info("✅ Данные продаж обновлены")
 
         except Exception as e:

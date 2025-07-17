@@ -1,3 +1,4 @@
+# gui/handlers/table_handlers.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 """
 Обработчики действий с таблицами аккаунтов - с красивыми модальными окнами
 """
@@ -28,7 +29,7 @@ class TableActionHandler:
         try:
             # Получаем выбранные аккаунты
             selected_accounts = self.table.get_selected_account_names()
-            category = self.table.get_table_category()
+            category = self.get_table_category()
 
             if not selected_accounts:
                 show_info(
@@ -123,7 +124,7 @@ class TableActionHandler:
         """Обрабатывает перемещение выбранных аккаунтов"""
         try:
             selected_accounts = self.table.get_selected_account_names()
-            category = self.table.get_table_category()
+            category = self.get_table_category()
 
             if not selected_accounts:
                 show_info(
@@ -296,7 +297,7 @@ class TableActionHandler:
             )
 
             # Запускаем ПОЛНОЕ обновление (пересканирование папок)
-            category = self.table.get_table_category()
+            category = self.get_table_category()
             if category:
                 # Обновляем только текущую категорию
                 task = asyncio.create_task(_account_manager.refresh_category(category))
@@ -314,6 +315,7 @@ class TableActionHandler:
                 "Ошибка обновления",
                 f"Ошибка при обновлении: {e}"
             )
+
 
     def _simple_refresh_after_deletion(self, category: str):
         """Простое обновление таблицы после удаления"""
@@ -340,28 +342,35 @@ class TableActionHandler:
     def _update_table_only(self, category: str):
         """Обновляет только данные таблицы для текущей папки"""
         try:
-            from src.accounts.manager import get_table_data, get_traffic_stats, get_sales_stats
+            from src.accounts.manager import get_table_data
 
             # Получаем текущий статус
             current_status = self.get_current_status()
             logger.info(f"📊 Обновляем таблицу для категории: {category}, статус: {current_status}")
 
-            # Получаем новые данные таблицы для текущей папки
-            new_data = get_table_data(category, current_status, limit=50)
+            # ИСПРАВЛЕНО: Получаем ВСЕ данные для пагинации (без лимита)
+            new_data = get_table_data(category, current_status, limit=-1)
 
             # Обновляем таблицу
             if hasattr(self.table, 'update_table_data'):
                 self.table.update_table_data(new_data)
-                logger.info(f"✅ Таблица обновлена, показано {len(new_data)} аккаунтов")
+                logger.info(f"✅ Таблица обновлена, всего данных: {len(new_data)}")
             else:
                 # Fallback - пересоздаем данные
                 self.table.config['demo_data'] = new_data
-                if hasattr(self.table, '_fill_table_data'):
+                if hasattr(self.table, '_load_initial_data'):
+                    self.table._load_initial_data()
+                elif hasattr(self.table, '_fill_table_data'):
                     self.table._fill_table_data()
                 logger.info("✅ Таблица обновлена через fallback метод")
 
             # Обновляем статистику в родительском компоненте
             self._update_parent_stats_only(category)
+
+            # Показываем информацию о пагинации
+            if hasattr(self.table, 'get_pagination_info'):
+                pag_info = self.table.get_pagination_info()
+                logger.info(f"📄 Пагинация: страница {pag_info['current_page']}/{pag_info['total_pages']}, показано {pag_info['per_page']} из {pag_info['total_items']}")
 
         except Exception as e:
             logger.error(f"❌ Ошибка обновления таблицы: {e}")
@@ -438,7 +447,7 @@ class TableActionHandler:
             result = task.result()
 
             # Полностью обновляем родительский компонент
-            category = self.table.get_table_category()
+            category = self.get_table_category()
             if category:
                 parent = self.table.parent()
                 while parent:
@@ -448,7 +457,7 @@ class TableActionHandler:
                         break
                     parent = parent.parent()
 
-            # Показываем результат
+            # Показываем результат с учетом пагинации
             if isinstance(result, dict) and 'traffic_diff' in result:
                 # Полное обновление
                 traffic_diff = result['traffic_diff']
@@ -467,9 +476,16 @@ class TableActionHandler:
             else:
                 # Обновление категории
                 if isinstance(result, int):
+                    # Показываем дополнительную информацию о пагинации
+                    pag_info = ""
+                    if hasattr(self.table, 'get_pagination_info'):
+                        pag_data = self.table.get_pagination_info()
+                        if pag_data['total_pages'] > 1:
+                            pag_info = f"\n📄 Страница {pag_data['current_page']}/{pag_data['total_pages']}"
+
                     show_success(
                         "Обновление завершено",
-                        f"Найдено аккаунтов: {result}"
+                        f"Найдено аккаунтов: {result}{pag_info}"
                     )
 
         except Exception as e:
@@ -479,3 +495,51 @@ class TableActionHandler:
                 "Ошибка обновления",
                 f"Ошибка при завершении обновления: {e}"
             )
+
+    # ИСПРАВЛЕННЫЕ МЕТОДЫ - убираем обращения к self.table.config
+    def get_table_category(self) -> str:
+        """Определяет категорию таблицы"""
+        # Проверяем атрибуты таблицы
+        if hasattr(self.table, 'category'):
+            return self.table.category
+        
+        # Если нет атрибута category, пытаемся получить из config
+        if hasattr(self.table, 'config') and 'category' in self.table.config:
+            return self.table.config['category']
+        
+        # Определяем по родительскому компоненту
+        parent = self.table.parent()
+        while parent:
+            if hasattr(parent, 'category'):
+                return parent.category
+            parent = parent.parent()
+        
+        # Последний fallback - возвращаем traffic по умолчанию
+        logger.warning("⚠️ Не удалось определить категорию таблицы, используем 'traffic' по умолчанию")
+        return 'traffic'
+
+    def get_current_status(self) -> str:
+        """Получает текущий статус (папку) таблицы"""
+        # Проверяем атрибуты таблицы
+        if hasattr(self.table, 'current_status'):
+            return self.table.current_status
+        
+        # Если нет атрибута current_status, пытаемся получить из config
+        if hasattr(self.table, 'config') and 'current_status' in self.table.config:
+            return self.table.config['current_status']
+        
+        # Определяем по родительскому компоненту
+        parent = self.table.parent()
+        while parent:
+            if hasattr(parent, 'current_status'):
+                return parent.current_status
+            parent = parent.parent()
+        
+        # Последний fallback - возвращаем статус по умолчанию для категории
+        category = self.get_table_category()
+        if category == "traffic":
+            return "active"
+        elif category == "sales":
+            return "registration"
+        else:
+            return "active"
