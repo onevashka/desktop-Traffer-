@@ -1,23 +1,28 @@
-# TeleCRM/gui/components/account_stats.py
+# TeleCRM/gui/components/account_stats.py - ОБНОВЛЕННАЯ ВЕРСИЯ
 """
-Компонент статистики аккаунтов
+Компонент статистики аккаунтов с кликабельными элементами
 """
 
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QSizePolicy, QGraphicsOpacityEffect
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QRect, QEasingCurve
+from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QRect, QEasingCurve, Signal
+from PySide6.QtGui import QCursor
 
 
 class AccountStatsWidget(QWidget):
-    """Виджет отображения статистики аккаунтов"""
+    """Виджет отображения статистики аккаунтов с кликабельными элементами"""
 
-    def __init__(self, stats_data):
+    # Сигнал для клика по статистике
+    stat_clicked = Signal(str)  # Передает status (ключ папки)
+
+    def __init__(self, stats_data, category="traffic"):
         """
-        stats_data: список кортежей (title, value, color)
-        Например: [("Всего аккаунтов", "153", "#3B82F6"), ...]
+        stats_data: список кортежей (title, value, color, status_key)
+        category: "traffic" или "sales"
         """
         super().__init__()
         self.setObjectName("AccountStatsWidget")
         self.stats_data = stats_data
+        self.category = category
 
         # Основной layout
         layout = QHBoxLayout(self)
@@ -26,17 +31,26 @@ class AccountStatsWidget(QWidget):
 
         # Создаем статистические блоки
         self.stat_boxes = []
-        for title, value, color in stats_data:
-            box = self._create_stat_box(title, value, color)
+        for i, (title, value, color, status_key) in enumerate(stats_data):
+            box = self._create_stat_box(title, value, color, status_key, i)
             self.stat_boxes.append(box)
             layout.addWidget(box)
 
-    def _create_stat_box(self, title, value, color):
+    def _create_stat_box(self, title, value, color, status_key, index):
         """Создает блок статистики"""
         box = QWidget()
         box.setObjectName("StatBox")
         box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         box.setFixedHeight(90)
+
+        # Сохраняем данные для обработки клика
+        box.status_key = status_key
+        box.category = self.category
+        box.index = index
+
+        # Делаем кликабельным
+        box.setCursor(QCursor(Qt.PointingHandCursor))
+        box.mousePressEvent = lambda event, key=status_key: self._on_stat_click(key)
 
         # Layout блока
         layout = QHBoxLayout(box)
@@ -95,6 +109,10 @@ class AccountStatsWidget(QWidget):
         box.setGraphicsEffect(effect)
 
         return box
+
+    def _on_stat_click(self, status_key):
+        """Обработка клика по статистике"""
+        self.stat_clicked.emit(status_key)
 
     def animate_appearance(self):
         """Анимирует появление статистических блоков"""

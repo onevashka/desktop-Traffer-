@@ -1,14 +1,14 @@
-# gui/component_account_manager/sales_accounts.py - СТАБИЛЬНАЯ ВЕРСИЯ
+# gui/component_account_manager/sales_accounts.py - ОБНОВЛЕННАЯ ВЕРСИЯ
 
 """
-Компонент для работы с аккаунтами продаж - стабильная версия
+Компонент для работы с аккаунтами продаж с кликабельной статистикой
 """
 
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 from gui.component_account_manager.account_stats import AccountStatsWidget
 from gui.component_account_manager.account_table import AccountTableWidget
 from gui.component_account_manager.loading_animation import LoadingAnimationWidget
-from src.accounts.manager import get_sales_stats, get_table_data
+from src.accounts.manager import get_sales_stats, get_table_data, get_default_status
 from loguru import logger
 
 
@@ -18,6 +18,8 @@ class SalesAccountsTab(QWidget):
     def __init__(self):
         super().__init__()
         self.setObjectName("SalesAccountsTab")
+        self.category = "sales"
+        self.current_status = get_default_status(self.category)  # "registration" по умолчанию
 
         # Основной layout
         layout = QVBoxLayout(self)
@@ -52,21 +54,57 @@ class SalesAccountsTab(QWidget):
         sales_stats = get_sales_stats()
         logger.debug(f"📊 Создаем компоненты продаж, статистика: {sales_stats}")
 
-        self.stats_widget = AccountStatsWidget(sales_stats)
+        # ОБНОВЛЕНО: Добавляем ключи статусов для кликабельности
+        stats_with_keys = [
+            (title, value, color, status_key) for (title, value, color), status_key in zip(
+                sales_stats,
+                ["registration", "ready_tdata", "ready_sessions", "middle", "frozen", "dead"]
+            )
+        ]
+
+        self.stats_widget = AccountStatsWidget(stats_with_keys, self.category)
+        # Подключаем обработчик клика по статистике
+        self.stats_widget.stat_clicked.connect(self._on_stat_clicked)
         self.main_content_layout.addWidget(self.stats_widget)
 
-        # Таблица аккаунтов продаж с реальными данными
-        table_data = get_table_data("sales", limit=50)
+        # Таблица аккаунтов с реальными данными для текущей папки
+        table_data = get_table_data(self.category, self.current_status, limit=50)
         logger.debug(f"📋 Создаем таблицу продаж, данных: {len(table_data)} строк")
 
         table_config = {
             'title': '💰 Склад аккаунтов для продажи',
             'add_button_text': '+ Добавить на склад',
-            'demo_data': table_data
+            'demo_data': table_data,
+            'category': self.category,
+            'current_status': self.current_status
         }
 
         self.table_widget = AccountTableWidget(table_config)
         self.main_content_layout.addWidget(self.table_widget)
+
+    def _on_stat_clicked(self, status_key: str):
+        """Обработка клика по статистике - переключение папки"""
+        logger.info(f"🔄 Переключаемся на папку: {status_key}")
+
+        self.current_status = status_key
+
+        # Обновляем таблицу для новой папки
+        self.table_widget.set_current_status(status_key)
+
+        # Показываем уведомление о переключении
+        try:
+            from gui.notifications import show_info
+            from src.accounts.manager import get_status_display_name, get_folder_status_count
+
+            folder_name = get_status_display_name(self.category, status_key)
+            count = get_folder_status_count(self.category, status_key)
+
+            show_info(
+                "Переключение папки",
+                f"Показана папка: {folder_name}\nАккаунтов: {count}"
+            )
+        except Exception as e:
+            logger.error(f"❌ Ошибка показа уведомления: {e}")
 
     def _show_main_content(self):
         """Показывает основной контент после загрузки"""
@@ -92,21 +130,13 @@ class SalesAccountsTab(QWidget):
                     self.stats_widget.update_stat(i, value)
                     logger.debug(f"   📊 Обновлен элемент {i}: {title} = {value}")
 
-            # Получаем новые данные таблицы
-            new_data = get_table_data("sales", limit=50)
-            logger.debug(f"📋 Новые данные таблицы: {len(new_data)} строк")
-
-            # Обновляем таблицу
-            if hasattr(self.table_widget, 'update_table_data'):
-                self.table_widget.update_table_data(new_data)
-                logger.info("✅ Данные продаж обновлены через update_table_data")
-            else:
-                # Fallback метод
-                self.table_widget.config['demo_data'] = new_data
-                if hasattr(self.table_widget, '_fill_table_data'):
-                    self.table_widget._fill_table_data()
-                logger.info("✅ Данные продаж обновлены через fallback")
+            # Обновляем таблицу для текущей папки
+            self.table_widget.refresh_data()
+            logger.info("✅ Данные продаж обновлены")
 
         except Exception as e:
             logger.error(f"❌ Ошибка обновления данных продаж: {e}")
-            # НЕ показываем уведомление об ошибке в refresh_data - пусть вызывающий код решает
+
+    def get_current_status(self) -> str:
+        """Возвращает текущий статус (папку)"""
+        return self.current_status

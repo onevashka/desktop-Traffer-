@@ -1,4 +1,4 @@
-# src/accounts/manager.py - ПЕРЕДЕЛАННАЯ логика с раздельными хранилищами
+# src/accounts/manager.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 
 """
 Центральный AccountManager - раздельные хранилища для трафика и продаж
@@ -198,10 +198,17 @@ class AccountManager:
             ("Мертвых", str(counts["dead"]), "#EF4444")
         ]
 
-    def get_table_data(self, category: str, limit: int = 50) -> List[List[str]]:
-        """Возвращает данные для отображения в таблице"""
+    def get_table_data(self, category: str, status: str = None, limit: int = 50) -> List[List[str]]:
+        """
+        Возвращает данные для отображения в таблице
 
-        # ИЗМЕНЕНО: Выбираем правильное хранилище
+        Args:
+            category: "traffic" или "sales"
+            status: конкретный статус (папка) или None для всех
+            limit: максимальное количество записей
+        """
+
+        # Выбираем правильное хранилище
         if category == "traffic":
             accounts_storage = self.traffic_accounts
         elif category == "sales":
@@ -210,8 +217,14 @@ class AccountManager:
             logger.error(f"❌ Неизвестная категория: {category}")
             return []
 
-        # Получаем аккаунты из соответствующего хранилища
-        category_accounts = list(accounts_storage.values())
+        # Фильтруем по статусу если указан
+        if status:
+            category_accounts = [
+                data for data in accounts_storage.values()
+                if data.status == status
+            ]
+        else:
+            category_accounts = list(accounts_storage.values())
 
         # Ограничиваем количество
         category_accounts = category_accounts[:limit]
@@ -247,6 +260,49 @@ class AccountManager:
             table_data.append(row)
 
         return table_data
+
+    # НОВЫЕ МЕТОДЫ для поддержки папок
+    def get_default_status(self, category: str) -> str:
+        """Возвращает статус по умолчанию для категории"""
+        if category == "traffic":
+            return "active"  # Показываем активные аккаунты
+        elif category == "sales":
+            return "registration"  # Показываем регистрационные аккаунты
+        else:
+            return "active"
+
+    def get_status_display_name(self, category: str, status: str) -> str:
+        """Возвращает человекочитаемое название статуса"""
+        display_names = {
+            "traffic": {
+                "active": "Активные аккаунты",
+                "dead": "Мертвые аккаунты",
+                "frozen": "Замороженные аккаунты",
+                "invalid": "Неверный формат"
+            },
+            "sales": {
+                "registration": "Регистрационные аккаунты",
+                "ready_tdata": "TData готовые",
+                "ready_sessions": "Session+JSON готовые",
+                "middle": "Средние аккаунты",
+                "dead": "Мертвые аккаунты",
+                "frozen": "Замороженные аккаунты",
+                "invalid": "Неверный формат"
+            }
+        }
+
+        return display_names.get(category, {}).get(status, f"Аккаунты ({status})")
+
+    def get_folder_status_count(self, category: str, status: str) -> int:
+        """Возвращает количество аккаунтов в конкретной папке"""
+        if category == "traffic":
+            accounts = [data for data in self.traffic_accounts.values() if data.status == status]
+        elif category == "sales":
+            accounts = [data for data in self.sales_accounts.values() if data.status == status]
+        else:
+            return 0
+
+        return len(accounts)
 
     def get_accounts_by_category(self, category: str) -> List[str]:
         """Возвращает список имен аккаунтов по категории"""
@@ -335,7 +391,7 @@ class AccountManager:
         return await self.updater.refresh_category(category)
 
 
-# Остальные функции остаются без изменений...
+# ИСПРАВЛЕНО: Глобальный экземпляр и функции
 _account_manager: Optional[AccountManager] = None
 
 
@@ -350,14 +406,17 @@ async def get_account_manager() -> AccountManager:
 
 async def init_account_manager() -> AccountManager:
     """Инициализирует менеджер при старте приложения"""
+    global _account_manager
     logger.info("🎯 Инициализация AccountManager...")
-    manager = await get_account_manager()
+    _account_manager = await get_account_manager()
     logger.info("✅ AccountManager готов!")
-    return manager
+    return _account_manager
 
 
+# ИСПРАВЛЕНО: Функции для GUI
 def get_traffic_stats() -> List[Tuple[str, str, str]]:
     """Быстрое получение статистики трафика"""
+    global _account_manager
     if _account_manager:
         return _account_manager.get_traffic_stats()
     return [("Не загружено", "0", "#EF4444")]
@@ -365,50 +424,88 @@ def get_traffic_stats() -> List[Tuple[str, str, str]]:
 
 def get_sales_stats() -> List[Tuple[str, str, str]]:
     """Быстрое получение статистики продаж"""
+    global _account_manager
     if _account_manager:
         return _account_manager.get_sales_stats()
     return [("Не загружено", "0", "#EF4444")]
 
 
-def get_table_data(category: str, limit: int = 50) -> List[List[str]]:
+def get_table_data(category: str, status: str = None, limit: int = 50) -> List[List[str]]:
     """Быстрое получение данных таблицы"""
+    global _account_manager
     if _account_manager:
-        return _account_manager.get_table_data(category, limit)
+        return _account_manager.get_table_data(category, status, limit)
     return []
+
+
+def get_default_status(category: str) -> str:
+    """Возвращает статус по умолчанию для категории"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.get_default_status(category)
+    return "active" if category == "traffic" else "registration"
+
+
+def get_status_display_name(category: str, status: str) -> str:
+    """Возвращает человекочитаемое название статуса"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.get_status_display_name(category, status)
+    return f"Аккаунты ({status})"
+
+
+def get_folder_status_count(category: str, status: str) -> int:
+    """Возвращает количество аккаунтов в конкретной папке"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.get_folder_status_count(category, status)
+    return 0
+
 
 def delete_accounts(account_names: List[str], category: str) -> Dict[str, bool]:
     """Функция для GUI - удаляет аккаунты"""
+    global _account_manager
     if _account_manager:
         return _account_manager.delete_accounts(account_names, category)
     return {name: False for name in account_names}
 
+
 def get_account_info_for_deletion(account_names: List[str], category: str) -> List[Dict]:
     """Функция для GUI - получает информацию для удаления"""
+    global _account_manager
     if _account_manager:
         return _account_manager.get_account_info_for_deletion(account_names, category)
     return []
 
+
 def move_accounts(account_names: List[str], source_category: str,
-                 target_category: str, target_status: str) -> Dict[str, bool]:
+                  target_category: str, target_status: str) -> Dict[str, bool]:
     """Функция для GUI - перемещает аккаунты"""
+    global _account_manager
     if _account_manager:
         return _account_manager.move_accounts(account_names, source_category, target_category, target_status)
     return {name: False for name in account_names}
 
+
 def get_move_destinations(current_category: str, current_status: str) -> List[Dict]:
     """Функция для GUI - получает назначения для перемещения"""
+    global _account_manager
     if _account_manager:
         return _account_manager.get_move_destinations(current_category, current_status)
     return []
 
+
 async def refresh_all_accounts() -> Dict[str, int]:
     """Функция для GUI - полное обновление"""
+    global _account_manager
     if _account_manager:
         return await _account_manager.refresh_all_accounts()
     return {"error": True}
 
+
 async def refresh_category(category: str) -> int:
     """Функция для GUI - обновление категории"""
+    global _account_manager
     if _account_manager:
         return await _account_manager.refresh_category(category)
     return 0

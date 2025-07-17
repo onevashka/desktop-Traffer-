@@ -24,11 +24,17 @@ class AccountTableWidget(QWidget):
             'title': 'Заголовок таблицы',
             'add_button_text': 'Текст кнопки добавления',
             'demo_data': [[...], [...]]  # Данные для таблицы
+            'category': 'traffic' или 'sales',
+            'current_status': 'active' или другой статус  # НОВОЕ
         }
         """
         super().__init__()
         self.setObjectName("AccountTableWidget")
         self.config = config
+
+        # НОВОЕ: Отслеживаем текущий статус (папку)
+        self.current_status = config.get('current_status', 'active')
+        self.category = config.get('category', 'traffic')
 
         # Основной layout
         layout = QVBoxLayout(self)
@@ -56,16 +62,17 @@ class AccountTableWidget(QWidget):
         actions_layout.setContentsMargins(0, 5, 0, 10)
         actions_layout.setSpacing(10)
 
-        # Заголовок секции
-        section_title = QLabel(self.config.get('title', '📋 Список аккаунтов'))
-        section_title.setObjectName("SectionTitle")
-        section_title.setStyleSheet("""
+        # Заголовок секции - ОБНОВЛЕНО
+        self.section_title = QLabel()
+        self.section_title.setObjectName("SectionTitle")
+        self.section_title.setStyleSheet("""
             QLabel#SectionTitle {
                 font-size: 16px;
                 font-weight: 600;
                 color: rgba(255, 255, 255, 0.9);
             }
         """)
+        self._update_section_title()  # Устанавливаем правильный заголовок
 
         # Кнопки массовых действий
         self.delete_btn = QPushButton("🗑️ Удалить")
@@ -89,7 +96,7 @@ class AccountTableWidget(QWidget):
         self.add_btn.setObjectName("AddButton")
         self.add_btn.setFixedSize(160, 36)
 
-        actions_layout.addWidget(section_title)
+        actions_layout.addWidget(self.section_title)
         actions_layout.addWidget(self.delete_btn)
         actions_layout.addWidget(self.update_btn)
         actions_layout.addWidget(self.move_btn)
@@ -99,8 +106,8 @@ class AccountTableWidget(QWidget):
 
         layout.addWidget(actions_container)
 
+        # Подключаем обработчики
         self.action_handler = TableActionHandler(self)
-
         self.delete_btn.clicked.connect(self.action_handler.handle_delete_action)
         self.update_btn.clicked.connect(self.action_handler.handle_refresh_action)
         self.move_btn.clicked.connect(self.action_handler.handle_move_action)
@@ -121,12 +128,16 @@ class AccountTableWidget(QWidget):
 
     def get_table_category(self) -> str:
         """Определяет категорию таблицы по заголовку"""
-        title = self.config.get('title', '').lower()
+        if hasattr(self.table, 'category'):
+            return self.table.category
 
+        # Fallback - старый способ
+        title = self.table.config.get('title', '').lower()
         if 'трафик' in title:
             return 'traffic'
         elif 'продаж' in title:
             return 'sales'
+        return 'traffic'  # По умолчанию
 
     def _create_table(self, layout):
         """Создает таблицу"""
@@ -175,6 +186,16 @@ class AccountTableWidget(QWidget):
 
         table_layout.addWidget(self.table)
         layout.addWidget(table_container)
+
+    def get_current_status(self) -> str:
+        """Получает текущий статус (папку) таблицы"""
+        if hasattr(self.table, 'get_current_status'):
+            return self.table.get_current_status()
+        return self.table.config.get('current_status', 'active')
+
+    def get_category(self) -> str:
+        """Возвращает категорию"""
+        return self.category
 
     def _create_master_checkbox(self):
         """Создает главный чекбокс в заголовке"""
@@ -325,17 +346,49 @@ class AccountTableWidget(QWidget):
         self.last_clicked_row = None
 
     def refresh_data(self):
-        """Простое обновление данных таблицы"""
+        """Обновление данных таблицы для текущей папки"""
         try:
-            category = self.get_table_category()
-            if category:
-                from src.accounts.manager import get_table_data
-                new_data = get_table_data(category, limit=50)
-                self.config['demo_data'] = new_data
-                if hasattr(self, '_fill_table_data'):
-                    self._fill_table_data()
+            from src.accounts.manager import get_table_data
+
+            # Получаем данные для текущей папки
+            new_data = get_table_data(self.category, self.current_status, limit=50)
+            self.config['demo_data'] = new_data
+
+            # Обновляем таблицу
+            if hasattr(self, 'update_table_data'):
+                self.update_table_data(new_data)
+            elif hasattr(self, '_fill_table_data'):
+                self._fill_table_data()
+
         except Exception as e:
             print(f"❌ Ошибка refresh_data: {e}")
+
+    def set_current_status(self, status: str):
+        """Устанавливает текущий статус (папку) для отображения"""
+        self.current_status = status
+        self.config['current_status'] = status
+
+        # Обновляем заголовок
+        self._update_section_title()
+
+        # Обновляем данные таблицы
+        self.refresh_data()
+
+    def _update_section_title(self):
+        """Обновляет заголовок секции в зависимости от текущей папки"""
+        if hasattr(self, 'section_title'):
+            from src.accounts.manager import get_status_display_name
+            folder_name = get_status_display_name(self.category, self.current_status)
+
+            # Иконки для разных категорий
+            if self.category == "traffic":
+                icon = "🚀"
+            elif self.category == "sales":
+                icon = "💰"
+            else:
+                icon = "📋"
+
+            self.section_title.setText(f"{icon} {folder_name}")
 
     def _toggle_all_checkboxes(self):
         """Переключает все чекбоксы"""

@@ -1,14 +1,17 @@
 """
-Обработчики действий с таблицами аккаунтов - с автоматическим обновлением
+Обработчики действий с таблицами аккаунтов - с красивыми модальными окнами
 """
 
-from typing import List
+from typing import List, Dict, Optional
 from PySide6.QtWidgets import QMessageBox
 from PySide6.QtCore import QTimer
 from loguru import logger
 
 # Импортируем систему уведомлений
 from gui.notifications import show_success, show_error, show_warning, show_info
+
+# Импортируем красивые модальные окна
+from gui.dialogs.custom_confirm_dialog import show_delete_confirmation
 
 
 class TableActionHandler:
@@ -51,11 +54,11 @@ class TableActionHandler:
                 )
                 return
 
-            # Получаем информацию об аккаунтах
+            # Получаем информацию об аккаунтах для удаления
             accounts_info = _account_manager.get_account_info_for_deletion(selected_accounts, category)
 
-            # Показываем диалог подтверждения
-            if self._confirm_deletion(accounts_info):
+            # Показываем красивое модальное окно
+            if self._show_beautiful_confirmation(accounts_info):
                 self._perform_deletion(selected_accounts, category)
 
         except Exception as e:
@@ -64,6 +67,34 @@ class TableActionHandler:
                 "Критическая ошибка",
                 f"Ошибка при удалении: {e}"
             )
+
+    def _show_beautiful_confirmation(self, accounts_info: List[dict]) -> bool:
+        """Показывает красивое модальное окно подтверждения"""
+        if not accounts_info:
+            show_warning("Ошибка", "Аккаунты не найдены")
+            return False
+
+        # Формируем заголовок и сообщение
+        count = len(accounts_info)
+        title = f"Подтверждение удаления"
+
+        if count == 1:
+            message = f"Вы действительно хотите удалить этот аккаунт?"
+        else:
+            message = f"Вы действительно хотите удалить {count} аккаунт(ов)?"
+
+        # Находим родительское окно
+        parent_window = self.table
+        while parent_window.parent():
+            parent_window = parent_window.parent()
+
+        # Показываем красивое модальное окно
+        return show_delete_confirmation(
+            parent=parent_window,
+            title=title,
+            message=message,
+            accounts_info=accounts_info
+        )
 
     def _perform_deletion(self, account_names: List[str], category: str):
         """Выполняет удаление аккаунтов с автоматическим обновлением"""
@@ -78,7 +109,7 @@ class TableActionHandler:
             # Показываем результат через уведомления
             self._show_deletion_results(results)
 
-            # ИСПРАВЛЕНО: Простое обновление только таблицы
+            # Простое обновление только таблицы
             self._simple_refresh_after_deletion(category)
 
         except Exception as e:
@@ -87,57 +118,6 @@ class TableActionHandler:
                 "Критическая ошибка",
                 f"❌ Критическая ошибка при удалении: {e}"
             )
-
-    def _auto_refresh_after_deletion(self, category: str):
-        """Автоматически обновляет таблицу после удаления"""
-        try:
-            logger.info("🔄 Автоматическое обновление таблицы после удаления...")
-
-            # Небольшая задержка для корректного обновления
-            QTimer.singleShot(200, lambda: self._refresh_table_data(category))
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка автоматического обновления: {e}")
-
-    def _refresh_table_data(self, category: str):
-        """Обновляет данные таблицы"""
-        try:
-            from src.accounts.manager import get_table_data
-
-            logger.info(f"📊 Обновляем данные таблицы для категории: {category}")
-
-            # Получаем новые данные
-            new_data = get_table_data(category, limit=50)
-
-            # Обновляем таблицу
-            if hasattr(self.table, 'update_table_data'):
-                self.table.update_table_data(new_data)
-                logger.info(f"✅ Таблица обновлена, показано {len(new_data)} аккаунтов")
-            else:
-                # Fallback - пересоздаем данные
-                self.table.config['demo_data'] = new_data
-                self.table._fill_table_data()
-                logger.info("✅ Таблица обновлена через fallback метод")
-
-            # Обновляем статистику в родительском компоненте
-            self._refresh_parent_statistics()
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка обновления данных таблицы: {e}")
-
-    def _refresh_parent_statistics(self):
-        """Обновляет статистику в родительском компоненте"""
-        try:
-            # Ищем родительский компонент (TrafficAccountsTab или SalesAccountsTab)
-            parent = self.table.parent()
-            while parent:
-                if hasattr(parent, 'refresh_data'):
-                    logger.info("📊 Обновляем статистику в родительском компоненте")
-                    parent.refresh_data()
-                    break
-                parent = parent.parent()
-        except Exception as e:
-            logger.error(f"❌ Ошибка обновления статистики: {e}")
 
     def handle_move_action(self):
         """Обрабатывает перемещение выбранных аккаунтов"""
@@ -152,14 +132,145 @@ class TableActionHandler:
                 )
                 return
 
-            # Открываем диалог выбора назначения
-            self._show_move_dialog(selected_accounts, category)
+            if not category:
+                show_error(
+                    "Ошибка",
+                    "Не удалось определить категорию аккаунтов"
+                )
+                return
+
+            # Получаем менеджер аккаунтов
+            from src.accounts.manager import _account_manager
+
+            if not _account_manager:
+                show_error(
+                    "Ошибка",
+                    "Менеджер аккаунтов не инициализирован"
+                )
+                return
+
+            # Получаем информацию об аккаунтах для перемещения
+            accounts_info = []
+            for account_name in selected_accounts:
+                if category == "traffic":
+                    account_data = _account_manager.traffic_accounts.get(account_name)
+                elif category == "sales":
+                    account_data = _account_manager.sales_accounts.get(account_name)
+                else:
+                    continue
+
+                if account_data:
+                    info = account_data.info
+                    accounts_info.append({
+                        'name': account_name,
+                        'full_name': info.get('full_name', '?'),
+                        'phone': info.get('phone', '?'),
+                        'status': account_data.status,
+                        'category': category
+                    })
+
+            # Получаем список доступных назначений
+            # Определяем текущий статус (берем от первого аккаунта)
+            current_status = accounts_info[0]['status'] if accounts_info else "unknown"
+            destinations = _account_manager.get_move_destinations(category, current_status)
+
+            if not destinations:
+                show_warning(
+                    "Нет доступных назначений",
+                    "Не найдено папок для перемещения аккаунтов"
+                )
+                return
+
+            # Показываем диалог перемещения
+            selected_destination = self._show_move_dialog(accounts_info, destinations, category)
+
+            if selected_destination:
+                self._perform_move(selected_accounts, category, selected_destination)
 
         except Exception as e:
             logger.error(f"❌ Ошибка обработки перемещения: {e}")
             show_error(
                 "Ошибка перемещения",
                 f"Ошибка при перемещении: {e}"
+            )
+
+    def _show_move_dialog(self, accounts_info: List[Dict], destinations: List[Dict],
+                         current_category: str) -> Optional[Dict]:
+        """Показывает диалог выбора назначения для перемещения"""
+        try:
+            # Импортируем диалог перемещения
+            from gui.dialogs.move_accounts_dialog import show_move_accounts_dialog
+
+            # Находим родительское окно
+            parent_window = self.table
+            while parent_window.parent():
+                parent_window = parent_window.parent()
+
+            # Показываем диалог
+            return show_move_accounts_dialog(
+                parent=parent_window,
+                accounts_info=accounts_info,
+                destinations=destinations,
+                current_category=current_category
+            )
+        except Exception as e:
+            logger.error(f"❌ Ошибка показа диалога перемещения: {e}")
+            return None
+
+    def _perform_move(self, account_names: List[str], source_category: str,
+                     destination: Dict):
+        """Выполняет перемещение аккаунтов"""
+        try:
+            from src.accounts.manager import _account_manager
+
+            target_category = destination['category']
+            target_status = destination['status']
+
+            logger.info(f"📦 Начинаем перемещение {len(account_names)} аккаунтов")
+            logger.info(f"   Из: {source_category}")
+            logger.info(f"   В: {target_category}/{target_status}")
+
+            # Выполняем перемещение
+            results = _account_manager.move_accounts(
+                account_names, source_category, target_category, target_status
+            )
+
+            # Показываем результат
+            self._show_move_results(results, destination)
+
+            # Обновляем таблицу
+            self._simple_refresh_after_move(source_category)
+
+        except Exception as e:
+            logger.error(f"❌ Критическая ошибка при перемещении: {e}")
+            show_error(
+                "Критическая ошибка",
+                f"❌ Критическая ошибка при перемещении: {e}"
+            )
+
+    def _show_move_results(self, results: Dict[str, bool], destination: Dict):
+        """Показывает результаты перемещения"""
+        success_count = sum(1 for success in results.values() if success)
+        failed_count = len(results) - success_count
+
+        destination_name = destination['display_name']
+
+        if failed_count == 0:
+            # Успешное перемещение
+            show_success(
+                "Перемещение завершено",
+                f"Успешно перемещено {success_count} аккаунт(ов)\n"
+                f"Назначение: {destination_name}"
+            )
+        else:
+            # Частичная ошибка
+            failed_accounts = [name for name, success in results.items() if not success]
+            show_error(
+                "Ошибки при перемещении",
+                f"Перемещено: {success_count}, ошибок: {failed_count}\n" +
+                f"Назначение: {destination_name}\n" +
+                f"Не удалось переместить: {', '.join(failed_accounts[:3])}" +
+                (f" и еще {len(failed_accounts) - 3}" if len(failed_accounts) > 3 else "")
             )
 
     def handle_refresh_action(self):
@@ -203,122 +314,6 @@ class TableActionHandler:
                 "Ошибка обновления",
                 f"Ошибка при обновлении: {e}"
             )
-    def _confirm_deletion(self, accounts_info: List[dict]) -> bool:
-        """Показывает диалог подтверждения удаления"""
-        if not accounts_info:
-            show_warning("Ошибка", "Аккаунты не найдены")
-            return False
-
-        # Формируем текст подтверждения
-        confirm_text = f"Вы действительно хотите удалить {len(accounts_info)} аккаунт(ов)?\n\n"
-        confirm_text += "Будут удалены следующие аккаунты:\n"
-
-        for info in accounts_info[:5]:  # Показываем первые 5
-            full_name = info.get('full_name', '?')
-            status = info.get('status', '?')
-            confirm_text += f"• {info['name']} ({full_name}) - {status}\n"
-
-        if len(accounts_info) > 5:
-            confirm_text += f"... и еще {len(accounts_info) - 5} аккаунт(ов)\n"
-
-        confirm_text += f"\n⚠️ ВНИМАНИЕ: Файлы .session и .json будут удалены безвозвратно!\n"
-        confirm_text += f"📊 Таблица будет автоматически обновлена после удаления."
-
-        # Показываем стандартный диалог Qt (для важных операций)
-        reply = QMessageBox.question(
-            self.table,
-            "Подтверждение удаления",
-            confirm_text,
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No
-        )
-
-        return reply == QMessageBox.Yes
-
-    def _show_deletion_results(self, results: dict):
-        """Показывает результаты удаления с красивыми уведомлениями"""
-        success_count = sum(1 for success in results.values() if success)
-        failed_count = len(results) - success_count
-
-        if failed_count == 0:
-            # Успешное удаление
-            show_success(
-                "Удаление завершено",
-                f"Успешно удалено {success_count} аккаунт(ов)\nТаблица обновлена автоматически"
-            )
-        else:
-            # Частичная ошибка
-            failed_accounts = [name for name, success in results.items() if not success]
-            show_error(
-                "Ошибки при удалении",
-                f"Удалено: {success_count}, ошибок: {failed_count}\n" +
-                f"Не удалось удалить: {', '.join(failed_accounts[:3])}" +
-                (f" и еще {len(failed_accounts) - 3}" if len(failed_accounts) > 3 else "")
-            )
-
-    def _show_move_dialog(self, account_names: List[str], source_category: str):
-        """Показывает информацию о перемещении (пока заглушка)"""
-        show_info(
-            "Перемещение аккаунтов",
-            f"Функция перемещения {len(account_names)} аккаунт(ов) из {source_category}\n" +
-            "будет реализована в следующем обновлении"
-        )
-
-    def _set_refresh_state(self, refreshing: bool):
-        """Устанавливает состояние кнопки обновления"""
-        if hasattr(self.table, 'update_btn'):
-            if refreshing:
-                self.table.update_btn.setText("⏳ Обновление...")
-                self.table.update_btn.setEnabled(False)
-            else:
-                self.table.update_btn.setText("🔄 Обновить")
-                self.table.update_btn.setEnabled(True)
-
-    def _on_refresh_complete(self, task):
-        """Вызывается после завершения ручного обновления"""
-        try:
-            # Возвращаем кнопку в нормальное состояние
-            self._set_refresh_state(False)
-
-            # Получаем результат
-            result = task.result()
-
-            # Обновляем таблицу
-            category = self.table.get_table_category()
-            if category:
-                self._refresh_table_data(category)
-
-            # Показываем результат
-            if isinstance(result, dict) and 'traffic_diff' in result:
-                # Полное обновление
-                traffic_diff = result['traffic_diff']
-                sales_diff = result['sales_diff']
-
-                if traffic_diff != 0 or sales_diff != 0:
-                    show_success(
-                        "Обновление завершено",
-                        f"Изменения в аккаунтах:\nТрафик: {traffic_diff:+d}, Продажи: {sales_diff:+d}"
-                    )
-                else:
-                    show_info(
-                        "Обновление завершено",
-                        "Изменений не обнаружено"
-                    )
-            else:
-                # Обновление категории
-                if isinstance(result, int):
-                    show_success(
-                        "Обновление завершено",
-                        f"Найдено аккаунтов: {result}"
-                    )
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка завершения обновления: {e}")
-            self._set_refresh_state(False)
-            show_error(
-                "Ошибка обновления",
-                f"Ошибка при завершении обновления: {e}"
-            )
 
     def _simple_refresh_after_deletion(self, category: str):
         """Простое обновление таблицы после удаления"""
@@ -331,15 +326,28 @@ class TableActionHandler:
         except Exception as e:
             logger.error(f"❌ Ошибка простого обновления: {e}")
 
+    def _simple_refresh_after_move(self, category: str):
+        """Простое обновление таблицы после перемещения"""
+        try:
+            logger.info("🔄 Простое обновление таблицы после перемещения...")
+
+            # Небольшая задержка для корректного обновления
+            QTimer.singleShot(300, lambda: self._update_table_only(category))
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка простого обновления: {e}")
+
     def _update_table_only(self, category: str):
-        """Обновляет только данные таблицы"""
+        """Обновляет только данные таблицы для текущей папки"""
         try:
             from src.accounts.manager import get_table_data, get_traffic_stats, get_sales_stats
 
-            logger.info(f"📊 Обновляем только таблицу для категории: {category}")
+            # Получаем текущий статус
+            current_status = self.get_current_status()
+            logger.info(f"📊 Обновляем таблицу для категории: {category}, статус: {current_status}")
 
-            # Получаем новые данные таблицы
-            new_data = get_table_data(category, limit=50)
+            # Получаем новые данные таблицы для текущей папки
+            new_data = get_table_data(category, current_status, limit=50)
 
             # Обновляем таблицу
             if hasattr(self.table, 'update_table_data'):
@@ -388,6 +396,37 @@ class TableActionHandler:
 
         except Exception as e:
             logger.error(f"❌ Ошибка обновления статистики: {e}")
+
+    def _show_deletion_results(self, results: dict):
+        """Показывает результаты удаления с красивыми уведомлениями"""
+        success_count = sum(1 for success in results.values() if success)
+        failed_count = len(results) - success_count
+
+        if failed_count == 0:
+            # Успешное удаление
+            show_success(
+                "Удаление завершено",
+                f"Успешно удалено {success_count} аккаунт(ов)\nТаблица обновлена автоматически"
+            )
+        else:
+            # Частичная ошибка
+            failed_accounts = [name for name, success in results.items() if not success]
+            show_error(
+                "Ошибки при удалении",
+                f"Удалено: {success_count}, ошибок: {failed_count}\n" +
+                f"Не удалось удалить: {', '.join(failed_accounts[:3])}" +
+                (f" и еще {len(failed_accounts) - 3}" if len(failed_accounts) > 3 else "")
+            )
+
+    def _set_refresh_state(self, refreshing: bool):
+        """Устанавливает состояние кнопки обновления"""
+        if hasattr(self.table, 'update_btn'):
+            if refreshing:
+                self.table.update_btn.setText("⏳ Обновление...")
+                self.table.update_btn.setEnabled(False)
+            else:
+                self.table.update_btn.setText("🔄 Обновить")
+                self.table.update_btn.setEnabled(True)
 
     def _on_manual_refresh_complete(self, task):
         """Вызывается после завершения РУЧНОГО обновления"""
