@@ -453,6 +453,34 @@ class AccountManager:
         self._init_operations()
         return await self.updater.refresh_category(category)
 
+    def get_account_info_for_archiving(self, account_names: List[str], category: str) -> List[Dict]:
+        """Получает информацию об аккаунтах для архивации"""
+        self._init_operations()
+        if not hasattr(self, 'archiver'):
+            from src.accounts.operations.archive_operations import AccountArchiver
+            self.archiver = AccountArchiver(self)
+        return self.archiver.get_archive_info(account_names, category)
+
+    def archive_accounts(self, account_names: List[str], category: str,
+                         archive_name: str, archive_format: str) -> Dict[str, any]:
+        """Архивирует аккаунты"""
+        self._init_operations()
+        if not hasattr(self, 'archiver'):
+            from src.accounts.operations.archive_operations import AccountArchiver
+            self.archiver = AccountArchiver(self)
+        return self.archiver.archive_accounts(account_names, category, archive_name, archive_format)
+
+    def check_winrar_available(self) -> bool:
+        """Проверяет доступность WinRAR"""
+        self._init_operations()
+        if not hasattr(self, 'archiver'):
+            from src.accounts.operations.archive_operations import AccountArchiver
+            self.archiver = AccountArchiver(self)
+        return self.archiver.check_winrar_available()
+
+    # Добавьте функции для GUI в src/accounts/manager.py
+
+
 
 # ИСПРАВЛЕНО: Глобальный экземпляр и функции
 _account_manager: Optional[AccountManager] = None
@@ -586,3 +614,25 @@ def get_paginated_data(category: str, status: str = None, page: int = 1, per_pag
         'has_next': False,
         'has_prev': False
     }
+
+def get_account_info_for_archiving(account_names: List[str], category: str) -> List[Dict]:
+    """Функция для GUI - получает информацию для архивации"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.get_account_info_for_archiving(account_names, category)
+    return []
+
+def archive_accounts(account_names: List[str], category: str,
+                     archive_name: str, archive_format: str) -> Dict[str, any]:
+    """Функция для GUI - архивирует аккаунты"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.archive_accounts(account_names, category, archive_name, archive_format)
+    return {'success': False, 'message': 'Менеджер не инициализирован'}
+
+def check_winrar_available() -> bool:
+    """Функция для GUI - проверяет доступность WinRAR"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.check_winrar_available()
+    return False

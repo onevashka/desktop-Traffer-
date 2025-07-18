@@ -543,3 +543,131 @@ class TableActionHandler:
             return "registration"
         else:
             return "active"
+
+    def handle_archive_action(self):
+        """Обрабатывает архивацию выбранных аккаунтов"""
+        try:
+            selected_accounts = self.table.get_selected_account_names()
+            category = self.get_table_category()
+
+            if not selected_accounts:
+                show_info(
+                    "Архивация аккаунтов",
+                    "Выберите аккаунты для архивации"
+                )
+                return
+
+            if not category:
+                show_error(
+                    "Ошибка",
+                    "Не удалось определить категорию аккаунтов"
+                )
+                return
+
+            # Получаем менеджер аккаунтов
+            from src.accounts.manager import _account_manager
+
+            if not _account_manager:
+                show_error(
+                    "Ошибка",
+                    "Менеджер аккаунтов не инициализирован"
+                )
+                return
+
+            # Получаем информацию об аккаунтах для архивации
+            accounts_info = _account_manager.get_account_info_for_archiving(selected_accounts, category)
+
+            if not accounts_info:
+                show_warning(
+                    "Ошибка",
+                    "Не найдены аккаунты для архивации"
+                )
+                return
+
+            # Показываем диалог архивации
+            archive_settings = self._show_archive_dialog(accounts_info, category)
+
+            if archive_settings:
+                self._perform_archive(selected_accounts, category, archive_settings)
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка обработки архивации: {e}")
+            show_error(
+                "Ошибка архивации",
+                f"Ошибка при архивации: {e}"
+            )
+
+    def _show_archive_dialog(self, accounts_info: List[Dict], category: str) -> Optional[Dict]:
+        """Показывает диалог архивации"""
+        try:
+            # Импортируем диалог архивации
+            from gui.dialogs.archive_accounts_dialog import show_archive_accounts_dialog
+
+            # Находим родительское окно
+            parent_window = self.table
+            while parent_window.parent():
+                parent_window = parent_window.parent()
+
+            # Показываем диалог
+            return show_archive_accounts_dialog(
+                parent=parent_window,
+                accounts_info=accounts_info,
+                current_category=category
+            )
+        except Exception as e:
+            logger.error(f"❌ Ошибка показа диалога архивации: {e}")
+            return None
+
+    def _perform_archive(self, account_names: List[str], category: str, archive_settings: Dict):
+        """Выполняет архивацию аккаунтов"""
+        try:
+            from src.accounts.manager import _account_manager
+
+            archive_name = archive_settings['name']
+            archive_format = archive_settings['format']
+
+            logger.info(f"📦 Начинаем архивацию {len(account_names)} аккаунтов")
+            logger.info(f"   Имя архива: {archive_name}")
+            logger.info(f"   Формат: {archive_format}")
+
+            # Показываем прогресс
+            show_info(
+                "Архивация начата",
+                f"Архивируем {len(account_names)} аккаунт(ов)...\nЭто может занять некоторое время"
+            )
+
+            # Выполняем архивацию
+            results = _account_manager.archive_accounts(
+                account_names, category, archive_name, archive_format
+            )
+
+            # Показываем результат
+            self._show_archive_results(results, archive_settings)
+
+        except Exception as e:
+            logger.error(f"❌ Критическая ошибка при архивации: {e}")
+            show_error(
+                "Критическая ошибка",
+                f"❌ Критическая ошибка при архивации: {e}"
+            )
+
+    def _show_archive_results(self, results: Dict, archive_settings: Dict):
+        """Показывает результаты архивации"""
+        if results['success']:
+            # Успешная архивация
+            archive_size = results.get('archive_size', '? KB')
+            archived_count = results.get('archived_count', 0)
+
+            show_success(
+                "Архивация завершена",
+                f"✅ Архив создан успешно!\n"
+                f"Файл: {archive_settings['name']}.{archive_settings['format']}\n"
+                f"Размер: {archive_size}\n"
+                f"Аккаунтов: {archived_count}"
+            )
+        else:
+            # Ошибка архивации
+            show_error(
+                "Ошибка архивации",
+                f"❌ {results['message']}"
+            )

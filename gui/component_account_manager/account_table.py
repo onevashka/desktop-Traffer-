@@ -1,4 +1,5 @@
-# gui/component_account_manager/account_table.py - С ПАГИНАЦИЕЙ
+# gui/component_account_manager/account_table.py - ПОЛНОСТЬЮ РАБОЧАЯ ВЕРСИЯ
+
 """
 Компонент таблицы аккаунтов с полноценной пагинацией
 """
@@ -9,10 +10,34 @@ from PySide6.QtWidgets import (
     QComboBox, QSpacerItem, QSizePolicy
 )
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, Signal
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QCursor
 from loguru import logger
 
 from gui.handlers import TableActionHandler
+
+CHECKBOX_STYLE_ELEGANT = """
+        QPushButton#RowCheckbox {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: transparent;
+        }
+        QPushButton#RowCheckbox:checked {
+            background: rgba(59, 130, 246, 0.9);
+            border: 1px solid #3B82F6;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+        }
+        QPushButton#RowCheckbox:checked::after {
+            content: "✓";
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        QPushButton#RowCheckbox:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+    """
 
 
 class AccountTableWidget(QWidget):
@@ -65,45 +90,7 @@ class AccountTableWidget(QWidget):
         effect.setOpacity(0.0)
         self.setGraphicsEffect(effect)
 
-        QTimer.singleShot(500, self._force_load_data)
-
-    def _force_load_data(self):
-        """Принудительная загрузка данных с отладкой"""
-        print("🔄 ПРИНУДИТЕЛЬНАЯ ЗАГРУЗКА ДАННЫХ")
-        print(f"📊 Категория: {self.category}")
-        print(f"📂 Статус: {self.current_status}")
-        print(f"📋 Данных в config: {len(self.config.get('demo_data', []))}")
-
-        # Получаем данные заново
-        try:
-            from src.accounts.manager import get_table_data
-            fresh_data = get_table_data(self.category, self.current_status, limit=-1)
-            print(f"📊 Свежие данные: {len(fresh_data)} строк")
-
-            if fresh_data:
-                print(f"📄 Первая строка: {fresh_data[0]}")
-
-                # Обновляем внутренние данные
-                self.all_data = fresh_data
-                self.total_items = len(fresh_data)
-                self.config['demo_data'] = fresh_data
-
-                # Пересчитываем пагинацию
-                self._calculate_pagination()
-
-                # Принудительно обновляем таблицу
-                self._update_table_for_current_page()
-
-                print(f"✅ Данные принудительно загружены: {len(fresh_data)} строк")
-            else:
-                print("❌ Нет свежих данных")
-
-        except Exception as e:
-            print(f"❌ Ошибка принудительной загрузки: {e}")
-            import traceback
-            traceback.print_exc()
-
-    # ТАКЖЕ ИСПРАВЬТЕ метод _fill_table_with_data (замените полностью):
+        logger.info(f"📊 AccountTableWidget создан для {self.category}/{self.current_status}")
 
     def _create_actions_bar(self, layout):
         """Создает панель действий"""
@@ -129,14 +116,78 @@ class AccountTableWidget(QWidget):
         self.delete_btn = QPushButton("🗑️ Удалить")
         self.delete_btn.setObjectName("ActionButton")
         self.delete_btn.setFixedSize(100, 36)
+        self.delete_btn.setStyleSheet("""
+            QPushButton#ActionButton {
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 13px;
+                font-weight: 500;
+            }
+            QPushButton#ActionButton:hover {
+                background: rgba(255, 255, 255, 0.12);
+                border: 1px solid rgba(59, 130, 246, 0.5);
+                color: #FFFFFF;
+            }
+        """)
 
         self.update_btn = QPushButton("🔄 Обновить")
         self.update_btn.setObjectName("ActionButton")
         self.update_btn.setFixedSize(110, 36)
+        self.update_btn.setStyleSheet("""
+            QPushButton#ActionButton {
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 13px;
+                font-weight: 500;
+            }
+            QPushButton#ActionButton:hover {
+                background: rgba(255, 255, 255, 0.12);
+                border: 1px solid rgba(59, 130, 246, 0.5);
+                color: #FFFFFF;
+            }
+        """)
 
         self.move_btn = QPushButton("📦 Переместить")
         self.move_btn.setObjectName("ActionButton")
         self.move_btn.setFixedSize(130, 36)
+        self.move_btn.setStyleSheet("""
+            QPushButton#ActionButton {
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 13px;
+                font-weight: 500;
+            }
+            QPushButton#ActionButton:hover {
+                background: rgba(255, 255, 255, 0.12);
+                border: 1px solid rgba(59, 130, 246, 0.5);
+                color: #FFFFFF;
+            }
+        """)
+
+        self.archive_btn = QPushButton("📦 Архивировать")
+        self.archive_btn.setObjectName("ActionButton")
+        self.archive_btn.setFixedSize(140, 36)
+        self.archive_btn.setStyleSheet("""
+                    QPushButton#ActionButton {
+                        background: rgba(255, 255, 255, 0.06);
+                        border: 1px solid rgba(255, 255, 255, 0.15);
+                        border-radius: 6px;
+                        color: rgba(255, 255, 255, 0.9);
+                        font-size: 13px;
+                        font-weight: 500;
+                    }
+                    QPushButton#ActionButton:hover {
+                        background: rgba(255, 255, 255, 0.12);
+                        border: 1px solid rgba(59, 130, 246, 0.5);
+                        color: #FFFFFF;
+                    }
+                """)
 
         # Селектор количества элементов на странице
         per_page_label = QLabel("Показать:")
@@ -154,7 +205,6 @@ class AccountTableWidget(QWidget):
         self.per_page_combo.addItems(["10", "25", "50", "100", "Все"])
         self.per_page_combo.setCurrentText("10")
         self.per_page_combo.setFixedSize(80, 36)
-        self.per_page_combo.currentTextChanged.connect(self._on_per_page_changed)
         self.per_page_combo.setStyleSheet("""
             QComboBox#PerPageCombo {
                 background: rgba(255, 255, 255, 0.05);
@@ -181,17 +231,32 @@ class AccountTableWidget(QWidget):
                 padding: 4px;
             }
         """)
+        self.per_page_combo.currentTextChanged.connect(self._on_per_page_changed)
 
         # Кнопка добавления
         self.add_btn = QPushButton(self.config.get('add_button_text', '+ Добавить'))
         self.add_btn.setObjectName("AddButton")
         self.add_btn.setFixedSize(160, 36)
+        self.add_btn.setStyleSheet("""
+            QPushButton#AddButton {
+                background: #3B82F6;
+                border: none;
+                border-radius: 6px;
+                color: #FFFFFF;
+                font-size: 14px;
+                font-weight: 500;
+            }
+            QPushButton#AddButton:hover {
+                background: #2563EB;
+            }
+        """)
 
         # Размещение элементов
         actions_layout.addWidget(self.section_title)
         actions_layout.addWidget(self.delete_btn)
         actions_layout.addWidget(self.update_btn)
         actions_layout.addWidget(self.move_btn)
+        actions_layout.addWidget(self.archive_btn)
         actions_layout.addStretch()
         actions_layout.addWidget(per_page_label)
         actions_layout.addWidget(self.per_page_combo)
@@ -204,6 +269,7 @@ class AccountTableWidget(QWidget):
         self.delete_btn.clicked.connect(self.action_handler.handle_delete_action)
         self.update_btn.clicked.connect(self.action_handler.handle_refresh_action)
         self.move_btn.clicked.connect(self.action_handler.handle_move_action)
+        self.archive_btn.clicked.connect(self.action_handler.handle_archive_action)
 
     def _create_table(self, layout):
         """Создает таблицу"""
@@ -215,16 +281,26 @@ class AccountTableWidget(QWidget):
         # Создаем таблицу
         self.table = QTableWidget()
         self.table.setObjectName("ModernTable")
-        self.table.setHorizontalHeaderLabels([
+
+        # ВАЖНО: Устанавливаем заголовки СРАЗУ после создания таблицы
+        headers = [
             "",  # Чекбоксы
             "Название аккаунта",
             "🌍 Гео",
-            "📅 Дней создан",
+            "📅 Дней\nсоздан",  # Перенос строки для длинного заголовка
             "📊 Статус",
             "👤 Имя",
             "📱 Телефон",
             "💎 Премиум"
-        ])
+        ]
+
+        # Устанавливаем количество колонок
+        self.table.setColumnCount(len(headers))
+
+        # Устанавливаем заголовки
+        self.table.setHorizontalHeaderLabels(headers)
+
+        logger.info(f"📊 Создана таблица с {len(headers)} колонками")
 
         # Настройки таблицы
         self.table.verticalHeader().setVisible(False)
@@ -245,10 +321,13 @@ class AccountTableWidget(QWidget):
         header.setSectionResizeMode(7, QHeaderView.Fixed)  # Премиум
 
         self.table.setColumnWidth(0, 50)  # Чекбоксы
-        self.table.setColumnWidth(2, 80)  # Гео
-        self.table.setColumnWidth(3, 100)  # Дней создан
-        self.table.setColumnWidth(6, 120)  # Телефон
-        self.table.setColumnWidth(7, 80)  # Премиум
+        self.table.setColumnWidth(1, 120)  # Название аккаунта - ДОБАВЬТЕ ЭТУ СТРОКУ
+        self.table.setColumnWidth(2, 90)  # Гео
+        self.table.setColumnWidth(3, 200)  # Дней создан
+        self.table.setColumnWidth(4, 100)  # Статус - ДОБАВЬТЕ ЭТУ СТРОКУ
+        self.table.setColumnWidth(5, 120)  # Имя - ДОБАВЬТЕ ЭТУ СТРОКУ
+        self.table.setColumnWidth(6, 200)  # Телефон
+        self.table.setColumnWidth(7, 160)  # Премиум
 
         # Создаем главный чекбокс
         self._create_master_checkbox()
@@ -276,45 +355,6 @@ class AccountTableWidget(QWidget):
         """)
 
         # Кнопки навигации
-        self.first_btn = QPushButton("⏮️")
-        self.first_btn.setObjectName("PaginationNavButton")
-        self.first_btn.setFixedSize(36, 36)
-        self.first_btn.setToolTip("Первая страница")
-        self.first_btn.clicked.connect(self._go_to_first_page)
-
-        self.prev_btn = QPushButton("◀️")
-        self.prev_btn.setObjectName("PaginationNavButton")
-        self.prev_btn.setFixedSize(36, 36)
-        self.prev_btn.setToolTip("Предыдущая страница")
-        self.prev_btn.clicked.connect(self._go_to_prev_page)
-
-        # Информация о текущей странице
-        self.page_label = QLabel()
-        self.page_label.setObjectName("PageLabel")
-        self.page_label.setStyleSheet("""
-            QLabel#PageLabel {
-                color: rgba(255, 255, 255, 0.9);
-                font-size: 14px;
-                font-weight: 500;
-                padding: 0 12px;
-                min-width: 80px;
-            }
-        """)
-        self.page_label.setAlignment(Qt.AlignCenter)
-
-        self.next_btn = QPushButton("▶️")
-        self.next_btn.setObjectName("PaginationNavButton")
-        self.next_btn.setFixedSize(36, 36)
-        self.next_btn.setToolTip("Следующая страница")
-        self.next_btn.clicked.connect(self._go_to_next_page)
-
-        self.last_btn = QPushButton("⏭️")
-        self.last_btn.setObjectName("PaginationNavButton")
-        self.last_btn.setFixedSize(36, 36)
-        self.last_btn.setToolTip("Последняя страница")
-        self.last_btn.clicked.connect(self._go_to_last_page)
-
-        # Стили для кнопок навигации
         nav_button_style = """
             QPushButton#PaginationNavButton {
                 background: rgba(255, 255, 255, 0.05);
@@ -339,8 +379,47 @@ class AccountTableWidget(QWidget):
             }
         """
 
-        for btn in [self.first_btn, self.prev_btn, self.next_btn, self.last_btn]:
-            btn.setStyleSheet(nav_button_style)
+        self.first_btn = QPushButton("⏮️")
+        self.first_btn.setObjectName("PaginationNavButton")
+        self.first_btn.setFixedSize(36, 36)
+        self.first_btn.setToolTip("Первая страница")
+        self.first_btn.setStyleSheet(nav_button_style)
+        self.first_btn.clicked.connect(self._go_to_first_page)
+
+        self.prev_btn = QPushButton("◀️")
+        self.prev_btn.setObjectName("PaginationNavButton")
+        self.prev_btn.setFixedSize(36, 36)
+        self.prev_btn.setToolTip("Предыдущая страница")
+        self.prev_btn.setStyleSheet(nav_button_style)
+        self.prev_btn.clicked.connect(self._go_to_prev_page)
+
+        # Информация о текущей странице
+        self.page_label = QLabel()
+        self.page_label.setObjectName("PageLabel")
+        self.page_label.setStyleSheet("""
+            QLabel#PageLabel {
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 14px;
+                font-weight: 500;
+                padding: 0 12px;
+                min-width: 80px;
+            }
+        """)
+        self.page_label.setAlignment(Qt.AlignCenter)
+
+        self.next_btn = QPushButton("▶️")
+        self.next_btn.setObjectName("PaginationNavButton")
+        self.next_btn.setFixedSize(36, 36)
+        self.next_btn.setToolTip("Следующая страница")
+        self.next_btn.setStyleSheet(nav_button_style)
+        self.next_btn.clicked.connect(self._go_to_next_page)
+
+        self.last_btn = QPushButton("⏭️")
+        self.last_btn.setObjectName("PaginationNavButton")
+        self.last_btn.setFixedSize(36, 36)
+        self.last_btn.setToolTip("Последняя страница")
+        self.last_btn.setStyleSheet(nav_button_style)
+        self.last_btn.clicked.connect(self._go_to_last_page)
 
         # Размещение элементов
         pag_layout.addWidget(self.info_label)
@@ -354,7 +433,7 @@ class AccountTableWidget(QWidget):
         layout.addWidget(pagination_container)
 
     def _create_master_checkbox(self):
-        """Создает главный чекбокс в заголовке"""
+        """Создает главный стильный чекбокс с галочкой в заголовке"""
         header_widget = QWidget()
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(0, 0, 0, 0)
@@ -362,22 +441,41 @@ class AccountTableWidget(QWidget):
         self.master_checkbox = QPushButton()
         self.master_checkbox.setObjectName("MasterCheckbox")
         self.master_checkbox.setCheckable(True)
-        self.master_checkbox.setFixedSize(24, 24)
+        self.master_checkbox.setFixedSize(20, 20)
+
+        # Тот же стиль что и у обычных чекбоксов
         self.master_checkbox.setStyleSheet("""
             QPushButton#MasterCheckbox {
-                background: rgba(255, 255, 255, 0.1);
-                border: 2px solid rgba(255, 255, 255, 0.4);
-                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.12);
+                border-radius: 5px;
+                color: white;
+                font-size: 12px;
+                font-weight: bold;
             }
             QPushButton#MasterCheckbox:checked {
                 background: #3B82F6;
-                border: 2px solid #3B82F6;
+                border: 1px solid #2563EB;
             }
             QPushButton#MasterCheckbox:hover {
-                border: 2px solid #3B82F6;
-                background: rgba(59, 130, 246, 0.3);
+                background: rgba(59, 130, 246, 0.12);
+                border: 1px solid rgba(59, 130, 246, 0.25);
             }
         """)
+
+        # Функция для обновления текста главного чекбокса
+        def update_master_checkbox_text():
+            if self.master_checkbox.isChecked():
+                self.master_checkbox.setText("✓")
+            else:
+                self.master_checkbox.setText("")
+
+        # Подключаем обновление текста к изменению состояния
+        self.master_checkbox.toggled.connect(update_master_checkbox_text)
+
+        # Изначально устанавливаем пустой текст
+        self.master_checkbox.setText("")
+
         self.master_checkbox.clicked.connect(self._toggle_all_checkboxes)
 
         header_layout.addStretch()
@@ -401,25 +499,15 @@ class AccountTableWidget(QWidget):
         widget.show()
 
     def _load_initial_data(self):
-        """Загружает начальные данные - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
-        print("🔄 _load_initial_data вызван")
-
+        """Загружает начальные данные"""
         demo_data = self.config.get('demo_data', [])
-        print(f"📊 Данные из config: {len(demo_data)} строк")
-
-        if demo_data:
-            print(f"📄 Первая строка: {demo_data[0]}")
-
         self.all_data = demo_data
         self.total_items = len(demo_data)
 
         self._calculate_pagination()
-        print(f"📄 Пагинация: страница {self.current_page}/{self.total_pages}")
-
-        # Принудительно обновляем таблицу
         self._update_table_for_current_page()
 
-        print(f"✅ Начальные данные загружены: {self.total_items} записей")
+        logger.info(f"✅ Начальные данные загружены: {self.total_items} записей")
 
     def _calculate_pagination(self):
         """Рассчитывает параметры пагинации"""
@@ -472,67 +560,48 @@ class AccountTableWidget(QWidget):
         return self.all_data[start_idx:end_idx]
 
     def _update_table_for_current_page(self):
-        """Обновляет таблицу для текущей страницы - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
-        print(f"🔄 _update_table_for_current_page: страница {self.current_page}")
-
+        """Обновляет таблицу для текущей страницы"""
         page_data = self._get_current_page_data()
-        print(f"📊 Данные для страницы: {len(page_data)} строк")
-
-        if page_data:
-            print(f"📄 Первая строка страницы: {page_data[0]}")
-
         self._fill_table_with_data(page_data)
 
-        print(f"✅ Таблица обновлена для страницы {self.current_page}")
-
     def _fill_table_with_data(self, data):
-        """Заполняет таблицу данными - ПРОСТОЕ ИСПРАВЛЕНИЕ"""
-        from PySide6.QtWidgets import QTableWidgetItem, QApplication
-        from PySide6.QtCore import Qt
-        from PySide6.QtGui import QColor
-
-        print(f"🔄 Заполняем таблицу: {len(data)} строк")
-
+        """Заполняет таблицу данными"""
         # Очищаем таблицу
         self.table.clearContents()
         self.table.setRowCount(len(data))
 
         if len(data) == 0:
-            print("❌ Нет данных")
+            logger.info("Нет данных для отображения")
             return
 
-        # Простое заполнение без чекбоксов
+        # Заполняем таблицу данными
         for row_idx, row_data in enumerate(data):
-            print(f"📄 Строка {row_idx}: {row_data[0]}")  # Показываем имя аккаунта
+            # Создаем чекбокс для первой колонки
+            self._create_row_checkbox(row_idx)
 
+            # Заполняем остальные колонки (начиная с 1)
             for col_idx, cell_value in enumerate(row_data):
-                if col_idx >= 7:  # Максимум 7 колонок
+                if col_idx >= 7:  # Максимум 7 колонок данных
                     break
 
                 # Создаем элемент таблицы
                 item = QTableWidgetItem(str(cell_value))
                 item.setTextAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
-                # Простая раскраска
-                if col_idx == 3 and "Регистрация" in str(cell_value):
-                    item.setForeground(QColor("#3B82F6"))  # Синий для статуса
-                else:
-                    item.setForeground(QColor("#FFFFFF"))  # Белый для остального
+                # Применяем стили
+                self._apply_cell_styling(item, col_idx + 1, cell_value)
 
-                # Ставим в таблицу (col_idx + 1 потому что первая колонка для чекбоксов)
+                # Размещаем в таблице (col_idx + 1 для пропуска колонки чекбоксов)
                 self.table.setItem(row_idx, col_idx + 1, item)
 
-        # ПРИНУДИТЕЛЬНО ПОКАЗЫВАЕМ
-        self.table.show()
-        self.table.setVisible(True)
-        self.table.update()
-        self.table.repaint()
+        # Обновляем отображение
+        self.table.viewport().update()
         QApplication.processEvents()
 
-        print(f"✅ Таблица заполнена и показана: {len(data)} строк")
+        logger.info(f"✅ Таблица заполнена: {len(data)} строк")
 
     def _create_row_checkbox(self, row):
-        """Создает чекбокс для строки"""
+        """Создает стильный чекбокс с галочкой для строки"""
         checkbox_container = QWidget()
         checkbox_layout = QHBoxLayout(checkbox_container)
         checkbox_layout.setContentsMargins(0, 0, 0, 0)
@@ -540,22 +609,42 @@ class AccountTableWidget(QWidget):
         checkbox = QPushButton()
         checkbox.setObjectName("RowCheckbox")
         checkbox.setCheckable(True)
-        checkbox.setFixedSize(24, 24)
+        checkbox.setFixedSize(20, 20)
+        checkbox.setCursor(QCursor(Qt.PointingHandCursor))
+
+        # Устанавливаем стиль и изначально пустой текст
         checkbox.setStyleSheet("""
             QPushButton#RowCheckbox {
-                background: rgba(255, 255, 255, 0.1);
-                border: 2px solid rgba(255, 255, 255, 0.4);
-                border-radius: 6px;
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.12);
+                border-radius: 5px;
+                color: white;
+                font-size: 12px;
+                font-weight: bold;
             }
             QPushButton#RowCheckbox:checked {
                 background: #3B82F6;
-                border: 2px solid #3B82F6;
+                border: 1px solid #2563EB;
             }
             QPushButton#RowCheckbox:hover {
-                border: 2px solid #3B82F6;
-                background: rgba(59, 130, 246, 0.3);
+                background: rgba(59, 130, 246, 0.12);
+                border: 1px solid rgba(59, 130, 246, 0.25);
             }
         """)
+
+        # Функция для обновления текста чекбокса
+        def update_checkbox_text():
+            if checkbox.isChecked():
+                checkbox.setText("✓")
+            else:
+                checkbox.setText("")
+
+        # Подключаем обновление текста к изменению состояния
+        checkbox.toggled.connect(update_checkbox_text)
+
+        # Изначально устанавливаем пустой текст
+        checkbox.setText("")
+
         checkbox.clicked.connect(lambda checked, r=row: self._handle_checkbox_click(r, checked))
 
         checkbox_layout.addStretch()
@@ -577,6 +666,8 @@ class AccountTableWidget(QWidget):
                 item.setForeground(QColor("#F59E0B"))
             elif "Неверный" in status_text:
                 item.setForeground(QColor("#6B7280"))
+            elif "Регистрация" in status_text:
+                item.setForeground(QColor("#3B82F6"))
             else:
                 item.setForeground(QColor("#8B5CF6"))
 
@@ -584,16 +675,14 @@ class AccountTableWidget(QWidget):
         elif col == 7:
             if value == "✅":
                 item.setForeground(QColor("#10B981"))
-                font = item.font()
-                font.setBold(True)
-                font.setPointSize(16)
-                item.setFont(font)
             elif value == "❌":
                 item.setForeground(QColor("#EF4444"))
-                font = item.font()
-                font.setBold(True)
-                font.setPointSize(16)
-                item.setFont(font)
+            else:
+                item.setForeground(QColor("#FFFFFF"))
+
+        # Стандартный стиль для остальных колонок
+        else:
+            item.setForeground(QColor("#FFFFFF"))
 
     # Обработчики событий пагинации
     def _on_per_page_changed(self, value):
@@ -606,8 +695,6 @@ class AccountTableWidget(QWidget):
         self.current_page = 1
         self._calculate_pagination()
         self._update_table_for_current_page()
-
-        logger.info(f"📄 Изменено количество на странице: {value}")
 
     def _go_to_first_page(self):
         """Переход на первую страницу"""
@@ -637,33 +724,28 @@ class AccountTableWidget(QWidget):
 
     # Вспомогательные методы
     def _toggle_all_checkboxes(self):
-        """Переключает все чекбоксы на текущей странице"""
+        """Переключает все чекбоксы на текущей странице - ОБНОВЛЕННАЯ ВЕРСИЯ"""
         master_checked = self.master_checkbox.isChecked()
+
         for row in range(self.table.rowCount()):
             checkbox_container = self.table.cellWidget(row, 0)
             if checkbox_container:
                 checkbox = checkbox_container.findChild(QPushButton)
                 if checkbox:
                     checkbox.setChecked(master_checked)
+                    # Обновляем текст галочки
+                    if master_checked:
+                        checkbox.setText("✓")
+                    else:
+                        checkbox.setText("")
 
     def _handle_checkbox_click(self, row, checked):
         """Обработка клика по чекбоксу"""
-        modifiers = QApplication.keyboardModifiers()
-        if modifiers == Qt.ShiftModifier and hasattr(self, 'last_clicked_row') and self.last_clicked_row is not None:
-            start_row = min(self.last_clicked_row, row)
-            end_row = max(self.last_clicked_row, row)
-            for r in range(start_row, end_row + 1):
-                checkbox_container = self.table.cellWidget(r, 0)
-                if checkbox_container:
-                    checkbox = checkbox_container.findChild(QPushButton)
-                    if checkbox:
-                        checkbox.setChecked(True)
-        else:
-            self.last_clicked_row = row
+        self.last_clicked_row = row
         self._update_master_checkbox()
 
     def _update_master_checkbox(self):
-        """Обновляет состояние главного чекбокса"""
+        """Обновляет состояние главного чекбокса - ОБНОВЛЕННАЯ ВЕРСИЯ"""
         total_rows = self.table.rowCount()
         if total_rows == 0:
             return
@@ -676,10 +758,17 @@ class AccountTableWidget(QWidget):
                 if checkbox and checkbox.isChecked():
                     checked_rows += 1
 
+        # Обновляем состояние и текст главного чекбокса
         if checked_rows == total_rows:
             self.master_checkbox.setChecked(True)
+            self.master_checkbox.setText("✓")
         elif checked_rows == 0:
             self.master_checkbox.setChecked(False)
+            self.master_checkbox.setText("")
+        else:
+            # Частичное выделение - можно показать минус или оставить пустым
+            self.master_checkbox.setChecked(False)
+            self.master_checkbox.setText("−")  # Показываем минус для частичного выделения
 
     def _update_section_title(self):
         """Обновляет заголовок секции"""
@@ -744,14 +833,13 @@ class AccountTableWidget(QWidget):
             self._calculate_pagination()
             self._update_table_for_current_page()
 
-            logger.info(
-                f"📊 Обновлены данные: {self.total_items} записей, страница {self.current_page}/{self.total_pages}")
+            logger.info(f"📊 Обновлены данные: {self.total_items} записей")
 
         except Exception as e:
             logger.error(f"❌ Ошибка refresh_data: {e}")
 
     def update_table_data(self, new_data):
-        """Обновляет данные в таблице (для совместимости с обработчиками)"""
+        """Обновляет данные в таблице"""
         self.all_data = new_data
         self.total_items = len(new_data)
         self.config['demo_data'] = new_data
