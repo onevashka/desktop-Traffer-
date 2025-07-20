@@ -623,7 +623,7 @@ def get_account_info_for_archiving(account_names: List[str], category: str) -> L
     return []
 
 def archive_accounts(account_names: List[str], category: str,
-                     archive_name: str, archive_format: str) -> Dict[str, any]:
+                    archive_name: str, archive_format: str) -> Dict[str, any]:
     """Функция для GUI - архивирует аккаунты"""
     global _account_manager
     if _account_manager:

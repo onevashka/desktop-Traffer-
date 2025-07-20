@@ -276,13 +276,13 @@ class ArchiveAccountsDialog(QDialog):
         return layout
 
     def _check_winrar_available(self) -> bool:
-        """Проверяет доступность WinRAR"""
-        winrar_paths = [
-            r"C:\Program Files\WinRAR\WinRAR.exe",
-            r"C:\Program Files (x86)\WinRAR\WinRAR.exe"
-        ]
-
-        return any(Path(path).exists() for path in winrar_paths)
+        """Проверяет доступность WinRAR через менеджер аккаунтов"""
+        try:
+            from src.accounts.manager import check_winrar_available
+            return check_winrar_available()
+        except Exception as e:
+            logger.error(f"Ошибка проверки WinRAR: {e}")
+            return False
 
     def _create_accounts_list(self) -> QWidget:
         """Создает список аккаунтов"""
@@ -525,7 +525,7 @@ class ArchiveAccountsDialog(QDialog):
             }
 
             /* Остальные стили аналогично другим диалогам... */
-
+            
             /* Кнопка отмены */
             QPushButton#CancelButton {
                 background: rgba(255, 255, 255, 0.06);

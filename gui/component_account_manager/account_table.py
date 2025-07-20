@@ -1,4 +1,53 @@
-# gui/component_account_manager/account_table.py - ПОЛНОСТЬЮ РАБОЧАЯ ВЕРСИЯ
+def get_pagination_info(self):
+    """Возвращает информацию о пагинации"""
+    return {
+        'current_page': self.current_page,
+        'total_pages': self.total_pages,
+        'per_page': self.per_page,
+        'total_items': self.total_items
+    }
+
+
+def _on_add_accounts_click(self):
+    """Обработчик нажатия кнопки добавления аккаунтов - автоматически определяет папку"""
+    try:
+        from src.utils.folder_utils import open_add_accounts_folder
+        from gui.notifications import show_success, show_error
+
+        logger.info(f"📂 Открываем папку для добавления аккаунтов ({self.category})")
+
+        # Система автоматически определяет нужную папку по категории
+        success = open_add_accounts_folder(self.category, self.current_status)
+
+        if success:
+            # Определяем название папки для уведомления
+            if self.category == "traffic":
+                folder_name = "Для работы"
+            elif self.category == "sales":
+                folder_name = "Регистрация"
+            else:
+                folder_name = "аккаунтов"
+
+            show_success(
+                "Папка открыта",
+                f"📁 Открыта папка '{folder_name}'\n"
+                f"Добавьте файлы аккаунтов (.session + .json)\n"
+                f"Затем нажмите '🔄 Обновить' для загрузки"
+            )
+        else:
+            show_error(
+                "Ошибка открытия папки",
+                f"❌ Не удалось открыть папку для добавления аккаунтов\n"
+                f"Проверьте настройки системы"
+            )
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка открытия папки добавления: {e}")
+        show_error(
+            "Ошибка",
+            f"❌ Ошибка при открытии папки: {e}"
+        )  # gui/component_account_manager/account_table.py - ПОЛНОСТЬЮ РАБОЧАЯ ВЕРСИЯ
+
 
 """
 Компонент таблицы аккаунтов с полноценной пагинацией
@@ -14,30 +63,6 @@ from PySide6.QtGui import QColor, QCursor
 from loguru import logger
 
 from gui.handlers import TableActionHandler
-
-CHECKBOX_STYLE_ELEGANT = """
-        QPushButton#RowCheckbox {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            color: transparent;
-        }
-        QPushButton#RowCheckbox:checked {
-            background: rgba(59, 130, 246, 0.9);
-            border: 1px solid #3B82F6;
-            box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
-        }
-        QPushButton#RowCheckbox:checked::after {
-            content: "✓";
-            color: white;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        QPushButton#RowCheckbox:hover {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-        }
-    """
 
 
 class AccountTableWidget(QWidget):
@@ -170,25 +195,6 @@ class AccountTableWidget(QWidget):
             }
         """)
 
-        self.archive_btn = QPushButton("📦 Архивировать")
-        self.archive_btn.setObjectName("ActionButton")
-        self.archive_btn.setFixedSize(140, 36)
-        self.archive_btn.setStyleSheet("""
-                    QPushButton#ActionButton {
-                        background: rgba(255, 255, 255, 0.06);
-                        border: 1px solid rgba(255, 255, 255, 0.15);
-                        border-radius: 6px;
-                        color: rgba(255, 255, 255, 0.9);
-                        font-size: 13px;
-                        font-weight: 500;
-                    }
-                    QPushButton#ActionButton:hover {
-                        background: rgba(255, 255, 255, 0.12);
-                        border: 1px solid rgba(59, 130, 246, 0.5);
-                        color: #FFFFFF;
-                    }
-                """)
-
         # Селектор количества элементов на странице
         per_page_label = QLabel("Показать:")
         per_page_label.setObjectName("PerPageLabel")
@@ -233,30 +239,51 @@ class AccountTableWidget(QWidget):
         """)
         self.per_page_combo.currentTextChanged.connect(self._on_per_page_changed)
 
-        # Кнопка добавления
-        self.add_btn = QPushButton(self.config.get('add_button_text', '+ Добавить'))
+        # Кнопка добавления - В СТИЛЕ ПРИЛОЖЕНИЯ (ИСПРАВЛЕННАЯ)
+        self.add_btn = QPushButton("+ Добавить аккаунты")
         self.add_btn.setObjectName("AddButton")
         self.add_btn.setFixedSize(160, 36)
+
+        # Устанавливаем подсказку в зависимости от категории
+        if self.category == "traffic":
+            tooltip = "Открыть папку 'Для работы' для добавления аккаунтов трафика"
+        elif self.category == "sales":
+            tooltip = "Открыть папку 'Регистрация' для добавления аккаунтов продаж"
+        else:
+            tooltip = "Открыть папку для добавления аккаунтов"
+
+        self.add_btn.setToolTip(tooltip)
+
+        # Стиль в духе приложения (простой и чистый)
         self.add_btn.setStyleSheet("""
             QPushButton#AddButton {
                 background: #3B82F6;
-                border: none;
+                border: 1px solid #2563EB;
                 border-radius: 6px;
                 color: #FFFFFF;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 500;
+                padding: 8px 12px;
             }
             QPushButton#AddButton:hover {
                 background: #2563EB;
+                border: 1px solid #1D4ED8;
+                color: #FFFFFF;
+            }
+            QPushButton#AddButton:pressed {
+                background: #1D4ED8;
+                border: 1px solid #1E3A8A;
             }
         """)
+
+        # Подключаем обработчик открытия папки
+        self.add_btn.clicked.connect(self._on_add_accounts_click)
 
         # Размещение элементов
         actions_layout.addWidget(self.section_title)
         actions_layout.addWidget(self.delete_btn)
         actions_layout.addWidget(self.update_btn)
         actions_layout.addWidget(self.move_btn)
-        actions_layout.addWidget(self.archive_btn)
         actions_layout.addStretch()
         actions_layout.addWidget(per_page_label)
         actions_layout.addWidget(self.per_page_combo)
@@ -269,7 +296,6 @@ class AccountTableWidget(QWidget):
         self.delete_btn.clicked.connect(self.action_handler.handle_delete_action)
         self.update_btn.clicked.connect(self.action_handler.handle_refresh_action)
         self.move_btn.clicked.connect(self.action_handler.handle_move_action)
-        self.archive_btn.clicked.connect(self.action_handler.handle_archive_action)
 
     def _create_table(self, layout):
         """Создает таблицу"""
@@ -321,13 +347,10 @@ class AccountTableWidget(QWidget):
         header.setSectionResizeMode(7, QHeaderView.Fixed)  # Премиум
 
         self.table.setColumnWidth(0, 50)  # Чекбоксы
-        self.table.setColumnWidth(1, 120)  # Название аккаунта - ДОБАВЬТЕ ЭТУ СТРОКУ
-        self.table.setColumnWidth(2, 90)  # Гео
-        self.table.setColumnWidth(3, 200)  # Дней создан
-        self.table.setColumnWidth(4, 100)  # Статус - ДОБАВЬТЕ ЭТУ СТРОКУ
-        self.table.setColumnWidth(5, 120)  # Имя - ДОБАВЬТЕ ЭТУ СТРОКУ
-        self.table.setColumnWidth(6, 200)  # Телефон
-        self.table.setColumnWidth(7, 160)  # Премиум
+        self.table.setColumnWidth(2, 90)  # Гео (увеличили)
+        self.table.setColumnWidth(3, 120)  # Дней создан (увеличили)
+        self.table.setColumnWidth(6, 140)  # Телефон (увеличили)
+        self.table.setColumnWidth(7, 100)  # Премиум (увеличили)
 
         # Создаем главный чекбокс
         self._create_master_checkbox()
@@ -433,7 +456,7 @@ class AccountTableWidget(QWidget):
         layout.addWidget(pagination_container)
 
     def _create_master_checkbox(self):
-        """Создает главный стильный чекбокс с галочкой в заголовке"""
+        """Создает главный чекбокс в заголовке"""
         header_widget = QWidget()
         header_layout = QHBoxLayout(header_widget)
         header_layout.setContentsMargins(0, 0, 0, 0)
@@ -441,41 +464,29 @@ class AccountTableWidget(QWidget):
         self.master_checkbox = QPushButton()
         self.master_checkbox.setObjectName("MasterCheckbox")
         self.master_checkbox.setCheckable(True)
-        self.master_checkbox.setFixedSize(20, 20)
-
-        # Тот же стиль что и у обычных чекбоксов
+        self.master_checkbox.setFixedSize(24, 24)
         self.master_checkbox.setStyleSheet("""
             QPushButton#MasterCheckbox {
-                background: rgba(255, 255, 255, 0.06);
-                border: 1px solid rgba(255, 255, 255, 0.12);
-                border-radius: 5px;
-                color: white;
-                font-size: 12px;
-                font-weight: bold;
+                background: rgba(255, 255, 255, 0.1);
+                border: 2px solid rgba(255, 255, 255, 0.4);
+                border-radius: 6px;
+                color: transparent;
             }
             QPushButton#MasterCheckbox:checked {
                 background: #3B82F6;
-                border: 1px solid #2563EB;
+                border: 2px solid #3B82F6;
+                color: #FFFFFF;
+            }
+            QPushButton#MasterCheckbox:checked::after {
+                content: "✓";
+                font-size: 14px;
+                font-weight: bold;
             }
             QPushButton#MasterCheckbox:hover {
-                background: rgba(59, 130, 246, 0.12);
-                border: 1px solid rgba(59, 130, 246, 0.25);
+                border: 2px solid #3B82F6;
+                background: rgba(59, 130, 246, 0.3);
             }
         """)
-
-        # Функция для обновления текста главного чекбокса
-        def update_master_checkbox_text():
-            if self.master_checkbox.isChecked():
-                self.master_checkbox.setText("✓")
-            else:
-                self.master_checkbox.setText("")
-
-        # Подключаем обновление текста к изменению состояния
-        self.master_checkbox.toggled.connect(update_master_checkbox_text)
-
-        # Изначально устанавливаем пустой текст
-        self.master_checkbox.setText("")
-
         self.master_checkbox.clicked.connect(self._toggle_all_checkboxes)
 
         header_layout.addStretch()
@@ -601,7 +612,7 @@ class AccountTableWidget(QWidget):
         logger.info(f"✅ Таблица заполнена: {len(data)} строк")
 
     def _create_row_checkbox(self, row):
-        """Создает стильный чекбокс с галочкой для строки"""
+        """Создает чекбокс для строки"""
         checkbox_container = QWidget()
         checkbox_layout = QHBoxLayout(checkbox_container)
         checkbox_layout.setContentsMargins(0, 0, 0, 0)
@@ -609,42 +620,30 @@ class AccountTableWidget(QWidget):
         checkbox = QPushButton()
         checkbox.setObjectName("RowCheckbox")
         checkbox.setCheckable(True)
-        checkbox.setFixedSize(20, 20)
+        checkbox.setFixedSize(24, 24)
         checkbox.setCursor(QCursor(Qt.PointingHandCursor))
-
-        # Устанавливаем стиль и изначально пустой текст
         checkbox.setStyleSheet("""
             QPushButton#RowCheckbox {
-                background: rgba(255, 255, 255, 0.06);
-                border: 1px solid rgba(255, 255, 255, 0.12);
-                border-radius: 5px;
-                color: white;
-                font-size: 12px;
-                font-weight: bold;
+                background: rgba(255, 255, 255, 0.1);
+                border: 2px solid rgba(255, 255, 255, 0.4);
+                border-radius: 6px;
+                color: transparent;
             }
             QPushButton#RowCheckbox:checked {
                 background: #3B82F6;
-                border: 1px solid #2563EB;
+                border: 2px solid #3B82F6;
+                color: #FFFFFF;
+            }
+            QPushButton#RowCheckbox:checked::after {
+                content: "✓";
+                font-size: 14px;
+                font-weight: bold;
             }
             QPushButton#RowCheckbox:hover {
-                background: rgba(59, 130, 246, 0.12);
-                border: 1px solid rgba(59, 130, 246, 0.25);
+                border: 2px solid #3B82F6;
+                background: rgba(59, 130, 246, 0.3);
             }
         """)
-
-        # Функция для обновления текста чекбокса
-        def update_checkbox_text():
-            if checkbox.isChecked():
-                checkbox.setText("✓")
-            else:
-                checkbox.setText("")
-
-        # Подключаем обновление текста к изменению состояния
-        checkbox.toggled.connect(update_checkbox_text)
-
-        # Изначально устанавливаем пустой текст
-        checkbox.setText("")
-
         checkbox.clicked.connect(lambda checked, r=row: self._handle_checkbox_click(r, checked))
 
         checkbox_layout.addStretch()
@@ -724,20 +723,14 @@ class AccountTableWidget(QWidget):
 
     # Вспомогательные методы
     def _toggle_all_checkboxes(self):
-        """Переключает все чекбоксы на текущей странице - ОБНОВЛЕННАЯ ВЕРСИЯ"""
+        """Переключает все чекбоксы на текущей странице"""
         master_checked = self.master_checkbox.isChecked()
-
         for row in range(self.table.rowCount()):
             checkbox_container = self.table.cellWidget(row, 0)
             if checkbox_container:
                 checkbox = checkbox_container.findChild(QPushButton)
                 if checkbox:
                     checkbox.setChecked(master_checked)
-                    # Обновляем текст галочки
-                    if master_checked:
-                        checkbox.setText("✓")
-                    else:
-                        checkbox.setText("")
 
     def _handle_checkbox_click(self, row, checked):
         """Обработка клика по чекбоксу"""
@@ -745,7 +738,7 @@ class AccountTableWidget(QWidget):
         self._update_master_checkbox()
 
     def _update_master_checkbox(self):
-        """Обновляет состояние главного чекбокса - ОБНОВЛЕННАЯ ВЕРСИЯ"""
+        """Обновляет состояние главного чекбокса"""
         total_rows = self.table.rowCount()
         if total_rows == 0:
             return
@@ -758,17 +751,10 @@ class AccountTableWidget(QWidget):
                 if checkbox and checkbox.isChecked():
                     checked_rows += 1
 
-        # Обновляем состояние и текст главного чекбокса
         if checked_rows == total_rows:
             self.master_checkbox.setChecked(True)
-            self.master_checkbox.setText("✓")
         elif checked_rows == 0:
             self.master_checkbox.setChecked(False)
-            self.master_checkbox.setText("")
-        else:
-            # Частичное выделение - можно показать минус или оставить пустым
-            self.master_checkbox.setChecked(False)
-            self.master_checkbox.setText("−")  # Показываем минус для частичного выделения
 
     def _update_section_title(self):
         """Обновляет заголовок секции"""
@@ -860,11 +846,45 @@ class AccountTableWidget(QWidget):
             self.opacity_animation.setEasingCurve(QEasingCurve.OutCubic)
             self.opacity_animation.start()
 
-    def get_pagination_info(self):
-        """Возвращает информацию о пагинации"""
-        return {
-            'current_page': self.current_page,
-            'total_pages': self.total_pages,
-            'per_page': self.per_page,
-            'total_items': self.total_items
-        }
+    def _on_add_accounts_click(self):
+        """Обработчик нажатия кнопки добавления аккаунтов"""
+        try:
+            from src.utils.folder_utils import open_add_accounts_folder
+            from gui.notifications import show_success, show_error, show_info
+
+            # Показываем что пытаемся открыть папку
+            if self.category == "traffic":
+                folder_name = "Для работы"
+                category_name = "трафика"
+            elif self.category == "sales":
+                folder_name = "Регистрация"
+                category_name = "продаж"
+            else:
+                folder_name = "аккаунтов"
+                category_name = "общую"
+
+            logger.info(f"📂 Пользователь открывает папку для добавления {category_name}")
+
+            # Открываем папку
+            success = open_add_accounts_folder(self.category, self.current_status)
+
+            if success:
+                show_success(
+                    "Папка открыта",
+                    f"📁 Открыта папка '{folder_name}'\n"
+                    f"Добавьте файлы аккаунтов (.session + .json)\n"
+                    f"Затем нажмите '🔄 Обновить' для загрузки"
+                )
+            else:
+                show_error(
+                    "Ошибка открытия папки",
+                    f"❌ Не удалось открыть папку '{folder_name}'\n"
+                    f"Проверьте настройки системы"
+                )
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка открытия папки добавления: {e}")
+            show_error(
+                "Ошибка",
+                f"❌ Ошибка при открытии папки: {e}"
+            )

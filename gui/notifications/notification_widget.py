@@ -174,75 +174,86 @@ class NotificationWidget(QWidget):
         self.icon_label.setStyleSheet("font-size: 20px;")
 
     def _apply_styles(self):
-        """Применяет стили в зависимости от типа"""
-        # Базовые стили
-        base_style = """
-            QWidget#NotificationContainer {
-                background: rgba(30, 30, 30, 0.95);
-                border: 1px solid rgba(255, 255, 255, 0.1);
+        """Применяет стили в зависимости от типа - УЛУЧШЕННАЯ ЧИТАЕМОСТЬ"""
+        # Базовые стили с улучшенной читаемостью
+        base_style = f"""
+            QWidget#NotificationContainer {{
+                background: rgba(5, 5, 5, 0.98);
+                border: 2px solid rgba(255, 255, 255, 0.3);
                 border-radius: 12px;
-                backdrop-filter: blur(10px);
-            }
+                backdrop-filter: blur(25px);
+            }}
 
-            QLabel#NotificationTitle {
+            QLabel#NotificationTitle {{
                 color: #FFFFFF;
                 font-size: 14px;
-                font-weight: 600;
+                font-weight: 700;
                 margin: 0;
-                padding: 0;
-            }
+                padding: 4px 8px;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 1.0);
+                background: rgba(0, 0, 0, 0.5);
+                border-radius: 4px;
+            }}
 
-            QLabel#NotificationMessage {
-                color: rgba(255, 255, 255, 0.8);
+            QLabel#NotificationMessage {{
+                color: #FFFFFF;
                 font-size: 12px;
-                font-weight: 400;
+                font-weight: 500;
                 margin: 0;
-                padding: 0;
-            }
+                padding: 6px 8px;
+                text-shadow: 0 1px 3px rgba(0, 0, 0, 1.0);
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 4px;
+                line-height: 1.4;
+            }}
 
-            QPushButton#NotificationCloseButton {
-                background: rgba(255, 255, 255, 0.1);
-                border: none;
+            QPushButton#NotificationCloseButton {{
+                background: rgba(255, 255, 255, 0.2);
+                border: 1px solid rgba(255, 255, 255, 0.4);
                 border-radius: 15px;
-                color: rgba(255, 255, 255, 0.7);
+                color: #FFFFFF;
                 font-size: 16px;
                 font-weight: bold;
-            }
+            }}
 
-            QPushButton#NotificationCloseButton:hover {
-                background: rgba(255, 255, 255, 0.2);
-                color: #FFFFFF;
-            }
-
-            QPushButton#NotificationCloseButton:pressed {
+            QPushButton#NotificationCloseButton:hover {{
                 background: rgba(255, 255, 255, 0.3);
-            }
+                border: 1px solid rgba(255, 255, 255, 0.6);
+            }}
+
+            QPushButton#NotificationCloseButton:pressed {{
+                background: rgba(255, 255, 255, 0.4);
+            }}
         """
 
-        # Цветовые схемы для разных типов
+        # Цветовые схемы для разных типов с улучшенным контрастом
         type_styles = {
             self.SUCCESS: """
                 QWidget#NotificationContainer {
                     border-left: 4px solid #10B981;
-                    background: rgba(16, 185, 129, 0.1);
+                    background: rgba(5, 40, 25, 0.98);
+                    border: 2px solid rgba(16, 185, 129, 0.5);
                 }
             """,
             self.ERROR: """
                 QWidget#NotificationContainer {
                     border-left: 4px solid #EF4444;
-                    background: rgba(239, 68, 68, 0.1);
+                    background: rgba(40, 5, 5, 0.98);
+                    border: 2px solid rgba(239, 68, 68, 0.5);
                 }
             """,
             self.WARNING: """
                 QWidget#NotificationContainer {
                     border-left: 4px solid #F59E0B;
-                    background: rgba(245, 158, 11, 0.1);
+                    background: rgba(40, 30, 5, 0.98);
+                    border: 2px solid rgba(245, 158, 11, 0.5);
                 }
             """,
             self.INFO: """
                 QWidget#NotificationContainer {
                     border-left: 4px solid #3B82F6;
-                    background: rgba(59, 130, 246, 0.1);
+                    background: rgba(5, 20, 40, 0.98);
+                    border: 2px solid rgba(59, 130, 246, 0.5);
                 }
             """
         }

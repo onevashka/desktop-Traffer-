@@ -167,14 +167,16 @@ files = [
 ]
 
 [[package]]
-name = "Telethon"
+name = "telethon"
 version = "1.40.0"
 description = "Full-featured Telegram client library for Python 3"
 optional = false
 python-versions = ">=3.5"
 groups = ["main"]
-files = []
-develop = false
+files = [
+    {file = "Telethon-1.40.0-py3-none-any.whl", hash = "sha256:146fd4cb2a7afa66bc67f9c2167756096a37b930f65711a3e7399ec9874dcfa7"},
+    {file = "telethon-1.40.0.tar.gz", hash = "sha256:40e83326877a2e68b754d4b6d0d1ca5ac924110045b039e02660f2d67add97db"},
+]
 
 [package.dependencies]
 pyaes = "*"
@@ -182,12 +184,6 @@ rsa = "*"
 
 [package.extras]
 cryptg = ["cryptg"]
-
-[package.source]
-type = "git"
-url = "https://github.com/LonamiWebs/Telethon.git"
-reference = "7d0fadea291ad0a67f6c4f9d57e84457a6a1b853"
-resolved_reference = "7d0fadea291ad0a67f6c4f9d57e84457a6a1b853"
 
 [[package]]
 name = "win32-setctime"
@@ -208,4 +204,4 @@ dev = ["black (>=19.3b0) ; python_version >= \"3.6\"", "pytest (>=4.6.2)"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.14"
-content-hash = "f7e801d5ef029212d46f94ac19d48b3267056df0c18a94ad2657704ab8875e68"
+content-hash = "b552ee95983e1e660be748286e44eb54f9727eb03585e7895ac1d954f32adf7a"
