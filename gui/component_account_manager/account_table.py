@@ -296,6 +296,7 @@ class AccountTableWidget(QWidget):
         self.delete_btn.clicked.connect(self.action_handler.handle_delete_action)
         self.update_btn.clicked.connect(self.action_handler.handle_refresh_action)
         self.move_btn.clicked.connect(self.action_handler.handle_move_action)
+        self.archive_btn.clicked.connect(self.action_handler.handle_archive_action)
 
     def _create_table(self, layout):
         """Создает таблицу"""

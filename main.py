@@ -1,7 +1,8 @@
 import os
 
-# Отключаем Qt предупреждения
-os.environ['QT_LOGGING_RULES'] = '*.debug=false'
+os.environ['QT_LOGGING_RULES'] = '*=false'  # Отключаем ВСЕ Qt логи
+os.environ['QT_FATAL_WARNINGS'] = '0'       # Отключаем фатальные предупреждения
+os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = ''  # Убираем лишние сообщения
 
 import sys
 import asyncio

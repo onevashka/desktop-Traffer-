@@ -1,5 +1,6 @@
+# src/accounts/operations/update_operations.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 """
-Операции обновления аккаунтов
+Операции обновления аккаунтов - адаптировано под новую архитектуру с сервисами
 """
 
 import asyncio
@@ -20,13 +21,13 @@ class AccountUpdater:
         Returns:
             Словарь с результатами обновления
         """
-        logger.info("🔄 Начинаем полное обновление аккаунтов...")
+        logger.info("🔄 AccountUpdater: начинаем полное обновление аккаунтов...")
 
         # Сохраняем текущие счетчики
         old_traffic_count = len(self.manager.traffic_accounts)
         old_sales_count = len(self.manager.sales_accounts)
 
-        # Пересканируем все папки
+        # ИСПРАВЛЕНО: Используем метод менеджера вместо прямого вызова
         await self.manager.scan_all_folders()
 
         # Новые счетчики
@@ -55,14 +56,12 @@ class AccountUpdater:
         Returns:
             Количество загруженных аккаунтов
         """
-        logger.info(f"🔄 Обновляем категорию: {category}")
+        logger.info(f"🔄 AccountUpdater: обновляем категорию: {category}")
 
         if category == "traffic":
             storage = self.manager.traffic_accounts
-            folders = self.manager.traffic_folders
         elif category == "sales":
             storage = self.manager.sales_accounts
-            folders = self.manager.sales_folders
         else:
             logger.error(f"❌ Неизвестная категория: {category}")
             return 0
@@ -70,11 +69,16 @@ class AccountUpdater:
         # Очищаем хранилище
         storage.clear()
 
-        # Пересканируем папки категории
-        total_count = 0
-        for status, folder_path in folders.items():
-            count = await self.manager._scan_folder(folder_path, category, status)
-            total_count += count
+        # ИСПРАВЛЕНО: Используем сервис сканера через менеджер
+        scanner = self.manager._get_scanner()
+        new_accounts = await scanner.scan_category(category)
+        
+        # Обновляем хранилище
+        storage.update(new_accounts)
+        
+        # Обновляем сервисы менеджера
+        self.manager._refresh_services()
 
+        total_count = len(new_accounts)
         logger.info(f"✅ Категория {category} обновлена: {total_count} аккаунтов")
         return total_count

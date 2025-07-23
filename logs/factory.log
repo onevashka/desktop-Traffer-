@@ -2866,3 +2866,246 @@ RAR 7.01 x64    ᪨ ࠢ (c) 1993-2024 ᠭ 蠫    12  2024
 2025-07-18 11:34:25.812 | INFO     | gui.notifications.notification_manager:init_notification_manager:209 - ✅ NotificationManager инициализирован
 2025-07-18 11:34:25.813 | DEBUG    | gui.main_window:_init_notifications:49 - ✅ Система уведомлений инициализирована
 2025-07-18 11:34:26.216 | INFO     | __main__:async_main:66 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-20 11:46:17.217 | INFO     | __main__:async_main:37 - 📋 Консоль логов открыта
+2025-07-20 11:46:17.727 | INFO     | __main__:async_main:43 - 📁 Структура папок создана
+2025-07-20 11:46:17.728 | INFO     | __main__:async_main:47 - 🎯 Начинаем инициализацию AccountManager...
+2025-07-20 11:46:17.728 | INFO     | src.accounts.manager:init_account_manager:322 - 🎯 Инициализация AccountManager...
+2025-07-20 11:46:17.729 | INFO     | src.accounts.manager:__init__:58 - 🏭 AccountManager цех инициализирован
+2025-07-20 11:46:17.730 | DEBUG    | src.accounts.services.account_scanner:__init__:21 - 🔍 AccountScanner инициализирован
+2025-07-20 11:46:17.731 | INFO     | src.accounts.services.account_scanner:scan_all_folders:33 - 🔍 AccountScanner: начинаем полное сканирование...
+2025-07-20 11:46:17.732 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-20 11:46:17.734 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:46:17.735 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Аккаунты: загружено 0 аккаунтов
+2025-07-20 11:46:17.736 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:44 -   📁 Трафик/active: 0 аккаунтов
+2025-07-20 11:46:17.737 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-20 11:46:17.737 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:46:17.738 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-20 11:46:17.738 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:44 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-20 11:46:17.740 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-20 11:46:17.741 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:46:17.742 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-20 11:46:17.742 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:44 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-20 11:46:17.743 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-20 11:46:17.744 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:46:17.744 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-20 11:46:17.745 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:44 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-20 11:46:17.745 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-20 11:46:17.747 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 14
+2025-07-20 11:46:17.748 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+13509550595] Имя session актуально: '+13509550595'
+2025-07-20 11:46:17.768 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +13509550595 | Celestine Koch | +13509550595
+2025-07-20 11:46:17.769 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+14062874628] Имя session актуально: '+14062874628'
+2025-07-20 11:46:17.770 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +14062874628 | Vjht Bhi N | +14062874628
+2025-07-20 11:46:17.771 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+14475001902] Имя session актуально: '+14475001902'
+2025-07-20 11:46:17.772 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +14475001902 | Kataleya | +14475001902
+2025-07-20 11:46:17.773 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+15013096729] Имя session актуально: '+15013096729'
+2025-07-20 11:46:17.774 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +15013096729 | Trevor | +15013096729
+2025-07-20 11:46:17.775 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+15022842680] Имя session актуально: '+15022842680'
+2025-07-20 11:46:17.776 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +15022842680 | Anaksb Baha | +15022842680
+2025-07-20 11:46:17.777 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+15082754385] Имя session актуально: '+15082754385'
+2025-07-20 11:46:17.778 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +15082754385 | Fffvg Hhhd | +15082754385
+2025-07-20 11:46:17.779 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+15595083661] Имя session актуально: '+15595083661'
+2025-07-20 11:46:17.780 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +15595083661 | Jasper | +15595083661
+2025-07-20 11:46:17.781 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16013050307] Имя session актуально: '+16013050307'
+2025-07-20 11:46:17.782 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16013050307 | Alva Flatley | +16013050307
+2025-07-20 11:46:17.784 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16098994693] Имя session актуально: '+16098994693'
+2025-07-20 11:46:17.785 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16098994693 | Zara | +16098994693
+2025-07-20 11:46:17.786 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16156296742] Имя session актуально: '+16156296742'
+2025-07-20 11:46:17.787 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16156296742 | Hjjfg Bbug | +16156296742
+2025-07-20 11:46:17.789 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16575202171] Имя session актуально: '+16575202171'
+2025-07-20 11:46:17.789 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16575202171 | Sarah J. Eastman | +16575202171
+2025-07-20 11:46:17.790 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16823667567] Имя session актуально: '+16823667567'
+2025-07-20 11:46:17.791 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16823667567 | Per Eklund | +16823667567
+2025-07-20 11:46:17.792 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+17472097311] Имя session актуально: '+17472097311'
+2025-07-20 11:46:17.793 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +17472097311 | Mary Schaefer | +17472097311
+2025-07-20 11:46:17.794 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+17705237646] Имя session актуально: '+17705237646'
+2025-07-20 11:46:17.794 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +17705237646 | Edith Mattsson | +17705237646
+2025-07-20 11:46:17.795 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Регистарция: загружено 14 аккаунтов
+2025-07-20 11:46:17.795 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/registration: 14 аккаунтов
+2025-07-20 11:46:17.796 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-20 11:46:17.797 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 2
+2025-07-20 11:46:17.797 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12176338424] Имя session актуально: '+12176338424'
+2025-07-20 11:46:17.798 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +12176338424 | Jesus Sanford | +12176338424
+2025-07-20 11:46:17.799 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12393929477] Имя session актуально: '+12393929477'
+2025-07-20 11:46:17.800 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +12393929477 | Helene Bosco | +12393929477
+2025-07-20 11:46:17.800 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Тдата: загружено 2 аккаунтов
+2025-07-20 11:46:17.800 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/ready_tdata: 2 аккаунтов
+2025-07-20 11:46:17.801 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-20 11:46:17.801 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:46:17.802 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-20 11:46:17.802 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-20 11:46:17.803 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-20 11:46:17.804 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:46:17.805 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-20 11:46:17.806 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-20 11:46:17.807 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-20 11:46:17.807 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:46:17.808 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-20 11:46:17.808 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-20 11:46:17.809 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-20 11:46:17.809 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:46:17.810 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-20 11:46:17.810 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-20 11:46:17.811 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-20 11:46:17.811 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:46:17.812 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-20 11:46:17.812 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-20 11:46:17.813 | INFO     | src.accounts.services.account_scanner:scan_all_folders:54 - ✅ Сканирование завершено: трафик=0, продажи=16, всего=16
+2025-07-20 11:46:17.813 | DEBUG    | src.accounts.manager:_refresh_services:255 - 🔄 Сервисы обновлены
+2025-07-20 11:46:17.814 | INFO     | src.accounts.manager:scan_all_folders:75 - ✅ Сканирование завершено: трафик=0, продажи=16
+2025-07-20 11:46:17.814 | INFO     | src.accounts.manager:init_account_manager:324 - ✅ AccountManager готов!
+2025-07-20 11:46:17.814 | INFO     | __main__:async_main:49 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-20 11:46:17.826 | DEBUG    | src.accounts.services.folder_service:__init__:17 - 📁 FolderService инициализирован
+2025-07-20 11:46:17.828 | DEBUG    | src.accounts.services.statistics_service:__init__:17 - 📊 StatisticsService инициализирован
+2025-07-20 11:46:17.828 | DEBUG    | gui.component_account_manager.traffic_accounts:_create_components:55 - 📊 Создаем компоненты трафика, статистика: [('Активных аккаунтов', '0', '#10B981'), ('Мертвых', '0', '#EF4444'), ('Замороженных', '0', '#F59E0B'), ('Неверный формат', '0', '#6B7280')]
+2025-07-20 11:46:17.832 | DEBUG    | src.accounts.services.data_service:__init__:17 - 📋 DataService инициализирован
+2025-07-20 11:46:17.833 | DEBUG    | src.accounts.services.data_service:get_table_data:31 - 📋 Получаем данные таблицы: traffic/active, limit=-1
+2025-07-20 11:46:17.834 | DEBUG    | src.accounts.services.data_service:get_table_data:64 - 📊 Получены данные для traffic/active: 0 записей (limit=-1)
+2025-07-20 11:46:17.834 | DEBUG    | gui.component_account_manager.traffic_accounts:_create_components:73 - 📋 Создаем таблицу трафика, данных: 0 строк
+2025-07-20 11:46:17.855 | INFO     | gui.component_account_manager.account_table:_create_table:329 - 📊 Создана таблица с 8 колонками
+2025-07-20 11:46:17.869 | INFO     | gui.component_account_manager.account_table:_fill_table_with_data:585 - Нет данных для отображения
+2025-07-20 11:46:17.870 | INFO     | gui.component_account_manager.account_table:_load_initial_data:521 - ✅ Начальные данные загружены: 0 записей
+2025-07-20 11:46:17.871 | INFO     | gui.component_account_manager.account_table:__init__:118 - 📊 AccountTableWidget создан для traffic/active
+2025-07-20 11:46:17.896 | DEBUG    | gui.component_account_manager.sales_accounts:_create_components:55 - 📊 Создаем компоненты продаж, статистика: [('Регистрация', '14', '#3B82F6'), ('📁 TData', '2', '#10B981'), ('📄 Session+JSON', '0', '#059669'), ('Средних', '0', '#8B5CF6'), ('Замороженных', '0', '#F59E0B'), ('Мертвых', '0', '#EF4444')]
+2025-07-20 11:46:17.904 | DEBUG    | src.accounts.services.data_service:get_table_data:31 - 📋 Получаем данные таблицы: sales/registration, limit=-1
+2025-07-20 11:46:17.905 | DEBUG    | src.accounts.services.data_service:get_table_data:64 - 📊 Получены данные для sales/registration: 14 записей (limit=-1)
+2025-07-20 11:46:17.905 | DEBUG    | gui.component_account_manager.sales_accounts:_create_components:73 - 📋 Создаем таблицу продаж, данных: 14 строк
+2025-07-20 11:46:17.913 | INFO     | gui.component_account_manager.account_table:_create_table:329 - 📊 Создана таблица с 8 колонками
+2025-07-20 11:46:17.958 | INFO     | gui.component_account_manager.account_table:_fill_table_with_data:612 - ✅ Таблица заполнена: 10 строк
+2025-07-20 11:46:17.959 | INFO     | gui.component_account_manager.account_table:_load_initial_data:521 - ✅ Начальные данные загружены: 14 записей
+2025-07-20 11:46:17.960 | INFO     | gui.component_account_manager.account_table:__init__:118 - 📊 AccountTableWidget создан для sales/registration
+2025-07-20 11:46:18.024 | DEBUG    | gui.account_manager:__init__:33 - AccountManager with tabs initialized
+2025-07-20 11:46:18.090 | DEBUG    | gui.main_window:__init__:39 - MainWindow with sidebar initialized
+2025-07-20 11:46:18.108 | INFO     | __main__:async_main:56 - 🖥️  Главное окно открыто
+2025-07-20 11:46:18.197 | INFO     | gui.notifications.notification_manager:init_notification_manager:209 - ✅ NotificationManager инициализирован
+2025-07-20 11:46:18.198 | DEBUG    | gui.main_window:_init_notifications:49 - ✅ Система уведомлений инициализирована
+2025-07-20 11:46:18.603 | INFO     | __main__:async_main:66 - 🚀 Приложение desktop-Traffer готово к работе!
+2025-07-20 11:46:26.473 | INFO     | gui.component_account_manager.account_table:_fill_table_with_data:612 - ✅ Таблица заполнена: 4 строк
+2025-07-20 11:46:27.520 | INFO     | gui.component_account_manager.account_table:_fill_table_with_data:612 - ✅ Таблица заполнена: 10 строк
+2025-07-20 11:46:37.489 | INFO     | gui.handlers.table_handlers:_perform_deletion:105 - 🗑️ Начинаем удаление 2 аккаунтов
+2025-07-20 11:46:37.490 | INFO     | src.accounts.operations.delete_operations:_delete_single_account:101 - 🗑️  Удаляем аккаунт +13509550595 из sales
+2025-07-20 11:46:37.490 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:102 -    Session: C:\desktop-Traffer\Продажи\Регистарция\+13509550595.session
+2025-07-20 11:46:37.490 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:103 -    JSON: C:\desktop-Traffer\Продажи\Регистарция\+13509550595.json
+2025-07-20 11:46:37.491 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:110 -    ✅ Session файл удален
+2025-07-20 11:46:37.492 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:115 -    ✅ JSON файл удален
+2025-07-20 11:46:37.492 | INFO     | src.accounts.operations.delete_operations:_delete_single_account:120 - ✅ Аккаунт +13509550595 удален (2 файлов)
+2025-07-20 11:46:37.492 | INFO     | src.accounts.operations.delete_operations:_delete_single_account:101 - 🗑️  Удаляем аккаунт +14062874628 из sales
+2025-07-20 11:46:37.493 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:102 -    Session: C:\desktop-Traffer\Продажи\Регистарция\+14062874628.session
+2025-07-20 11:46:37.493 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:103 -    JSON: C:\desktop-Traffer\Продажи\Регистарция\+14062874628.json
+2025-07-20 11:46:37.494 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:110 -    ✅ Session файл удален
+2025-07-20 11:46:37.494 | DEBUG    | src.accounts.operations.delete_operations:_delete_single_account:115 -    ✅ JSON файл удален
+2025-07-20 11:46:37.495 | INFO     | src.accounts.operations.delete_operations:_delete_single_account:120 - ✅ Аккаунт +14062874628 удален (2 файлов)
+2025-07-20 11:46:37.495 | DEBUG    | src.accounts.manager:_refresh_services:255 - 🔄 Сервисы обновлены
+2025-07-20 11:46:37.500 | INFO     | gui.handlers.table_handlers:_simple_refresh_after_deletion:323 - 🔄 Простое обновление таблицы после удаления...
+2025-07-20 11:46:37.800 | INFO     | gui.handlers.table_handlers:_update_table_only:349 - 📊 Обновляем таблицу для категории: sales, статус: registration
+2025-07-20 11:46:37.800 | DEBUG    | src.accounts.services.data_service:__init__:17 - 📋 DataService инициализирован
+2025-07-20 11:46:37.801 | DEBUG    | src.accounts.services.data_service:get_table_data:31 - 📋 Получаем данные таблицы: sales/registration, limit=-1
+2025-07-20 11:46:37.801 | DEBUG    | src.accounts.services.data_service:get_table_data:64 - 📊 Получены данные для sales/registration: 12 записей (limit=-1)
+2025-07-20 11:46:37.817 | INFO     | gui.component_account_manager.account_table:_fill_table_with_data:612 - ✅ Таблица заполнена: 10 строк
+2025-07-20 11:46:37.818 | INFO     | gui.handlers.table_handlers:_update_table_only:357 - ✅ Таблица обновлена, всего данных: 12
+2025-07-20 11:46:37.818 | INFO     | gui.handlers.table_handlers:_update_parent_stats_only:387 - 📊 Обновляем статистику в родительском компоненте
+2025-07-20 11:46:37.819 | DEBUG    | src.accounts.services.statistics_service:__init__:17 - 📊 StatisticsService инициализирован
+2025-07-20 11:46:37.819 | DEBUG    | gui.handlers.table_handlers:_update_parent_stats_only:401 -    📊 Обновлен элемент 0: Регистрация = 12
+2025-07-20 11:46:37.819 | DEBUG    | gui.handlers.table_handlers:_update_parent_stats_only:401 -    📊 Обновлен элемент 1: 📁 TData = 2
+2025-07-20 11:46:37.820 | DEBUG    | gui.handlers.table_handlers:_update_parent_stats_only:401 -    📊 Обновлен элемент 2: 📄 Session+JSON = 0
+2025-07-20 11:46:37.820 | DEBUG    | gui.handlers.table_handlers:_update_parent_stats_only:401 -    📊 Обновлен элемент 3: Средних = 0
+2025-07-20 11:46:37.820 | DEBUG    | gui.handlers.table_handlers:_update_parent_stats_only:401 -    📊 Обновлен элемент 4: Замороженных = 0
+2025-07-20 11:46:37.821 | DEBUG    | gui.handlers.table_handlers:_update_parent_stats_only:401 -    📊 Обновлен элемент 5: Мертвых = 0
+2025-07-20 11:46:40.079 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: sales
+2025-07-20 11:46:40.083 | ERROR    | gui.handlers.table_handlers:_on_manual_refresh_complete:492 - ❌ Ошибка завершения обновления: 'AccountManager' object has no attribute '_scan_folder'
+2025-07-20 11:46:47.803 | INFO     | src.accounts.operations.update_operations:refresh_category:58 - 🔄 Обновляем категорию: sales
+2025-07-20 11:46:47.806 | ERROR    | gui.handlers.table_handlers:_on_manual_refresh_complete:492 - ❌ Ошибка завершения обновления: 'AccountManager' object has no attribute '_scan_folder'
+2025-07-20 11:47:04.570 | INFO     | gui.component_account_manager.account_table:_on_add_accounts_click:866 - 📂 Пользователь открывает папку для добавления продаж
+2025-07-20 11:47:04.571 | DEBUG    | src.utils.folder_utils:get_add_accounts_folder:96 - 📁 Папка для добавления продаж: C:\desktop-Traffer\Продажи\Регистарция
+2025-07-20 11:47:04.571 | INFO     | src.utils.folder_utils:open_add_accounts_folder:119 - 📂 Открываем папку для добавления аккаунтов (sales): C:\desktop-Traffer\Продажи\Регистарция
+2025-07-20 11:47:04.607 | INFO     | src.utils.folder_utils:open_folder_in_explorer:42 - 📂 Открыта папка в Windows Explorer: C:\desktop-Traffer\Продажи\Регистарция
+2025-07-20 11:57:32.687 | INFO     | __main__:async_main:38 - 📋 Консоль логов открыта
+2025-07-20 11:57:33.188 | INFO     | __main__:async_main:44 - 📁 Структура папок создана
+2025-07-20 11:57:33.190 | INFO     | __main__:async_main:48 - 🎯 Начинаем инициализацию AccountManager...
+2025-07-20 11:57:33.191 | INFO     | src.accounts.manager:init_account_manager:322 - 🎯 Инициализация AccountManager...
+2025-07-20 11:57:33.191 | INFO     | src.accounts.manager:__init__:58 - 🏭 AccountManager цех инициализирован
+2025-07-20 11:57:33.192 | DEBUG    | src.accounts.services.account_scanner:__init__:21 - 🔍 AccountScanner инициализирован
+2025-07-20 11:57:33.192 | INFO     | src.accounts.services.account_scanner:scan_all_folders:33 - 🔍 AccountScanner: начинаем полное сканирование...
+2025-07-20 11:57:33.193 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Аккаунты (категория: traffic, статус: active)
+2025-07-20 11:57:33.193 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:57:33.194 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Аккаунты: загружено 0 аккаунтов
+2025-07-20 11:57:33.194 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:44 -   📁 Трафик/active: 0 аккаунтов
+2025-07-20 11:57:33.194 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Мертвые (категория: traffic, статус: dead)
+2025-07-20 11:57:33.195 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:57:33.195 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-20 11:57:33.196 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:44 -   📁 Трафик/dead: 0 аккаунтов
+2025-07-20 11:57:33.198 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Замороженные (категория: traffic, статус: frozen)
+2025-07-20 11:57:33.198 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:57:33.199 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-20 11:57:33.200 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:44 -   📁 Трафик/frozen: 0 аккаунтов
+2025-07-20 11:57:33.200 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Для работы\Неверный формат (категория: traffic, статус: invalid)
+2025-07-20 11:57:33.201 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:57:33.201 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-20 11:57:33.202 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:44 -   📁 Трафик/invalid: 0 аккаунтов
+2025-07-20 11:57:33.202 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Регистарция (категория: sales, статус: registration)
+2025-07-20 11:57:33.203 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 12
+2025-07-20 11:57:33.204 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+14475001902] Имя session актуально: '+14475001902'
+2025-07-20 11:57:33.207 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +14475001902 | Kataleya | +14475001902
+2025-07-20 11:57:33.208 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+15013096729] Имя session актуально: '+15013096729'
+2025-07-20 11:57:33.209 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +15013096729 | Trevor | +15013096729
+2025-07-20 11:57:33.210 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+15022842680] Имя session актуально: '+15022842680'
+2025-07-20 11:57:33.210 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +15022842680 | Anaksb Baha | +15022842680
+2025-07-20 11:57:33.211 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+15082754385] Имя session актуально: '+15082754385'
+2025-07-20 11:57:33.212 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +15082754385 | Fffvg Hhhd | +15082754385
+2025-07-20 11:57:33.213 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+15595083661] Имя session актуально: '+15595083661'
+2025-07-20 11:57:33.213 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +15595083661 | Jasper | +15595083661
+2025-07-20 11:57:33.214 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16013050307] Имя session актуально: '+16013050307'
+2025-07-20 11:57:33.215 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16013050307 | Alva Flatley | +16013050307
+2025-07-20 11:57:33.215 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16098994693] Имя session актуально: '+16098994693'
+2025-07-20 11:57:33.216 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16098994693 | Zara | +16098994693
+2025-07-20 11:57:33.217 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16156296742] Имя session актуально: '+16156296742'
+2025-07-20 11:57:33.217 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16156296742 | Hjjfg Bbug | +16156296742
+2025-07-20 11:57:33.218 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16575202171] Имя session актуально: '+16575202171'
+2025-07-20 11:57:33.218 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16575202171 | Sarah J. Eastman | +16575202171
+2025-07-20 11:57:33.219 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+16823667567] Имя session актуально: '+16823667567'
+2025-07-20 11:57:33.220 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +16823667567 | Per Eklund | +16823667567
+2025-07-20 11:57:33.220 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+17472097311] Имя session актуально: '+17472097311'
+2025-07-20 11:57:33.221 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +17472097311 | Mary Schaefer | +17472097311
+2025-07-20 11:57:33.222 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+17705237646] Имя session актуально: '+17705237646'
+2025-07-20 11:57:33.223 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +17705237646 | Edith Mattsson | +17705237646
+2025-07-20 11:57:33.223 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Регистарция: загружено 12 аккаунтов
+2025-07-20 11:57:33.224 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/registration: 12 аккаунтов
+2025-07-20 11:57:33.224 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Тдата (категория: sales, статус: ready_tdata)
+2025-07-20 11:57:33.225 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 2
+2025-07-20 11:57:33.225 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12176338424] Имя session актуально: '+12176338424'
+2025-07-20 11:57:33.226 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +12176338424 | Jesus Sanford | +12176338424
+2025-07-20 11:57:33.227 | DEBUG    | src.accounts.impl.account:_sync_session_name:115 - ✅ [+12393929477] Имя session актуально: '+12393929477'
+2025-07-20 11:57:33.227 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:147 -   ✅ Загружен в sales: +12393929477 | Helene Bosco | +12393929477
+2025-07-20 11:57:33.228 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Тдата: загружено 2 аккаунтов
+2025-07-20 11:57:33.228 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/ready_tdata: 2 аккаунтов
+2025-07-20 11:57:33.229 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Готовые для продажи\Сессии+json (категория: sales, статус: ready_sessions)
+2025-07-20 11:57:33.229 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:57:33.230 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Сессии+json: загружено 0 аккаунтов
+2025-07-20 11:57:33.230 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/ready_sessions: 0 аккаунтов
+2025-07-20 11:57:33.230 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Средние (категория: sales, статус: middle)
+2025-07-20 11:57:33.231 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:57:33.231 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Средние: загружено 0 аккаунтов
+2025-07-20 11:57:33.232 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/middle: 0 аккаунтов
+2025-07-20 11:57:33.232 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Мертвые (категория: sales, статус: dead)
+2025-07-20 11:57:33.233 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:57:33.233 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Мертвые: загружено 0 аккаунтов
+2025-07-20 11:57:33.234 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/dead: 0 аккаунтов
+2025-07-20 11:57:33.234 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Замороженные (категория: sales, статус: frozen)
+2025-07-20 11:57:33.235 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:57:33.235 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Замороженные: загружено 0 аккаунтов
+2025-07-20 11:57:33.235 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/frozen: 0 аккаунтов
+2025-07-20 11:57:33.236 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:110 - 🔍 Сканируем папку: C:\desktop-Traffer\Продажи\Неверный формат (категория: sales, статус: invalid)
+2025-07-20 11:57:33.236 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:116 - 📁 Найдено .session файлов: 0
+2025-07-20 11:57:33.237 | DEBUG    | src.accounts.services.account_scanner:_scan_folder:159 - 📊 Папка Неверный формат: загружено 0 аккаунтов
+2025-07-20 11:57:33.237 | DEBUG    | src.accounts.services.account_scanner:scan_all_folders:52 -   💰 Продажи/invalid: 0 аккаунтов
+2025-07-20 11:57:33.238 | INFO     | src.accounts.services.account_scanner:scan_all_folders:54 - ✅ Сканирование завершено: трафик=0, продажи=14, всего=14
+2025-07-20 11:57:33.238 | DEBUG    | src.accounts.manager:_refresh_services:255 - 🔄 Сервисы обновлены
+2025-07-20 11:57:33.239 | INFO     | src.accounts.manager:scan_all_folders:75 - ✅ Сканирование завершено: трафик=0, продажи=14
+2025-07-20 11:57:33.239 | INFO     | src.accounts.manager:init_account_manager:324 - ✅ AccountManager готов!
+2025-07-20 11:57:33.239 | INFO     | __main__:async_main:50 - ✅ AccountManager инициализирован с полной загрузкой аккаунтов
+2025-07-20 11:57:33.245 | DEBUG    | src.accounts.services.folder_service:__init__:17 - 📁 FolderService инициализирован
+2025-07-20 11:57:33.246 | DEBUG    | src.accounts.services.statistics_service:__init__:17 - 📊 StatisticsService инициализирован
+2025-07-20 11:57:33.246 | DEBUG    | gui.component_account_manager.traffic_accounts:_create_components:55 - 📊 Создаем компоненты трафика, статистика: [('Активных аккаунтов', '0', '#10B981'), ('Мертвых', '0', '#EF4444'), ('Замороженных', '0', '#F59E0B'), ('Неверный формат', '0', '#6B7280')]
+2025-07-20 11:57:33.250 | DEBUG    | src.accounts.services.data_service:__init__:17 - 📋 DataService инициализирован
+2025-07-20 11:57:33.250 | DEBUG    | src.accounts.services.data_service:get_table_data:31 - 📋 Получаем данные таблицы: traffic/active, limit=-1
+2025-07-20 11:57:33.251 | DEBUG    | src.accounts.services.data_service:get_table_data:64 - 📊 Получены данные для traffic/active: 0 записей (limit=-1)
+2025-07-20 11:57:33.251 | DEBUG    | gui.component_account_manager.traffic_accounts:_create_components:73 - 📋 Создаем таблицу трафика, данных: 0 строк

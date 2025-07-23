@@ -1,7 +1,7 @@
-# src/accounts/manager.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
-
+# src/accounts/manager.py - НОВАЯ ВЕРСИЯ
 """
-Центральный AccountManager - раздельные хранилища для трафика и продаж
+Главный менеджер аккаунтов - координатор цеха
+Делегирует задачи специализированным сервисам
 """
 
 import asyncio
@@ -10,18 +10,18 @@ from typing import Dict, List, Optional, Tuple
 from loguru import logger
 
 from src.entities.account import AccountData
-from src.accounts.impl.account import Account
+from src.accounts.services import AccountScanner, StatisticsService, DataService, FolderService
 from paths import *
 
 
 class AccountManager:
     """
-    Центральный менеджер аккаунтов.
-    Раздельные хранилища для трафика и продаж.
+    Главный координатор цеха аккаунтов
+    Делегирует задачи специализированным сервисам
     """
 
     def __init__(self):
-        # Маппинг папок трафика
+        # Конфигурация папок
         self.traffic_folders = {
             "active": WORK_ACCOUNTS_TRAFFER_FOLDER,
             "dead": DEAD_TRAFFER_FOLDER,
@@ -29,7 +29,6 @@ class AccountManager:
             "invalid": INVALID_TRAFFER_FORMAT_FOLDER
         }
 
-        # Маппинг папок продаж
         self.sales_folders = {
             "registration": WORK_ACCOUNTS_SALE_FOLDER,
             "ready_tdata": TDATA_FOLDER,
@@ -40,361 +39,224 @@ class AccountManager:
             "invalid": INVALID_SALES_FORMAT_FOLDER
         }
 
-        # ИЗМЕНЕНО: Раздельные хранилища
+        # Хранилища данных
         self.traffic_accounts: Dict[str, AccountData] = {}
         self.sales_accounts: Dict[str, AccountData] = {}
 
-        self.deleter = None
-        self.mover = None
-        self.updater = None
+        # Сервисы цеха (создаются лениво)
+        self._scanner: Optional[AccountScanner] = None
+        self._statistics: Optional[StatisticsService] = None
+        self._data_service: Optional[DataService] = None
+        self._folder_service: Optional[FolderService] = None
 
-        logger.info("📋 AccountManager создан с раздельными хранилищами")
+        # Операции (из существующего кода)
+        self._deleter = None
+        self._mover = None
+        self._updater = None
+        self._archiver = None
 
-    def _init_operations(self):
-        """Инициализирует объекты операций (ленивая инициализация)"""
-        if not self.deleter:
-            from src.accounts.operations import AccountDeleter, AccountMover, AccountUpdater
-            self.deleter = AccountDeleter(self)
-            self.mover = AccountMover(self)
-            self.updater = AccountUpdater(self)
+        logger.info("🏭 AccountManager цех инициализирован")
+
+    # ═══════════════════════════════════════════════════════════════════
+    # 🚀 ОСНОВНЫЕ МЕТОДЫ - делегируем сервисам
+    # ═══════════════════════════════════════════════════════════════════
 
     async def scan_all_folders(self) -> None:
-        """
-        Сканирует все папки и создает объекты Account.
-        Раздельно для трафика и продаж.
-        """
-        logger.info("🔍 Начинаем полное сканирование и загрузку аккаунтов...")
+        """Полное сканирование всех папок"""
+        scanner = self._get_scanner()
+        storages = await scanner.scan_all_folders()
 
-        self.traffic_accounts.clear()
-        self.sales_accounts.clear()
+        self.traffic_accounts = storages['traffic']
+        self.sales_accounts = storages['sales']
 
-        # Сканируем папки трафика
-        traffic_total = 0
-        for status, folder_path in self.traffic_folders.items():
-            count = await self._scan_folder(folder_path, "traffic", status)
-            traffic_total += count
-            logger.debug(f"  📁 Трафик/{status}: {count} аккаунтов")
+        # Обновляем зависимые сервисы
+        self._refresh_services()
 
-        # Сканируем папки продаж
-        sales_total = 0
-        for status, folder_path in self.sales_folders.items():
-            count = await self._scan_folder(folder_path, "sales", status)
-            sales_total += count
-            logger.debug(f"  💰 Продажи/{status}: {count} аккаунтов")
+        logger.info(
+            f"✅ Сканирование завершено: трафик={len(self.traffic_accounts)}, продажи={len(self.sales_accounts)}")
 
-        total = len(self.traffic_accounts) + len(self.sales_accounts)
-        logger.info(f"✅ Полная загрузка завершена! Трафик: {traffic_total}, Продажи: {sales_total}, Всего: {total}")
-
-    async def _scan_folder(self, folder_path: Path, category: str, status: str) -> int:
-        """
-        Сканирует папку и создает объекты Account.
-        Сохраняет в соответствующее хранилище.
-        """
-        if not folder_path.exists():
-            logger.debug(f"⏭️  Папка не существует: {folder_path}")
-            return 0
-
-        logger.debug(f"🔍 Сканируем папку: {folder_path} (категория: {category}, статус: {status})")
-
-        # ИЗМЕНЕНО: Выбираем правильное хранилище
-        if category == "traffic":
-            accounts_storage = self.traffic_accounts
-        elif category == "sales":
-            accounts_storage = self.sales_accounts
-        else:
-            logger.error(f"❌ Неизвестная категория: {category}")
-            return 0
-
-        count = 0
-        try:
-            session_files = list(folder_path.glob("*.session"))
-            logger.debug(f"📁 Найдено .session файлов: {len(session_files)}")
-
-            for session_file in session_files:
-                json_file = session_file.with_suffix(".json")
-
-                if json_file.exists():
-                    name = session_file.stem
-
-                    # ИЗМЕНЕНО: Проверяем дубликаты только в рамках категории
-                    if name in accounts_storage:
-                        logger.warning(f"⚠️  Дубликат в {category}: {name}")
-                        continue
-
-                    try:
-                        # Создаем объект Account
-                        account = Account(session_file, json_file)
-
-                        # Получаем информацию из аккаунта
-                        info = await account.get_info()
-
-                        # Создаем полные данные аккаунта
-                        account_data = AccountData(
-                            name=name,
-                            category=category,
-                            status=status,
-                            account=account,
-                            info=info
-                        )
-
-                        # ИЗМЕНЕНО: Сохраняем в соответствующее хранилище
-                        accounts_storage[name] = account_data
-                        count += 1
-
-                        logger.debug(
-                            f"  ✅ Загружен в {category}: {name} | {info.get('full_name', '?')} | {info.get('phone', '?')}")
-
-                    except Exception as e:
-                        logger.error(f"❌ Ошибка создания Account для {name}: {e}")
-                        continue
-                else:
-                    logger.debug(f"⚠️  JSON файл не найден для: {session_file.name}")
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка сканирования {folder_path}: {e}")
-
-        logger.debug(f"📊 Папка {folder_path.name}: загружено {count} аккаунтов")
-        return count
-
-    def get_folder_counts(self) -> Dict[str, Dict[str, int]]:
-        """Возвращает количество аккаунтов в каждой папке"""
-        counts = {
-            "traffic": {status: 0 for status in self.traffic_folders.keys()},
-            "sales": {status: 0 for status in self.sales_folders.keys()}
-        }
-
-        # ИЗМЕНЕНО: Считаем раздельно
-        for account_data in self.traffic_accounts.values():
-            if account_data.status in counts["traffic"]:
-                counts["traffic"][account_data.status] += 1
-
-        for account_data in self.sales_accounts.values():
-            if account_data.status in counts["sales"]:
-                counts["sales"][account_data.status] += 1
-
-        return counts
+    # ═══════════════════════════════════════════════════════════════════
+    # 📊 СТАТИСТИКА - делегируем StatisticsService
+    # ═══════════════════════════════════════════════════════════════════
 
     def get_traffic_stats(self) -> List[Tuple[str, str, str]]:
-        """Возвращает статистику для GUI трафика"""
-        counts = self.get_folder_counts()["traffic"]
-
-        return [
-            ("Активных аккаунтов", str(counts["active"]), "#10B981"),
-            ("Мертвых", str(counts["dead"]), "#EF4444"),
-            ("Замороженных", str(counts["frozen"]), "#F59E0B"),
-            ("Неверный формат", str(counts["invalid"]), "#6B7280")
-        ]
+        """Статистика трафика для GUI"""
+        statistics = self._get_statistics()
+        return statistics.get_traffic_stats()
 
     def get_sales_stats(self) -> List[Tuple[str, str, str]]:
-        """Возвращает статистику для GUI продаж"""
-        counts = self.get_folder_counts()["sales"]
+        """Статистика продаж для GUI"""
+        statistics = self._get_statistics()
+        return statistics.get_sales_stats()
 
-        return [
-            ("Регистрация", str(counts["registration"]), "#3B82F6"),
-            ("📁 TData", str(counts["ready_tdata"]), "#10B981"),
-            ("📄 Session+JSON", str(counts["ready_sessions"]), "#059669"),
-            ("Средних", str(counts["middle"]), "#8B5CF6"),
-            ("Замороженных", str(counts["frozen"]), "#F59E0B"),
-            ("Мертвых", str(counts["dead"]), "#EF4444")
-        ]
+    def get_folder_counts(self) -> Dict[str, Dict[str, int]]:
+        """Количество аккаунтов в каждой папке"""
+        statistics = self._get_statistics()
+        return statistics.get_folder_counts()
 
-    def get_table_data(self, category: str, status: str = None, limit: int = 50) -> List[List[str]]:
-        """
-        Возвращает данные для отображения в таблице
-
-        Args:
-            category: "traffic" или "sales"
-            status: конкретный статус (папка) или None для всех
-            limit: максимальное количество записей, -1 для всех данных
-        """
-
-        # Выбираем правильное хранилище
-        if category == "traffic":
-            accounts_storage = self.traffic_accounts
-        elif category == "sales":
-            accounts_storage = self.sales_accounts
-        else:
-            logger.error(f"❌ Неизвестная категория: {category}")
-            return []
-
-        # Фильтруем по статусу если указан
-        if status:
-            category_accounts = [
-                data for data in accounts_storage.values()
-                if data.status == status
-            ]
-        else:
-            category_accounts = list(accounts_storage.values())
-
-        # Сортируем по имени для стабильного порядка
-        category_accounts.sort(key=lambda x: x.name)
-
-        # Ограничиваем количество только если limit > 0
-        if limit > 0:
-            category_accounts = category_accounts[:limit]
-
-        table_data = []
-        for account_data in category_accounts:
-            info = account_data.info
-
-            # Определяем статус для отображения
-            status_display = {
-                "active": "✅ Активный",
-                "dead": "❌ Мертвый",
-                "frozen": "🧊 Заморожен",
-                "invalid": "⚠️ Неверный формат",
-                "registration": "📝 Регистрация",
-                "ready_tdata": "📁 TData готов",
-                "ready_sessions": "📄 Session готов",
-                "middle": "🟡 Средний"
-            }.get(account_data.status, account_data.status)
-
-            # Формируем строку таблицы с реальными данными
-            session_name = info.get('session_name', account_data.name)
-
-            # Правильный формат данных для новой структуры таблицы
-            row = [
-                session_name,  # Название аккаунта
-                info.get('geo', '?'),  # Гео из номера телефона
-                "?",  # Дней создан (пока заглушка)
-                status_display,  # Статус аккаунта
-                info.get('full_name', '?') or '?',  # Полное имя
-                info.get('phone', '?') or '?',  # Телефон
-                "❓"  # Премиум (пока заглушка)
-            ]
-            table_data.append(row)
-
-        logger.debug(f"📊 Получены данные для {category}/{status}: {len(table_data)} записей (limit={limit})")
-        return table_data
-
-    def get_paginated_data(self, category: str, status: str = None, page: int = 1, per_page: int = 10) -> dict:
-        """
-        Возвращает данные с пагинацией
-
-        Args:
-            category: "traffic" или "sales"
-            status: конкретный статус (папка) или None для всех
-            page: номер страницы (начиная с 1)
-            per_page: количество записей на странице
-
-        Returns:
-            dict: {
-                'data': List[List[str]],  # Данные для текущей страницы
-                'total_items': int,       # Общее количество записей
-                'total_pages': int,       # Общее количество страниц
-                'current_page': int,      # Текущая страница
-                'per_page': int,          # Записей на странице
-                'has_next': bool,         # Есть ли следующая страница
-                'has_prev': bool          # Есть ли предыдущая страница
-            }
-        """
-
-        # Получаем все данные
-        all_data = self.get_table_data(category, status, limit=-1)
-        total_items = len(all_data)
-
-        # Рассчитываем пагинацию
-        if per_page <= 0:
-            per_page = total_items or 1
-
-        total_pages = max(1, (total_items + per_page - 1) // per_page) if total_items > 0 else 1
-
-        # Корректируем номер страницы
-        if page < 1:
-            page = 1
-        elif page > total_pages:
-            page = total_pages
-
-        # Получаем данные для текущей страницы
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        page_data = all_data[start_idx:end_idx]
-
-        result = {
-            'data': page_data,
-            'total_items': total_items,
-            'total_pages': total_pages,
-            'current_page': page,
-            'per_page': per_page,
-            'has_next': page < total_pages,
-            'has_prev': page > 1
-        }
-
-        logger.debug(
-            f"📄 Пагинация {category}/{status}: страница {page}/{total_pages}, показано {len(page_data)} из {total_items}")
-        return result
-
-    # НОВЫЕ МЕТОДЫ для поддержки папок
-    def get_default_status(self, category: str) -> str:
-        """Возвращает статус по умолчанию для категории"""
-        if category == "traffic":
-            return "active"  # Показываем активные аккаунты
-        elif category == "sales":
-            return "registration"  # Показываем регистрационные аккаунты
-        else:
-            return "active"
-
-    def get_status_display_name(self, category: str, status: str) -> str:
-        """Возвращает человекочитаемое название статуса"""
-        display_names = {
-            "traffic": {
-                "active": "Активные аккаунты",
-                "dead": "Мертвые аккаунты",
-                "frozen": "Замороженные аккаунты",
-                "invalid": "Неверный формат"
-            },
-            "sales": {
-                "registration": "Регистрационные аккаунты",
-                "ready_tdata": "TData готовые",
-                "ready_sessions": "Session+JSON готовые",
-                "middle": "Средние аккаунты",
-                "dead": "Мертвые аккаунты",
-                "frozen": "Замороженные аккаунты",
-                "invalid": "Неверный формат"
-            }
-        }
-
-        return display_names.get(category, {}).get(status, f"Аккаунты ({status})")
+    def get_total_counts(self) -> Dict[str, int]:
+        """Общие счетчики"""
+        statistics = self._get_statistics()
+        return statistics.get_total_counts()
 
     def get_folder_status_count(self, category: str, status: str) -> int:
-        """Возвращает количество аккаунтов в конкретной папке"""
-        if category == "traffic":
-            accounts = [data for data in self.traffic_accounts.values() if data.status == status]
-        elif category == "sales":
-            accounts = [data for data in self.sales_accounts.values() if data.status == status]
-        else:
-            return 0
+        """Количество аккаунтов в конкретной папке"""
+        statistics = self._get_statistics()
+        return statistics.get_folder_status_count(category, status)
 
-        return len(accounts)
+    # ═══════════════════════════════════════════════════════════════════
+    # 📋 ДАННЫЕ ДЛЯ GUI - делегируем DataService
+    # ═══════════════════════════════════════════════════════════════════
 
-    def get_accounts_by_category(self, category: str) -> List[str]:
-        """Возвращает список имен аккаунтов по категории"""
-        if category == "traffic":
-            return list(self.traffic_accounts.keys())
-        elif category == "sales":
-            return list(self.sales_accounts.keys())
-        else:
-            return []
+    def get_table_data(self, category: str, status: str = None, limit: int = 50) -> List[List[str]]:
+        """Данные для таблицы GUI"""
+        data_service = self._get_data_service()
+        return data_service.get_table_data(category, status, limit)
 
-    def get_account(self, name: str, category: str) -> Optional[Account]:
-        """Возвращает объект Account по имени и категории"""
-        if category == "traffic":
-            account_data = self.traffic_accounts.get(name)
-        elif category == "sales":
-            account_data = self.sales_accounts.get(name)
-        else:
-            return None
+    def get_paginated_data(self, category: str, status: str = None, page: int = 1, per_page: int = 10) -> dict:
+        """Данные с пагинацией"""
+        data_service = self._get_data_service()
+        return data_service.get_paginated_data(category, status, page, per_page)
 
-        return account_data.account if account_data else None
+    def search_accounts(self, query: str, category: str = None, status: str = None) -> List[AccountData]:
+        """Поиск аккаунтов"""
+        data_service = self._get_data_service()
+        return data_service.search_accounts(query, category, status)
 
-    def has_account(self, name: str, category: str) -> bool:
-        """Проверяет существование аккаунта в определенной категории"""
-        if category == "traffic":
-            return name in self.traffic_accounts
-        elif category == "sales":
-            return name in self.sales_accounts
-        else:
-            return False
+    def get_account_by_name(self, name: str, category: str) -> Optional[AccountData]:
+        """Получает аккаунт по имени"""
+        data_service = self._get_data_service()
+        return data_service.get_account_by_name(name, category)
+
+    # ═══════════════════════════════════════════════════════════════════
+    # 📁 РАБОТА С ПАПКАМИ - делегируем FolderService
+    # ═══════════════════════════════════════════════════════════════════
+
+    def get_default_status(self, category: str) -> str:
+        """Статус по умолчанию для категории"""
+        folder_service = self._get_folder_service()
+        return folder_service.get_default_status(category)
+
+    def get_status_display_name(self, category: str, status: str) -> str:
+        """Человекочитаемое название статуса"""
+        folder_service = self._get_folder_service()
+        return folder_service.get_status_display_name(category, status)
+
+    def get_move_destinations(self, current_category: str, current_status: str) -> List[Dict]:
+        """Доступные папки для перемещения"""
+        folder_service = self._get_folder_service()
+        return folder_service.get_move_destinations(current_category, current_status)
+
+    # ═══════════════════════════════════════════════════════════════════
+    # ⚡ ОПЕРАЦИИ - делегируем существующим классам Operations
+    # ═══════════════════════════════════════════════════════════════════
+
+    def delete_accounts(self, account_names: List[str], category: str) -> Dict[str, bool]:
+        """Удаление аккаунтов"""
+        deleter = self._get_deleter()
+        result = deleter.delete_accounts(account_names, category)
+        self._refresh_services()  # Обновляем сервисы после изменений
+        return result
+
+    def get_account_info_for_deletion(self, account_names: List[str], category: str) -> List[Dict]:
+        """Информация для подтверждения удаления"""
+        deleter = self._get_deleter()
+        return deleter.get_deletion_info(account_names, category)
+
+    def move_accounts(self, account_names: List[str], source_category: str,
+                      target_category: str, target_status: str) -> Dict[str, bool]:
+        """Перемещение аккаунтов"""
+        mover = self._get_mover()
+        result = mover.move_accounts(account_names, source_category, target_category, target_status)
+        self._refresh_services()
+        return result
+
+    def archive_accounts(self, account_names: List[str], category: str,
+                         archive_name: str, archive_format: str) -> Dict[str, any]:
+        """Архивация аккаунтов"""
+        archiver = self._get_archiver()
+        return archiver.archive_accounts(account_names, category, archive_name, archive_format)
+
+    def get_account_info_for_archiving(self, account_names: List[str], category: str) -> List[Dict]:
+        """Информация для архивации"""
+        archiver = self._get_archiver()
+        return archiver.get_archive_info(account_names, category)
+
+    async def refresh_all_accounts(self) -> Dict[str, int]:
+        """Полное обновление аккаунтов"""
+        updater = self._get_updater()
+        return await updater.refresh_all_accounts()
+
+    async def refresh_category(self, category: str) -> int:
+        """Обновление конкретной категории"""
+        updater = self._get_updater()
+        return await updater.refresh_category(category)
+
+    # ═══════════════════════════════════════════════════════════════════
+    # 🔧 ЛЕНИВАЯ ИНИЦИАЛИЗАЦИЯ СЕРВИСОВ
+    # ═══════════════════════════════════════════════════════════════════
+
+    def _get_scanner(self) -> AccountScanner:
+        """Получает сканер (ленивая инициализация)"""
+        if self._scanner is None:
+            self._scanner = AccountScanner(self.traffic_folders, self.sales_folders)
+        return self._scanner
+
+    def _get_statistics(self) -> StatisticsService:
+        """Получает статистический сервис"""
+        if self._statistics is None:
+            self._statistics = StatisticsService(self.traffic_accounts, self.sales_accounts)
+        return self._statistics
+
+    def _get_data_service(self) -> DataService:
+        """Получает сервис данных"""
+        if self._data_service is None:
+            self._data_service = DataService(self.traffic_accounts, self.sales_accounts)
+        return self._data_service
+
+    def _get_folder_service(self) -> FolderService:
+        """Получает сервис папок"""
+        if self._folder_service is None:
+            self._folder_service = FolderService(self.traffic_folders, self.sales_folders)
+        return self._folder_service
+
+    def _get_deleter(self):
+        """Получает удалятор (из существующего кода)"""
+        if self._deleter is None:
+            from src.accounts.operations import AccountDeleter
+            self._deleter = AccountDeleter(self)
+        return self._deleter
+
+    def _get_mover(self):
+        """Получает переместитель (из существующего кода)"""
+        if self._mover is None:
+            from src.accounts.operations import AccountMover
+            self._mover = AccountMover(self)
+        return self._mover
+
+    def _get_updater(self):
+        """Получает обновлятор (из существующего кода)"""
+        if self._updater is None:
+            from src.accounts.operations import AccountUpdater
+            self._updater = AccountUpdater(self)
+        return self._updater
+
+    def _get_archiver(self):
+        """Получает архиватор (из существующего кода)"""
+        if self._archiver is None:
+            from src.accounts.operations.archive_operations import AccountArchiver
+            self._archiver = AccountArchiver(self)
+        return self._archiver
+
+    def _refresh_services(self):
+        """Обновляет сервисы после изменения данных"""
+        self._statistics = None  # Пересоздастся с новыми данными
+        self._data_service = None
+        logger.debug("🔄 Сервисы обновлены")
+
+    # ═══════════════════════════════════════════════════════════════════
+    # 🔗 LEGACY API - для обратной совместимости
+    # ═══════════════════════════════════════════════════════════════════
 
     @property
     def accounts(self) -> Dict[str, AccountData]:
@@ -414,75 +276,34 @@ class AccountManager:
 
         return combined
 
-    def get_total_counts(self) -> Dict[str, int]:
-        """Возвращает общие счетчики"""
-        return {
-            "total": len(self.traffic_accounts) + len(self.sales_accounts),
-            "traffic": len(self.traffic_accounts),
-            "sales": len(self.sales_accounts)
-        }
+    def has_account(self, name: str, category: str) -> bool:
+        """Проверяет существование аккаунта в определенной категории"""
+        if category == "traffic":
+            return name in self.traffic_accounts
+        elif category == "sales":
+            return name in self.sales_accounts
+        else:
+            return False
 
-    def delete_accounts(self, account_names: List[str], category: str) -> Dict[str, bool]:
-        """Удаляет аккаунты"""
-        self._init_operations()
-        return self.deleter.delete_accounts(account_names, category)
+    def get_account(self, name: str, category: str) -> Optional:
+        """Возвращает объект Account по имени и категории"""
+        account_data = self.get_account_by_name(name, category)
+        return account_data.account if account_data else None
 
-    def get_account_info_for_deletion(self, account_names: List[str], category: str) -> List[Dict]:
-        """Получает информацию для подтверждения удаления"""
-        self._init_operations()
-        return self.deleter.get_deletion_info(account_names, category)
-
-    def move_accounts(self, account_names: List[str], source_category: str,
-                      target_category: str, target_status: str) -> Dict[str, bool]:
-        """Перемещает аккаунты"""
-        self._init_operations()
-        return self.mover.move_accounts(account_names, source_category, target_category, target_status)
-
-    def get_move_destinations(self, current_category: str, current_status: str) -> List[Dict]:
-        """Получает список доступных папок для перемещения"""
-        self._init_operations()
-        return self.mover.get_available_destinations(current_category, current_status)
-
-    async def refresh_all_accounts(self) -> Dict[str, int]:
-        """Полное обновление аккаунтов"""
-        self._init_operations()
-        return await self.updater.refresh_all_accounts()
-
-    async def refresh_category(self, category: str) -> int:
-        """Обновление конкретной категории"""
-        self._init_operations()
-        return await self.updater.refresh_category(category)
-
-    def get_account_info_for_archiving(self, account_names: List[str], category: str) -> List[Dict]:
-        """Получает информацию об аккаунтах для архивации"""
-        self._init_operations()
-        if not hasattr(self, 'archiver'):
-            from src.accounts.operations.archive_operations import AccountArchiver
-            self.archiver = AccountArchiver(self)
-        return self.archiver.get_archive_info(account_names, category)
-
-    def archive_accounts(self, account_names: List[str], category: str,
-                         archive_name: str, archive_format: str) -> Dict[str, any]:
-        """Архивирует аккаунты"""
-        self._init_operations()
-        if not hasattr(self, 'archiver'):
-            from src.accounts.operations.archive_operations import AccountArchiver
-            self.archiver = AccountArchiver(self)
-        return self.archiver.archive_accounts(account_names, category, archive_name, archive_format)
-
-    def check_winrar_available(self) -> bool:
-        """Проверяет доступность WinRAR"""
-        self._init_operations()
-        if not hasattr(self, 'archiver'):
-            from src.accounts.operations.archive_operations import AccountArchiver
-            self.archiver = AccountArchiver(self)
-        return self.archiver.check_winrar_available()
-
-    # Добавьте функции для GUI в src/accounts/manager.py
+    def get_accounts_by_category(self, category: str) -> List[str]:
+        """Возвращает список имен аккаунтов по категории"""
+        if category == "traffic":
+            return list(self.traffic_accounts.keys())
+        elif category == "sales":
+            return list(self.sales_accounts.keys())
+        else:
+            return []
 
 
+# ═══════════════════════════════════════════════════════════════════
+# 🌍 ГЛОБАЛЬНЫЙ ЭКЗЕМПЛЯР И ФУНКЦИИ ДЛЯ GUI
+# ═══════════════════════════════════════════════════════════════════
 
-# ИСПРАВЛЕНО: Глобальный экземпляр и функции
 _account_manager: Optional[AccountManager] = None
 
 
@@ -504,7 +325,10 @@ async def init_account_manager() -> AccountManager:
     return _account_manager
 
 
-# ИСПРАВЛЕНО: Функции для GUI
+# ═══════════════════════════════════════════════════════════════════
+# 🎨 ФУНКЦИИ ДЛЯ GUI - простые обертки
+# ═══════════════════════════════════════════════════════════════════
+
 def get_traffic_stats() -> List[Tuple[str, str, str]]:
     """Быстрое получение статистики трафика"""
     global _account_manager
@@ -527,6 +351,18 @@ def get_table_data(category: str, status: str = None, limit: int = 50) -> List[L
     if _account_manager:
         return _account_manager.get_table_data(category, status, limit)
     return []
+
+
+def get_paginated_data(category: str, status: str = None, page: int = 1, per_page: int = 10) -> dict:
+    """Быстрое получение данных с пагинацией"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.get_paginated_data(category, status, page, per_page)
+    return {
+        'data': [], 'total_items': 0, 'total_pages': 1, 'current_page': 1,
+        'per_page': per_page, 'has_next': False, 'has_prev': False
+    }
+
 
 def get_default_status(category: str) -> str:
     """Возвращает статус по умолчанию для категории"""
@@ -600,20 +436,6 @@ async def refresh_category(category: str) -> int:
         return await _account_manager.refresh_category(category)
     return 0
 
-def get_paginated_data(category: str, status: str = None, page: int = 1, per_page: int = 10) -> dict:
-    """Быстрое получение данных с пагинацией"""
-    global _account_manager
-    if _account_manager:
-        return _account_manager.get_paginated_data(category, status, page, per_page)
-    return {
-        'data': [],
-        'total_items': 0,
-        'total_pages': 1,
-        'current_page': 1,
-        'per_page': per_page,
-        'has_next': False,
-        'has_prev': False
-    }
 
 def get_account_info_for_archiving(account_names: List[str], category: str) -> List[Dict]:
     """Функция для GUI - получает информацию для архивации"""
@@ -622,17 +444,20 @@ def get_account_info_for_archiving(account_names: List[str], category: str) -> L
         return _account_manager.get_account_info_for_archiving(account_names, category)
     return []
 
+
 def archive_accounts(account_names: List[str], category: str,
-                    archive_name: str, archive_format: str) -> Dict[str, any]:
+                     archive_name: str, archive_format: str) -> Dict[str, any]:
     """Функция для GUI - архивирует аккаунты"""
     global _account_manager
     if _account_manager:
         return _account_manager.archive_accounts(account_names, category, archive_name, archive_format)
     return {'success': False, 'message': 'Менеджер не инициализирован'}
 
+
 def check_winrar_available() -> bool:
     """Функция для GUI - проверяет доступность WinRAR"""
     global _account_manager
     if _account_manager:
-        return _account_manager.check_winrar_available()
+        archiver = _account_manager._get_archiver()
+        return archiver.check_winrar_available()
     return False
