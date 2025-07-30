@@ -1,4 +1,4 @@
-# gui/dialogs/inviter_dialogs.py
+# gui/dialogs/inviter_dialogs.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 """
 Диалоги настроек для инвайтера - ПОЛНАЯ ВЕРСИЯ
 """
@@ -107,15 +107,236 @@ class UsersBaseDialog(QDialog):
         cancel_btn.setFixedSize(120, 44)
         cancel_btn.clicked.connect(self.reject)
 
-        # Кнопка создания
-        create_btn = QPushButton("Создать профиль")
-        create_btn.setObjectName("CreateButton")
-        create_btn.setFixedSize(150, 44)
-        create_btn.clicked.connect(self.accept)
+        # Кнопка сохранения
+        save_btn = QPushButton("Сохранить")
+        save_btn.setObjectName("SaveButton")
+        save_btn.setFixedSize(120, 44)
+        save_btn.clicked.connect(self.accept)
 
         layout.addStretch()
         layout.addWidget(cancel_btn)
-        layout.addWidget(create_btn)
+        layout.addWidget(save_btn)
+
+        return layout
+
+    def _center_on_parent(self):
+        """Центрирует диалог относительно родителя"""
+        if self.parent():
+            parent_rect = self.parent().geometry()
+            x = parent_rect.x() + (parent_rect.width() - self.width()) // 2
+            y = parent_rect.y() + (parent_rect.height() - self.height()) // 2
+            self.move(x, y)
+        else:
+            screen = QApplication.primaryScreen().geometry()
+            x = (screen.width() - self.width()) // 2
+            y = (screen.height() - self.height()) // 2
+            self.move(x, y)
+
+    def _apply_styles(self):
+        """Применяет стили к диалогу"""
+        self.setStyleSheet("""
+            QFrame#DialogContainer {
+                background: rgba(20, 20, 20, 0.95);
+                border: 2px solid rgba(255, 255, 255, 0.1);
+                border-radius: 16px;
+                backdrop-filter: blur(20px);
+            }
+
+            QLabel#DialogIcon {
+                font-size: 32px;
+                background: rgba(59, 130, 246, 0.1);
+                border-radius: 24px;
+                border: 2px solid rgba(59, 130, 246, 0.3);
+            }
+
+            QLabel#DialogTitle {
+                font-size: 20px;
+                font-weight: 700;
+                color: #FFFFFF;
+                margin: 0;
+            }
+
+            QLabel#DialogDescription {
+                font-size: 14px;
+                color: rgba(255, 255, 255, 0.8);
+                line-height: 1.4;
+                margin: 0;
+            }
+
+            QTextEdit#UsersTextEdit {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                padding: 12px;
+                font-family: 'Consolas', monospace;
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.9);
+                selection-background-color: rgba(59, 130, 246, 0.3);
+            }
+
+            QTextEdit#UsersTextEdit:focus {
+                border-color: #3B82F6;
+                background: rgba(255, 255, 255, 0.08);
+            }
+
+            QLabel#InfoLabel {
+                font-size: 12px;
+                color: rgba(59, 130, 246, 0.8);
+                background: rgba(59, 130, 246, 0.05);
+                border: 1px solid rgba(59, 130, 246, 0.2);
+                border-radius: 6px;
+                padding: 8px;
+                margin: 0;
+            }
+
+            QPushButton#CancelButton {
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 8px;
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            QPushButton#CancelButton:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: rgba(255, 255, 255, 0.3);
+                color: #FFFFFF;
+            }
+
+            QPushButton#SaveButton {
+                background: #10B981;
+                border: 1px solid #10B981;
+                border-radius: 8px;
+                color: #FFFFFF;
+                font-size: 14px;
+                font-weight: 600;
+            }
+
+            QPushButton#SaveButton:hover {
+                background: #059669;
+                border-color: #059669;
+            }
+        """)
+
+    def get_users(self) -> List[str]:
+        """Возвращает список пользователей"""
+        text = self.users_text.toPlainText()
+        users = []
+        for line in text.split('\n'):
+            line = line.strip()
+            if line:
+                # Убираем @ если есть
+                if line.startswith('@'):
+                    line = line[1:]
+                if line:  # Проверяем что что-то осталось
+                    users.append(line)
+        return users
+
+
+class ChatsBaseDialog(QDialog):
+    """Диалог настройки базы чатов"""
+
+    def __init__(self, parent=None, current_chats: List[str] = None):
+        super().__init__(parent)
+        self.current_chats = current_chats or []
+        self.setWindowTitle("База чатов")
+        self.setModal(True)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setFixedSize(600, 500)
+        self.init_ui()
+        self._center_on_parent()
+
+    def init_ui(self):
+        # Основной контейнер
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(20, 20, 20, 20)
+
+        # Контейнер для контента
+        self.content_container = QFrame()
+        self.content_container.setObjectName("DialogContainer")
+        content_layout = QVBoxLayout(self.content_container)
+        content_layout.setContentsMargins(30, 30, 30, 30)
+        content_layout.setSpacing(20)
+
+        # Заголовок с иконкой
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(15)
+
+        # Иконка
+        icon_label = QLabel("💬")
+        icon_label.setObjectName("DialogIcon")
+        icon_label.setFixedSize(48, 48)
+        icon_label.setAlignment(Qt.AlignCenter)
+
+        # Заголовок
+        title_label = QLabel("База чатов")
+        title_label.setObjectName("DialogTitle")
+        title_label.setWordWrap(True)
+
+        header_layout.addWidget(icon_label)
+        header_layout.addWidget(title_label, 1)
+
+        # Описание
+        desc = QLabel("Введите ссылки на чаты/каналы для инвайта (по одной на строку):")
+        desc.setObjectName("DialogDescription")
+        desc.setWordWrap(True)
+
+        # Текстовое поле
+        self.chats_text = QTextEdit()
+        self.chats_text.setObjectName("ChatsTextEdit")
+        self.chats_text.setPlaceholderText(
+            "https://t.me/chat1\nt.me/channel2\n@chatusername\nhttps://t.me/joinchat/ABC123")
+        self.chats_text.setPlainText('\n'.join(self.current_chats))
+
+        # Информация
+        info_label = QLabel("💡 Поддерживаются: полные ссылки, короткие ссылки, @username, invite ссылки")
+        info_label.setObjectName("InfoLabel")
+
+        # Кнопки
+        buttons_layout = self._create_buttons()
+
+        # Сборка
+        content_layout.addLayout(header_layout)
+        content_layout.addWidget(desc)
+        content_layout.addWidget(self.chats_text, 1)
+        content_layout.addWidget(info_label)
+        content_layout.addLayout(buttons_layout)
+
+        main_layout.addWidget(self.content_container)
+
+        # Стили
+        self._apply_styles()
+
+        # Тень
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(30)
+        shadow.setXOffset(0)
+        shadow.setYOffset(10)
+        shadow.setColor(QColor(0, 0, 0, 120))
+        self.content_container.setGraphicsEffect(shadow)
+
+    def _create_buttons(self):
+        """Создает кнопки диалога"""
+        layout = QHBoxLayout()
+        layout.setSpacing(12)
+
+        # Кнопка отмены
+        cancel_btn = QPushButton("Отменить")
+        cancel_btn.setObjectName("CancelButton")
+        cancel_btn.setFixedSize(120, 44)
+        cancel_btn.clicked.connect(self.reject)
+
+        # Кнопка сохранения
+        save_btn = QPushButton("Сохранить")
+        save_btn.setObjectName("SaveButton")
+        save_btn.setFixedSize(120, 44)
+        save_btn.clicked.connect(self.accept)
+
+        layout.addStretch()
+        layout.addWidget(cancel_btn)
+        layout.addWidget(save_btn)
 
         return layout
 
@@ -156,98 +377,37 @@ class UsersBaseDialog(QDialog):
                 margin: 0;
             }
 
-            QScrollArea#SettingsScroll {
-                background: transparent;
-                border: none;
+            QLabel#DialogDescription {
+                font-size: 14px;
+                color: rgba(255, 255, 255, 0.8);
+                line-height: 1.4;
+                margin: 0;
             }
 
-            QGroupBox#SettingsGroup {
-                font-size: 14px;
-                font-weight: 600;
-                color: rgba(255, 255, 255, 0.9);
+            QTextEdit#ChatsTextEdit {
+                background: rgba(255, 255, 255, 0.05);
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 8px;
-                padding-top: 10px;
-                margin-top: 10px;
-            }
-
-            QGroupBox#SettingsGroup::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-            }
-
-            QLabel#SectionLabel {
-                font-size: 13px;
-                font-weight: 600;
-                color: rgba(255, 255, 255, 0.7);
-                text-align: center;
-                margin: 8px 0;
-            }
-
-            QLineEdit#SettingsInput {
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 6px;
-                padding: 8px 12px;
+                padding: 12px;
+                font-family: 'Consolas', monospace;
                 font-size: 13px;
                 color: rgba(255, 255, 255, 0.9);
                 selection-background-color: rgba(16, 185, 129, 0.3);
             }
 
-            QLineEdit#SettingsInput:focus {
+            QTextEdit#ChatsTextEdit:focus {
                 border-color: #10B981;
                 background: rgba(255, 255, 255, 0.08);
             }
 
-            QComboBox#SettingsCombo {
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 6px;
-                padding: 8px 12px;
-                font-size: 13px;
-                color: rgba(255, 255, 255, 0.9);
-                selection-background-color: rgba(16, 185, 129, 0.3);
-            }
-
-            QComboBox#SettingsCombo:focus {
-                border-color: #10B981;
-                background: rgba(255, 255, 255, 0.08);
-            }
-
-            QComboBox#SettingsCombo QAbstractItemView {
-                background: rgba(30, 30, 30, 0.95);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                selection-background-color: rgba(16, 185, 129, 0.3);
-                color: #FFFFFF;
-            }
-
-            QSpinBox#SettingsSpinBox {
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
+            QLabel#InfoLabel {
+                font-size: 12px;
+                color: rgba(16, 185, 129, 0.8);
+                background: rgba(16, 185, 129, 0.05);
+                border: 1px solid rgba(16, 185, 129, 0.2);
                 border-radius: 6px;
                 padding: 8px;
-                font-size: 13px;
-                color: rgba(255, 255, 255, 0.9);
-            }
-
-            QSpinBox#SettingsSpinBox:focus {
-                border-color: #10B981;
-                background: rgba(255, 255, 255, 0.08);
-            }
-
-            QPushButton#SettingsButton {
-                background: rgba(59, 130, 246, 0.2);
-                border: 1px solid rgba(59, 130, 246, 0.5);
-                border-radius: 6px;
-                color: #FFFFFF;
-                font-size: 13px;
-                font-weight: 500;
-                padding: 8px 12px;
-            }
-
-            QPushButton#SettingsButton:hover {
-                background: rgba(59, 130, 246, 0.3);
+                margin: 0;
             }
 
             QPushButton#CancelButton {
@@ -265,7 +425,7 @@ class UsersBaseDialog(QDialog):
                 color: #FFFFFF;
             }
 
-            QPushButton#CreateButton {
+            QPushButton#SaveButton {
                 background: #10B981;
                 border: 1px solid #10B981;
                 border-radius: 8px;
@@ -274,34 +434,21 @@ class UsersBaseDialog(QDialog):
                 font-weight: 600;
             }
 
-            QPushButton#CreateButton:hover {
+            QPushButton#SaveButton:hover {
                 background: #059669;
                 border-color: #059669;
             }
         """)
 
-    def get_profile_data(self) -> Dict:
-        """Возвращает данные профиля"""
-        return {
-            'name': self.profile_name.text() or "Новый профиль",
-            'invite_type': self.invite_type.currentText(),
-            'threads_per_chat': self.threads_per_chat.value(),
-            'chat_limit': self.chat_limit.value(),
-            'account_limit': self.account_limit.value(),
-            'invite_delay': self.invite_delay.value(),
-            'freeze_limit': self.freeze_limit.value(),
-            'join_delay': self.join_delay.value(),
-            'spam_errors': self.spam_errors.value(),
-            'writeoff_limit': self.writeoff_limit.value(),
-            'chat_spam_limit': self.chat_spam_limit.value(),
-            'chat_writeoff_limit': self.chat_writeoff_limit.value(),
-            'unknown_errors_limit': self.unknown_errors_limit.value(),
-            'blocked_invites_limit': self.blocked_invites_limit.value(),
-            'is_running': False,
-            'users_list': [],
-            'chats_list': [],
-            'extended_settings': {}
-        }
+    def get_chats(self) -> List[str]:
+        """Возвращает список чатов"""
+        text = self.chats_text.toPlainText()
+        chats = []
+        for line in text.split('\n'):
+            line = line.strip()
+            if line:
+                chats.append(line)
+        return chats
 
 
 class ExtendedSettingsDialog(QDialog):
@@ -666,391 +813,6 @@ class ExtendedSettingsDialog(QDialog):
         }
 
 
-# Удобные функции для показа диалогов
-def show_users_base_dialog(parent, current_users: List[str] = None) -> List[str]:
-    """Показывает диалог настройки базы пользователей"""
-    dialog = UsersBaseDialog(parent, current_users)
-    if dialog.exec() == QDialog.Accepted:
-        return dialog.get_users()
-    return current_users or []
-
-
-def show_chats_base_dialog(parent, current_chats: List[str] = None) -> List[str]:
-    """Показывает диалог настройки базы чатов"""
-    dialog = ChatsBaseDialog(parent, current_chats)
-    if dialog.exec() == QDialog.Accepted:
-        return dialog.get_chats()
-    return current_chats or []
-
-
-def show_create_profile_dialog(parent) -> Dict:
-    """Показывает диалог создания профиля"""
-    dialog = CreateProfileDialog(parent)
-    if dialog.exec() == QDialog.Accepted:
-        return dialog.get_profile_data()
-    return {}
-
-
-def show_extended_settings_dialog(parent, profile_data: Dict = None) -> Dict:
-    """Показывает диалог расширенных настроек"""
-    dialog = ExtendedSettingsDialog(parent, profile_data)
-    if dialog.exec() == QDialog.Accepted:
-        return dialog.get_settings()
-    return profile_data or {}
-
-    # Кнопка отмены
-    cancel_btn = QPushButton("Отменить")
-    cancel_btn.setObjectName("CancelButton")
-    cancel_btn.setFixedSize(120, 44)
-    cancel_btn.clicked.connect(self.reject)
-
-    # Кнопка сохранения
-    save_btn = QPushButton("Сохранить")
-    save_btn.setObjectName("SaveButton")
-    save_btn.setFixedSize(120, 44)
-    save_btn.clicked.connect(self.accept)
-
-    layout.addStretch()
-    layout.addWidget(cancel_btn)
-    layout.addWidget(save_btn)
-
-    return layout
-
-
-def _center_on_parent(self):
-    """Центрирует диалог относительно родителя"""
-    if self.parent():
-        parent_rect = self.parent().geometry()
-        x = parent_rect.x() + (parent_rect.width() - self.width()) // 2
-        y = parent_rect.y() + (parent_rect.height() - self.height()) // 2
-        self.move(x, y)
-    else:
-        screen = QApplication.primaryScreen().geometry()
-        x = (screen.width() - self.width()) // 2
-        y = (screen.height() - self.height()) // 2
-        self.move(x, y)
-
-
-def _apply_styles(self):
-    """Применяет стили к диалогу"""
-    self.setStyleSheet("""
-            QFrame#DialogContainer {
-                background: rgba(20, 20, 20, 0.95);
-                border: 2px solid rgba(255, 255, 255, 0.1);
-                border-radius: 16px;
-                backdrop-filter: blur(20px);
-            }
-
-            QLabel#DialogIcon {
-                font-size: 32px;
-                background: rgba(59, 130, 246, 0.1);
-                border-radius: 24px;
-                border: 2px solid rgba(59, 130, 246, 0.3);
-            }
-
-            QLabel#DialogTitle {
-                font-size: 20px;
-                font-weight: 700;
-                color: #FFFFFF;
-                margin: 0;
-            }
-
-            QLabel#DialogDescription {
-                font-size: 14px;
-                color: rgba(255, 255, 255, 0.8);
-                line-height: 1.4;
-                margin: 0;
-            }
-
-            QTextEdit#UsersTextEdit {
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 8px;
-                padding: 12px;
-                font-family: 'Consolas', monospace;
-                font-size: 13px;
-                color: rgba(255, 255, 255, 0.9);
-                selection-background-color: rgba(59, 130, 246, 0.3);
-            }
-
-            QTextEdit#UsersTextEdit:focus {
-                border-color: #3B82F6;
-                background: rgba(255, 255, 255, 0.08);
-            }
-
-            QLabel#InfoLabel {
-                font-size: 12px;
-                color: rgba(59, 130, 246, 0.8);
-                background: rgba(59, 130, 246, 0.05);
-                border: 1px solid rgba(59, 130, 246, 0.2);
-                border-radius: 6px;
-                padding: 8px;
-                margin: 0;
-            }
-
-            QPushButton#CancelButton {
-                background: rgba(255, 255, 255, 0.06);
-                border: 1px solid rgba(255, 255, 255, 0.15);
-                border-radius: 8px;
-                color: rgba(255, 255, 255, 0.9);
-                font-size: 14px;
-                font-weight: 500;
-            }
-
-            QPushButton#CancelButton:hover {
-                background: rgba(255, 255, 255, 0.1);
-                border-color: rgba(255, 255, 255, 0.3);
-                color: #FFFFFF;
-            }
-
-            QPushButton#SaveButton {
-                background: #10B981;
-                border: 1px solid #10B981;
-                border-radius: 8px;
-                color: #FFFFFF;
-                font-size: 14px;
-                font-weight: 600;
-            }
-
-            QPushButton#SaveButton:hover {
-                background: #059669;
-                border-color: #059669;
-            }
-        """)
-
-
-def get_users(self) -> List[str]:
-    """Возвращает список пользователей"""
-    text = self.users_text.toPlainText()
-    users = []
-    for line in text.split('\n'):
-        line = line.strip()
-        if line:
-            # Убираем @ если есть
-            if line.startswith('@'):
-                line = line[1:]
-            if line:  # Проверяем что что-то осталось
-                users.append(line)
-    return users
-
-
-class ChatsBaseDialog(QDialog):
-    """Диалог настройки базы чатов"""
-
-    def __init__(self, parent=None, current_chats: List[str] = None):
-        super().__init__(parent)
-        self.current_chats = current_chats or []
-        self.setWindowTitle("База чатов")
-        self.setModal(True)
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedSize(600, 500)
-        self.init_ui()
-        self._center_on_parent()
-
-    def init_ui(self):
-        # Основной контейнер
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-
-        # Контейнер для контента
-        self.content_container = QFrame()
-        self.content_container.setObjectName("DialogContainer")
-        content_layout = QVBoxLayout(self.content_container)
-        content_layout.setContentsMargins(30, 30, 30, 30)
-        content_layout.setSpacing(20)
-
-        # Заголовок с иконкой
-        header_layout = QHBoxLayout()
-        header_layout.setSpacing(15)
-
-        # Иконка
-        icon_label = QLabel("💬")
-        icon_label.setObjectName("DialogIcon")
-        icon_label.setFixedSize(48, 48)
-        icon_label.setAlignment(Qt.AlignCenter)
-
-        # Заголовок
-        title_label = QLabel("База чатов")
-        title_label.setObjectName("DialogTitle")
-        title_label.setWordWrap(True)
-
-        header_layout.addWidget(icon_label)
-        header_layout.addWidget(title_label, 1)
-
-        # Описание
-        desc = QLabel("Введите ссылки на чаты/каналы для инвайта (по одной на строку):")
-        desc.setObjectName("DialogDescription")
-        desc.setWordWrap(True)
-
-        # Текстовое поле
-        self.chats_text = QTextEdit()
-        self.chats_text.setObjectName("ChatsTextEdit")
-        self.chats_text.setPlaceholderText(
-            "https://t.me/chat1\nt.me/channel2\n@chatusername\nhttps://t.me/joinchat/ABC123")
-        self.chats_text.setPlainText('\n'.join(self.current_chats))
-
-        # Информация
-        info_label = QLabel("💡 Поддерживаются: полные ссылки, короткие ссылки, @username, invite ссылки")
-        info_label.setObjectName("InfoLabel")
-
-        # Кнопки
-        buttons_layout = self._create_buttons()
-
-        # Сборка
-        content_layout.addLayout(header_layout)
-        content_layout.addWidget(desc)
-        content_layout.addWidget(self.chats_text, 1)
-        content_layout.addWidget(info_label)
-        content_layout.addLayout(buttons_layout)
-
-        main_layout.addWidget(self.content_container)
-
-        # Стили
-        self._apply_styles()
-
-        # Тень
-        shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(30)
-        shadow.setXOffset(0)
-        shadow.setYOffset(10)
-        shadow.setColor(QColor(0, 0, 0, 120))
-        self.content_container.setGraphicsEffect(shadow)
-
-    def _create_buttons(self):
-        """Создает кнопки диалога"""
-        layout = QHBoxLayout()
-        layout.setSpacing(12)
-
-        # Кнопка отмены
-        cancel_btn = QPushButton("Отменить")
-        cancel_btn.setObjectName("CancelButton")
-        cancel_btn.setFixedSize(120, 44)
-        cancel_btn.clicked.connect(self.reject)
-
-        # Кнопка сохранения
-        save_btn = QPushButton("Сохранить")
-        save_btn.setObjectName("SaveButton")
-        save_btn.setFixedSize(120, 44)
-        save_btn.clicked.connect(self.accept)
-
-        layout.addStretch()
-        layout.addWidget(cancel_btn)
-        layout.addWidget(save_btn)
-
-        return layout
-
-    def _center_on_parent(self):
-        """Центrирует диалог относительно родителя"""
-        if self.parent():
-            parent_rect = self.parent().geometry()
-            x = parent_rect.x() + (parent_rect.width() - self.width()) // 2
-            y = parent_rect.y() + (parent_rect.height() - self.height()) // 2
-            self.move(x, y)
-        else:
-            screen = QApplication.primaryScreen().geometry()
-            x = (screen.width() - self.width()) // 2
-            y = (screen.height() - self.height()) // 2
-            self.move(x, y)
-
-    def _apply_styles(self):
-        """Применяет стили к диалогу"""
-        self.setStyleSheet("""
-            QFrame#DialogContainer {
-                background: rgba(20, 20, 20, 0.95);
-                border: 2px solid rgba(255, 255, 255, 0.1);
-                border-radius: 16px;
-                backdrop-filter: blur(20px);
-            }
-
-            QLabel#DialogIcon {
-                font-size: 32px;
-                background: rgba(16, 185, 129, 0.1);
-                border-radius: 24px;
-                border: 2px solid rgba(16, 185, 129, 0.3);
-            }
-
-            QLabel#DialogTitle {
-                font-size: 20px;
-                font-weight: 700;
-                color: #FFFFFF;
-                margin: 0;
-            }
-
-            QLabel#DialogDescription {
-                font-size: 14px;
-                color: rgba(255, 255, 255, 0.8);
-                line-height: 1.4;
-                margin: 0;
-            }
-
-            QTextEdit#ChatsTextEdit {
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 8px;
-                padding: 12px;
-                font-family: 'Consolas', monospace;
-                font-size: 13px;
-                color: rgba(255, 255, 255, 0.9);
-                selection-background-color: rgba(16, 185, 129, 0.3);
-            }
-
-            QTextEdit#ChatsTextEdit:focus {
-                border-color: #10B981;
-                background: rgba(255, 255, 255, 0.08);
-            }
-
-            QLabel#InfoLabel {
-                font-size: 12px;
-                color: rgba(16, 185, 129, 0.8);
-                background: rgba(16, 185, 129, 0.05);
-                border: 1px solid rgba(16, 185, 129, 0.2);
-                border-radius: 6px;
-                padding: 8px;
-                margin: 0;
-            }
-
-            QPushButton#CancelButton {
-                background: rgba(255, 255, 255, 0.06);
-                border: 1px solid rgba(255, 255, 255, 0.15);
-                border-radius: 8px;
-                color: rgba(255, 255, 255, 0.9);
-                font-size: 14px;
-                font-weight: 500;
-            }
-
-            QPushButton#CancelButton:hover {
-                background: rgba(255, 255, 255, 0.1);
-                border-color: rgba(255, 255, 255, 0.3);
-                color: #FFFFFF;
-            }
-
-            QPushButton#SaveButton {
-                background: #10B981;
-                border: 1px solid #10B981;
-                border-radius: 8px;
-                color: #FFFFFF;
-                font-size: 14px;
-                font-weight: 600;
-            }
-
-            QPushButton#SaveButton:hover {
-                background: #059669;
-                border-color: #059669;
-            }
-        """)
-
-    def get_chats(self) -> List[str]:
-        """Возвращает список чатов"""
-        text = self.chats_text.toPlainText()
-        chats = []
-        for line in text.split('\n'):
-            line = line.strip()
-            if line:
-                chats.append(line)
-        return chats
-
-
 class CreateProfileDialog(QDialog):
     """Диалог создания нового профиля инвайтера"""
 
@@ -1157,12 +919,6 @@ class CreateProfileDialog(QDialog):
         self.invite_type.addItems(["Классический", "Через админку"])
         layout.addWidget(self.invite_type, 1, 1)
 
-        # Выбор аккаунтов
-        layout.addWidget(QLabel("Аккаунты:"), 2, 0)
-        self.accounts_btn = QPushButton("Выбрать аккаунты")
-        self.accounts_btn.setObjectName("SettingsButton")
-        layout.addWidget(self.accounts_btn, 2, 1)
-
         return group
 
     def _create_work_settings_group(self) -> QGroupBox:
@@ -1204,22 +960,6 @@ class CreateProfileDialog(QDialog):
         self.invite_delay.setValue(30)
         layout.addWidget(self.invite_delay, 3, 1)
 
-        # Глобальный лимит заморозки
-        layout.addWidget(QLabel("Лимит заморозки:"), 4, 0)
-        self.freeze_limit = QSpinBox()
-        self.freeze_limit.setObjectName("SettingsSpinBox")
-        self.freeze_limit.setRange(1, 100)
-        self.freeze_limit.setValue(5)
-        layout.addWidget(self.freeze_limit, 4, 1)
-
-        # Задержка после вступления
-        layout.addWidget(QLabel("Задержка после вступления (сек):"), 5, 0)
-        self.join_delay = QSpinBox()
-        self.join_delay.setObjectName("SettingsSpinBox")
-        self.join_delay.setRange(1, 3600)
-        self.join_delay.setValue(300)
-        layout.addWidget(self.join_delay, 5, 1)
-
         return group
 
     def _create_security_settings_group(self) -> QGroupBox:
@@ -1229,67 +969,232 @@ class CreateProfileDialog(QDialog):
         layout = QGridLayout(group)
         layout.setSpacing(10)
 
-        # Заголовок блока защиты аккаунта
-        account_label = QLabel("=== Защита аккаунта ===")
-        account_label.setObjectName("SectionLabel")
-        layout.addWidget(account_label, 0, 0, 1, 2)
-
         # Ошибок спамблока до остановки
-        layout.addWidget(QLabel("Спамблоков до остановки:"), 1, 0)
+        layout.addWidget(QLabel("Спамблоков до остановки:"), 0, 0)
         self.spam_errors = QSpinBox()
         self.spam_errors.setObjectName("SettingsSpinBox")
         self.spam_errors.setRange(1, 50)
         self.spam_errors.setValue(3)
-        layout.addWidget(self.spam_errors, 1, 1)
+        layout.addWidget(self.spam_errors, 0, 1)
 
         # Списаний до остановки
-        layout.addWidget(QLabel("Списаний до остановки:"), 2, 0)
+        layout.addWidget(QLabel("Списаний до остановки:"), 1, 0)
         self.writeoff_limit = QSpinBox()
         self.writeoff_limit.setObjectName("SettingsSpinBox")
         self.writeoff_limit.setRange(1, 20)
         self.writeoff_limit.setValue(2)
-        layout.addWidget(self.writeoff_limit, 2, 1)
-
-        # Заголовок блока защиты чата
-        chat_label = QLabel("=== Защита чата ===")
-        chat_label.setObjectName("SectionLabel")
-        layout.addWidget(chat_label, 3, 0, 1, 2)
-
-        # Спамблоков подряд
-        layout.addWidget(QLabel("Спамблоков подряд:"), 4, 0)
-        self.chat_spam_limit = QSpinBox()
-        self.chat_spam_limit.setObjectName("SettingsSpinBox")
-        self.chat_spam_limit.setRange(1, 20)
-        self.chat_spam_limit.setValue(3)
-        layout.addWidget(self.chat_spam_limit, 4, 1)
-
-        # Списаний подряд
-        layout.addWidget(QLabel("Списаний подряд:"), 5, 0)
-        self.chat_writeoff_limit = QSpinBox()
-        self.chat_writeoff_limit.setObjectName("SettingsSpinBox")
-        self.chat_writeoff_limit.setRange(1, 10)
-        self.chat_writeoff_limit.setValue(2)
-        layout.addWidget(self.chat_writeoff_limit, 5, 1)
-
-        # Неизвестных ошибок подряд
-        layout.addWidget(QLabel("Неизвестных ошибок подряд:"), 6, 0)
-        self.unknown_errors_limit = QSpinBox()
-        self.unknown_errors_limit.setObjectName("SettingsSpinBox")
-        self.unknown_errors_limit.setRange(1, 20)
-        self.unknown_errors_limit.setValue(5)
-        layout.addWidget(self.unknown_errors_limit, 6, 1)
-
-        # Заблокированных инвайтов подряд
-        layout.addWidget(QLabel("Заблокированных подряд:"), 7, 0)
-        self.blocked_invites_limit = QSpinBox()
-        self.blocked_invites_limit.setObjectName("SettingsSpinBox")
-        self.blocked_invites_limit.setRange(1, 20)
-        self.blocked_invites_limit.setValue(3)
-        layout.addWidget(self.blocked_invites_limit, 7, 1)
+        layout.addWidget(self.writeoff_limit, 1, 1)
 
         return group
 
     def _create_buttons(self):
         """Создает кнопки диалога"""
         layout = QHBoxLayout()
-        layout
+        layout.setSpacing(12)
+
+        # Кнопка отмены
+        cancel_btn = QPushButton("Отменить")
+        cancel_btn.setObjectName("CancelButton")
+        cancel_btn.setFixedSize(120, 44)
+        cancel_btn.clicked.connect(self.reject)
+
+        # Кнопка создания
+        create_btn = QPushButton("Создать профиль")
+        create_btn.setObjectName("CreateButton")
+        create_btn.setFixedSize(150, 44)
+        create_btn.clicked.connect(self.accept)
+
+        layout.addStretch()
+        layout.addWidget(cancel_btn)
+        layout.addWidget(create_btn)
+
+        return layout
+
+    def _center_on_parent(self):
+        """Центрирует диалог относительно родителя"""
+        if self.parent():
+            parent_rect = self.parent().geometry()
+            x = parent_rect.x() + (parent_rect.width() - self.width()) // 2
+            y = parent_rect.y() + (parent_rect.height() - self.height()) // 2
+            self.move(x, y)
+        else:
+            screen = QApplication.primaryScreen().geometry()
+            x = (screen.width() - self.width()) // 2
+            y = (screen.height() - self.height()) // 2
+            self.move(x, y)
+
+    def _apply_styles(self):
+        """Применяет стили к диалогу"""
+        self.setStyleSheet("""
+            QFrame#DialogContainer {
+                background: rgba(20, 20, 20, 0.95);
+                border: 2px solid rgba(255, 255, 255, 0.1);
+                border-radius: 16px;
+                backdrop-filter: blur(20px);
+            }
+
+            QLabel#DialogIcon {
+                font-size: 32px;
+                background: rgba(16, 185, 129, 0.1);
+                border-radius: 24px;
+                border: 2px solid rgba(16, 185, 129, 0.3);
+            }
+
+            QLabel#DialogTitle {
+                font-size: 20px;
+                font-weight: 700;
+                color: #FFFFFF;
+                margin: 0;
+            }
+
+            QScrollArea#SettingsScroll {
+                background: transparent;
+                border: none;
+            }
+
+            QGroupBox#SettingsGroup {
+                font-size: 14px;
+                font-weight: 600;
+                color: rgba(255, 255, 255, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                padding-top: 10px;
+                margin-top: 10px;
+            }
+
+            QGroupBox#SettingsGroup::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 5px 0 5px;
+            }
+
+            QLineEdit#SettingsInput {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                padding: 8px 12px;
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.9);
+                selection-background-color: rgba(16, 185, 129, 0.3);
+            }
+
+            QLineEdit#SettingsInput:focus {
+                border-color: #10B981;
+                background: rgba(255, 255, 255, 0.08);
+            }
+
+            QComboBox#SettingsCombo {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                padding: 8px 12px;
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.9);
+                selection-background-color: rgba(16, 185, 129, 0.3);
+            }
+
+            QComboBox#SettingsCombo:focus {
+                border-color: #10B981;
+                background: rgba(255, 255, 255, 0.08);
+            }
+
+            QComboBox#SettingsCombo QAbstractItemView {
+                background: rgba(30, 30, 30, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                selection-background-color: rgba(16, 185, 129, 0.3);
+                color: #FFFFFF;
+            }
+
+            QSpinBox#SettingsSpinBox {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 6px;
+                padding: 8px;
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.9);
+            }
+
+            QSpinBox#SettingsSpinBox:focus {
+                border-color: #10B981;
+                background: rgba(255, 255, 255, 0.08);
+            }
+
+            QPushButton#CancelButton {
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 8px;
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 14px;
+                font-weight: 500;
+            }
+
+            QPushButton#CancelButton:hover {
+                background: rgba(255, 255, 255, 0.1);
+                border-color: rgba(255, 255, 255, 0.3);
+                color: #FFFFFF;
+            }
+
+            QPushButton#CreateButton {
+                background: #10B981;
+                border: 1px solid #10B981;
+                border-radius: 8px;
+                color: #FFFFFF;
+                font-size: 14px;
+                font-weight: 600;
+            }
+
+            QPushButton#CreateButton:hover {
+                background: #059669;
+                border-color: #059669;
+            }
+        """)
+
+    def get_profile_data(self) -> Dict:
+        """Возвращает данные профиля"""
+        return {
+            'name': self.profile_name.text() or "Новый профиль",
+            'invite_type': self.invite_type.currentText(),
+            'threads_per_chat': self.threads_per_chat.value(),
+            'chat_limit': self.chat_limit.value(),
+            'account_limit': self.account_limit.value(),
+            'invite_delay': self.invite_delay.value(),
+            'spam_errors': self.spam_errors.value(),
+            'writeoff_limit': self.writeoff_limit.value(),
+            'is_running': False,
+            'users_list': [],
+            'chats_list': [],
+            'extended_settings': {}
+        }
+
+
+# Удобные функции для показа диалогов
+def show_users_base_dialog(parent, current_users: List[str] = None) -> List[str]:
+    """Показывает диалог настройки базы пользователей"""
+    dialog = UsersBaseDialog(parent, current_users)
+    if dialog.exec() == QDialog.Accepted:
+        return dialog.get_users()
+    return current_users or []
+
+
+def show_chats_base_dialog(parent, current_chats: List[str] = None) -> List[str]:
+    """Показывает диалог настройки базы чатов"""
+    dialog = ChatsBaseDialog(parent, current_chats)
+    if dialog.exec() == QDialog.Accepted:
+        return dialog.get_chats()
+    return current_chats or []
+
+
+def show_create_profile_dialog(parent) -> Dict:
+    """Показывает диалог создания профиля"""
+    dialog = CreateProfileDialog(parent)
+    if dialog.exec() == QDialog.Accepted:
+        return dialog.get_profile_data()
+    return {}
+
+
+def show_extended_settings_dialog(parent, profile_data: Dict = None) -> Dict:
+    """Показывает диалог расширенных настроек"""
+    dialog = ExtendedSettingsDialog(parent, profile_data)
+    if dialog.exec() == QDialog.Accepted:
+        return dialog.get_settings()
+    return profile_data or {}

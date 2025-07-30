@@ -1,4 +1,4 @@
-# gui/inviter_manager.py
+# gui/inviter_manager.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 """
 Главный менеджер инвайтера - интерфейс для массовых инвайтов
 """
@@ -63,34 +63,8 @@ class InviterManagerTab(QWidget):
 
         layout.addWidget(header_container)
 
-    def _on_create_profile(self):
-        """Обработка создания нового профиля"""
-        try:
-            from gui.notifications import show_success, show_error
-
-            # Показываем диалог создания профиля
-            profile_data = show_create_profile_dialog(self)
-
-            if profile_data:
-                # Добавляем профиль в таблицу
-                self.profiles_table.add_profile(profile_data)
-
-                show_success(
-                    "Профиль создан",
-                    f"Профиль '{profile_data['name']}' успешно создан"
-                )
-
-                logger.info(f"✅ Создан новый профиль: {profile_data['name']}")
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка создания профиля: {e}")
-            show_error("Ошибка", f"Не удалось создать профиль: {e}")
-
     def _create_control_buttons(self):
         """Создает кнопки управления инвайтером"""
-
-        self.create_profile_btn.clicked.connect(self._on_create_profile)
-
         buttons_layout = QHBoxLayout()
         buttons_layout.setSpacing(10)
 
@@ -116,6 +90,9 @@ class InviterManagerTab(QWidget):
             }
         """)
 
+        # ИСПРАВЛЕНО: Подключаем обработчик ПОСЛЕ создания кнопки
+        self.create_profile_btn.clicked.connect(self._on_create_profile)
+
         # Кнопка запуска всех
         self.start_all_btn = QPushButton("▶️ Запустить все")
         self.start_all_btn.setObjectName("StartAllButton")
@@ -134,6 +111,7 @@ class InviterManagerTab(QWidget):
                 border-color: #1D4ED8;
             }
         """)
+        self.start_all_btn.clicked.connect(self._on_start_all_profiles)
 
         # Кнопка остановки всех
         self.stop_all_btn = QPushButton("⏸️ Остановить все")
@@ -153,12 +131,67 @@ class InviterManagerTab(QWidget):
                 border-color: #B91C1C;
             }
         """)
+        self.stop_all_btn.clicked.connect(self._on_stop_all_profiles)
 
         buttons_layout.addWidget(self.create_profile_btn)
         buttons_layout.addWidget(self.start_all_btn)
         buttons_layout.addWidget(self.stop_all_btn)
 
         return buttons_layout
+
+    def _on_create_profile(self):
+        """Обработка создания нового профиля"""
+        try:
+            from gui.notifications import show_success, show_error
+
+            # Показываем диалог создания профиля
+            profile_data = show_create_profile_dialog(self)
+
+            if profile_data:
+                # Добавляем профиль в таблицу
+                self.profiles_table.add_profile(profile_data)
+
+                show_success(
+                    "Профиль создан",
+                    f"Профиль '{profile_data['name']}' успешно создан"
+                )
+
+                logger.info(f"✅ Создан новый профиль: {profile_data['name']}")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка создания профиля: {e}")
+            from gui.notifications import show_error
+            show_error("Ошибка", f"Не удалось создать профиль: {e}")
+
+    def _on_start_all_profiles(self):
+        """Запускает все профили"""
+        try:
+            if hasattr(self, 'profiles_table'):
+                self.profiles_table.start_all_profiles()
+
+                from gui.notifications import show_success
+                show_success(
+                    "Профили запущены",
+                    "Все профили инвайтера запущены"
+                )
+                logger.info("🚀 Все профили инвайтера запущены")
+        except Exception as e:
+            logger.error(f"❌ Ошибка запуска всех профилей: {e}")
+
+    def _on_stop_all_profiles(self):
+        """Останавливает все профили"""
+        try:
+            if hasattr(self, 'profiles_table'):
+                self.profiles_table.stop_all_profiles()
+
+                from gui.notifications import show_warning
+                show_warning(
+                    "Профили остановлены",
+                    "Все профили инвайтера остановлены"
+                )
+                logger.info("⏸️ Все профили инвайтера остановлены")
+        except Exception as e:
+            logger.error(f"❌ Ошибка остановки всех профилей: {e}")
 
     def _create_stats_section(self, layout):
         """Создает секцию статистики"""

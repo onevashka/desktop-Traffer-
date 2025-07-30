@@ -1,4 +1,4 @@
-# gui/component_inviter/inviter_table.py
+# gui/component_inviter/inviter_table.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 """
 Компонент таблицы профилей инвайтера с двухэтажными строками
 """
@@ -55,6 +55,7 @@ class InviterProfileRow(QWidget):
         # Стили
         self._apply_styles()
 
+        # ИСПРАВЛЕНО: Подключаем обработчики ПОСЛЕ создания кнопок
         self.users_btn.clicked.connect(self._on_users_settings)
         self.chats_btn.clicked.connect(self._on_chats_settings)
         self.settings_btn.clicked.connect(self._on_extended_settings)
@@ -201,7 +202,6 @@ class InviterProfileRow(QWidget):
         users_label = QLabel("База юзеров:")
         users_label.setStyleSheet("font-size: 11px; color: rgba(255,255,255,0.6);")
 
-        # ← ОБНОВИТЕ ЭТИ СТРОКИ
         users_count = len(self.users_list)
         button_text = f"📝 {users_count} юзеров" if users_count > 0 else "📝 Настроить"
 
@@ -235,7 +235,6 @@ class InviterProfileRow(QWidget):
         chats_label = QLabel("База чатов:")
         chats_label.setStyleSheet("font-size: 11px; color: rgba(255,255,255,0.6);")
 
-        # ← ОБНОВИТЕ ЭТИ СТРОКИ
         chats_count = len(self.chats_list)
         button_text = f"📝 {chats_count} чатов" if chats_count > 0 else "📝 Настроить"
 
@@ -280,7 +279,7 @@ class InviterProfileRow(QWidget):
         return widget
 
     def _create_limits_settings(self):
-        """Настройки лимитов"""
+        """Настройки лимитов - ИСПРАВЛЕННАЯ ВЕРСИЯ"""
         widget = QWidget()
         widget.setFixedWidth(120)
         layout = QVBoxLayout(widget)
@@ -288,6 +287,17 @@ class InviterProfileRow(QWidget):
         layout.setSpacing(2)
 
         # Лимит на чат
+        chat_limit_layout = QHBoxLayout()
+        chat_limit_layout.setSpacing(5)
+
+        chat_limit_label = QLabel("Чат:")
+        chat_limit_label.setStyleSheet("font-size: 10px; color: rgba(255,255,255,0.6);")
+
+        self.chat_limit_spin = QSpinBox()
+        self.chat_limit_spin.setRange(1, 1000)
+        self.chat_limit_spin.setValue(50)
+        self.chat_limit_spin.setFixedSize(50, 20)
+
         chat_limit_layout.addWidget(chat_limit_label)
         chat_limit_layout.addWidget(self.chat_limit_spin)
 
@@ -579,6 +589,45 @@ class InviterProfileRow(QWidget):
         """Удаляет профиль"""
         self.profile_deleted.emit(self.profile_name)
 
+    def _on_users_settings(self):
+        """Настройка базы пользователей"""
+        try:
+            current_users = getattr(self, 'users_list', [])
+            users = show_users_base_dialog(self, current_users)
+            if users != current_users:
+                self.users_list = users
+                users_count = len(users)
+                button_text = f"📝 {users_count} юзеров" if users_count > 0 else "📝 Настроить"
+                self.users_btn.setText(button_text)
+                logger.info(f"🔄 Обновлена база пользователей для {self.profile_name}: {len(users)} пользователей")
+        except Exception as e:
+            logger.error(f"❌ Ошибка настройки пользователей: {e}")
+
+    def _on_chats_settings(self):
+        """Настройка базы чатов"""
+        try:
+            current_chats = getattr(self, 'chats_list', [])
+            chats = show_chats_base_dialog(self, current_chats)
+            if chats != current_chats:
+                self.chats_list = chats
+                chats_count = len(chats)
+                button_text = f"📝 {chats_count} чатов" if chats_count > 0 else "📝 Настроить"
+                self.chats_btn.setText(button_text)
+                logger.info(f"🔄 Обновлена база чатов для {self.profile_name}: {len(chats)} чатов")
+        except Exception as e:
+            logger.error(f"❌ Ошибка настройки чатов: {e}")
+
+    def _on_extended_settings(self):
+        """Расширенные настройки профиля"""
+        try:
+            current_settings = getattr(self, 'extended_settings', {})
+            settings = show_extended_settings_dialog(self, current_settings)
+            if settings != current_settings:
+                self.extended_settings = settings
+                logger.info(f"⚙️ Обновлены расширенные настройки для {self.profile_name}")
+        except Exception as e:
+            logger.error(f"❌ Ошибка настройки профиля: {e}")
+
     def update_progress(self, value):
         """Обновляет прогресс бар"""
         self.progress_bar.setValue(value)
@@ -667,7 +716,10 @@ class InviterTableWidget(QWidget):
                 'invite_type': 'Классический',
                 'threads': 2,
                 'chat_limit': 50,
-                'acc_limit': 100
+                'acc_limit': 100,
+                'users_list': [],
+                'chats_list': [],
+                'extended_settings': {}
             },
             {
                 'name': 'Профиль #2',
@@ -675,7 +727,10 @@ class InviterTableWidget(QWidget):
                 'invite_type': 'Через админку',
                 'threads': 3,
                 'chat_limit': 75,
-                'acc_limit': 150
+                'acc_limit': 150,
+                'users_list': [],
+                'chats_list': [],
+                'extended_settings': {}
             },
             {
                 'name': 'Профиль #3',
@@ -683,7 +738,10 @@ class InviterTableWidget(QWidget):
                 'invite_type': 'Классический',
                 'threads': 1,
                 'chat_limit': 30,
-                'acc_limit': 80
+                'acc_limit': 80,
+                'users_list': [],
+                'chats_list': [],
+                'extended_settings': {}
             }
         ]
 
@@ -766,54 +824,3 @@ class InviterTableWidget(QWidget):
             self.opacity_animation.setEndValue(1.0)
             self.opacity_animation.setEasingCurve(QEasingCurve.OutCubic)
             self.opacity_animation.start()
-            _layout = QHBoxLayout()
-        chat_limit_layout.setSpacing(5)
-
-        chat_limit_label = QLabel("Чат:")
-        chat_limit_label.setStyleSheet("font-size: 10px; color: rgba(255,255,255,0.6);")
-
-        self.chat_limit_spin = QSpinBox()
-        self.chat_limit_spin.setRange(1, 1000)
-        self.chat_limit_spin.setValue(50)
-        self.chat_limit_spin.setFixedSize(50, 20)
-
-        chat_limit
-
-    def _on_users_settings(self):
-        """Настройка базы пользователей"""
-        try:
-            current_users = getattr(self, 'users_list', [])
-            users = show_users_base_dialog(self, current_users)
-            if users != current_users:
-                self.users_list = users
-                users_count = len(users)
-                button_text = f"📝 {users_count} юзеров" if users_count > 0 else "📝 Настроить"
-                self.users_btn.setText(button_text)
-                logger.info(f"🔄 Обновлена база пользователей для {self.profile_name}: {len(users)} пользователей")
-        except Exception as e:
-            logger.error(f"❌ Ошибка настройки пользователей: {e}")
-
-    def _on_chats_settings(self):
-        """Настройка базы чатов"""
-        try:
-            current_chats = getattr(self, 'chats_list', [])
-            chats = show_chats_base_dialog(self, current_chats)
-            if chats != current_chats:
-                self.chats_list = chats
-                chats_count = len(chats)
-                button_text = f"📝 {chats_count} чатов" if chats_count > 0 else "📝 Настроить"
-                self.chats_btn.setText(button_text)
-                logger.info(f"🔄 Обновлена база чатов для {self.profile_name}: {len(chats)} чатов")
-        except Exception as e:
-            logger.error(f"❌ Ошибка настройки чатов: {e}")
-
-    def _on_extended_settings(self):
-        """Расширенные настройки профиля"""
-        try:
-            current_settings = getattr(self, 'extended_settings', {})
-            settings = show_extended_settings_dialog(self, current_settings)
-            if settings != current_settings:
-                self.extended_settings = settings
-                logger.info(f"⚙️ Обновлены расширенные настройки для {self.profile_name}")
-        except Exception as e:
-            logger.error(f"❌ Ошибка настройки профиля: {e}")
