@@ -195,6 +195,26 @@ class AccountTableWidget(QWidget):
             }
         """)
 
+        # ДОБАВЛЯЕМ КНОПКУ АРХИВАЦИИ
+        self.archive_btn = QPushButton("📦 Архив")
+        self.archive_btn.setObjectName("ActionButton")
+        self.archive_btn.setFixedSize(100, 36)
+        self.archive_btn.setStyleSheet("""
+            QPushButton#ActionButton {
+                background: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                color: rgba(255, 255, 255, 0.9);
+                font-size: 13px;
+                font-weight: 500;
+            }
+            QPushButton#ActionButton:hover {
+                background: rgba(255, 255, 255, 0.12);
+                border: 1px solid rgba(59, 130, 246, 0.5);
+                color: #FFFFFF;
+            }
+        """)
+
         # Селектор количества элементов на странице
         per_page_label = QLabel("Показать:")
         per_page_label.setObjectName("PerPageLabel")
@@ -284,6 +304,7 @@ class AccountTableWidget(QWidget):
         actions_layout.addWidget(self.delete_btn)
         actions_layout.addWidget(self.update_btn)
         actions_layout.addWidget(self.move_btn)
+        actions_layout.addWidget(self.archive_btn)  # ДОБАВЛЯЕМ В LAYOUT
         actions_layout.addStretch()
         actions_layout.addWidget(per_page_label)
         actions_layout.addWidget(self.per_page_combo)
@@ -296,7 +317,7 @@ class AccountTableWidget(QWidget):
         self.delete_btn.clicked.connect(self.action_handler.handle_delete_action)
         self.update_btn.clicked.connect(self.action_handler.handle_refresh_action)
         self.move_btn.clicked.connect(self.action_handler.handle_move_action)
-        self.archive_btn.clicked.connect(self.action_handler.handle_archive_action)
+        self.archive_btn.clicked.connect(self.action_handler.handle_archive_action)  # ТЕПЕРЬ ЭТО РАБОТАЕТ
 
     def _create_table(self, layout):
         """Создает таблицу"""

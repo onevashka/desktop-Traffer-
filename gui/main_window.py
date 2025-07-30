@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve, QTimer
 from PySide6.QtGui import QFont, QIcon
 from gui.account_manager import AccountManagerTab
+from gui.inviter_manager import InviterManagerTab
 from log_config import logger
 
 
@@ -74,6 +75,11 @@ class MainWindow(QMainWindow):
                 show_info(
                     "Менеджер аккаунтов",
                     "Управление Telegram аккаунтами"
+                )
+            elif section_name == "inviter":
+                show_info(
+                    "Инвайтер",
+                    "Массовые инвайты в чаты и каналы"
                 )
             elif section_name == "modules":
                 show_info(
@@ -167,6 +173,7 @@ class MainWindow(QMainWindow):
         # Кнопки навигации
         nav_buttons = [
             ("👥", "Менеджер аккаунтов", "accounts", True),
+            ("📨", "Инвайтер", "inviter", False),  # НОВАЯ КНОПКА
             ("🏭", "Модули автоматизации", "modules", False),
             ("📊", "Аналитика", "analytics", False),
             ("⚙️", "Настройки", "settings", False),
@@ -246,6 +253,8 @@ class MainWindow(QMainWindow):
             btn.clicked.connect(self._switch_to_accounts)
         elif key == "modules":
             btn.clicked.connect(self._switch_to_modules)
+        elif key == "inviter":
+            btn.clicked.connect(self._switch_to_inviter)
         # Добавьте другие обработчики по мере необходимости
 
         return btn
@@ -289,6 +298,9 @@ class MainWindow(QMainWindow):
         # Добавляем страницы
         self.account_tab = AccountManagerTab()
         self.stacked_widget.addWidget(self.account_tab)
+
+        self.inviter_tab = InviterManagerTab()
+        self.stacked_widget.addWidget(self.inviter_tab)
 
         # Заглушки для других разделов
         self.modules_tab = self._create_placeholder("🏭 Модули автоматизации", "Здесь будут модули для автоматизации")
@@ -336,9 +348,20 @@ class MainWindow(QMainWindow):
             self._accounts_visited = True
             QTimer.singleShot(300, lambda: self.show_navigation_info("accounts"))
 
+    def _switch_to_inviter(self):
+        """Переключение на инвайтер"""
+        self.stacked_widget.setCurrentIndex(1)
+        self._update_nav_buttons("inviter")
+
+        # Запускаем анимацию появления
+        if hasattr(self.inviter_tab, 'start_animation'):
+            QTimer.singleShot(100, self.inviter_tab.start_animation)
+
+        QTimer.singleShot(300, lambda: self.show_navigation_info("inviter"))
+
     def _switch_to_modules(self):
         """Переключение на модули"""
-        self.stacked_widget.setCurrentIndex(1)
+        self.stacked_widget.setCurrentIndex(2)
         self._update_nav_buttons("modules")
         QTimer.singleShot(300, lambda: self.show_navigation_info("modules"))
 
