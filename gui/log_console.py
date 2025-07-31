@@ -6,7 +6,7 @@ import html
 from PySide6.QtCore    import Qt, QObject, Signal
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QFrame
 from loguru            import logger
-
+from log_config import DEBUG_MODE
 
 class LogEmitter(QObject):
     new_log = Signal(str)
@@ -14,11 +14,12 @@ class LogEmitter(QObject):
 
 class LogConsole(QWidget):
     LEVEL_COLORS = {
-        "DEBUG":    "#3498db",
-        "INFO":     "#2ecc71",
-        "WARNING":  "#f1c40f",
-        "ERROR":    "#e74c3c",
-        "CRITICAL": "#c0392b"
+        "DEBUG": "#3498db",  # синий
+        "INFO": "#FFFFFF",  # белый
+        "SUCCESS": "#2ecc71",  # зелёный
+        "WARNING": "#f1c40f",  # жёлтый
+        "ERROR": "#e74c3c",  # красный
+        "CRITICAL": "#c0392b"  # тёмно-красный
     }
 
     def __init__(self):
@@ -56,24 +57,31 @@ class LogConsole(QWidget):
         self.emitter = LogEmitter()
         self.emitter.new_log.connect(self._append)
 
+        console_level = "DEBUG" if DEBUG_MODE else "INFO"
         logger.add(
             self.emitter.new_log.emit,
-            level="DEBUG",
-            format="{time:HH:mm:ss}|{message}",
+            level=console_level,
+            # теперь в выводе будет и уровень между временем и сообщением
+            format="{time:HH:mm:ss}|{level}|{message}",
             colorize=False
         )
 
     def _append(self, text: str):
-        # Разбор формата "HH:MM:SS|message"
-        parts = text.split("|", 1)
-        if len(parts) != 2:
-            self.editor.append(text)
+        # Ожидаем текст формата "HH:MM:SS|LEVEL|message"
+        parts = text.split("|", 2)
+        if len(parts) != 3:
+            # fallback на старый режим, если формат неожиданный
+            self.editor.append(html.escape(text))
             return
 
-        ts, msg = parts
+        ts, level, msg = parts
         safe = html.escape(msg)
+
+        # Подбираем цвет для уровня
+        color = self.LEVEL_COLORS.get(level, "#AAD4FF")
+
         html_line = (
             f"<span style='color:#777;'>{ts}</span> "
-            f"<span style='color:#AAD4FF;'>{safe}</span>"
+            f"<span style='color:{color}; font-weight:bold;'>{safe}</span>"
         )
         self.editor.append(html_line)

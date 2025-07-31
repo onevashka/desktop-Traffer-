@@ -33,6 +33,11 @@ DEAD_TRAFFER_FOLDER = WORK_TRAFFER_FOLDER / "Мертвые"
 FROZEN_TRAFFER_FOLDER = WORK_TRAFFER_FOLDER / "Замороженные"
 INVALID_TRAFFER_FORMAT_FOLDER = WORK_TRAFFER_FOLDER / "Неверный формат"
 
+#--------------- Инвайтер --------------------------
+
+WORK_INVITER_FOLDER = WORK_TRAFFER_FOLDER / "Инвайт"
+
+
 #--------------- Продажи ---------------
 WORK_SALES_FOLDER = BASE_PATH / "Продажи"
 DEAD_SALES_FOLDER = WORK_SALES_FOLDER / "Мертвые"
@@ -68,7 +73,8 @@ ALL_FOLDERS = [
     TDATA_FOLDER,
     SESSIONS_JSON_FOLDER,
     WORK_ACCOUNTS_SALE_FOLDER,
-    WORK_ACCOUNTS_TRAFFER_FOLDER
+    WORK_ACCOUNTS_TRAFFER_FOLDER,
+    WORK_INVITER_FOLDER
 ]
 
 # Список всех файлов для создания

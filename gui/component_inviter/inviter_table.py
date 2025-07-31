@@ -12,7 +12,7 @@ from gui.dialogs.inviter_dialogs import (
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QFrame,
     QLabel, QPushButton, QComboBox, QSpinBox, QCheckBox,
-    QProgressBar, QSizePolicy, QGraphicsOpacityEffect
+    QProgressBar, QSizePolicy, QGraphicsOpacityEffect, QLineEdit
 )
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, Signal
 from PySide6.QtGui import QFont, QColor
@@ -30,6 +30,7 @@ class InviterProfileRow(QWidget):
 
     def __init__(self, profile_data):
         super().__init__()
+        self.setAttribute(Qt.WA_StyledBackground, True)
         self.profile_data = profile_data
         self.profile_name = profile_data.get('name', 'Профиль')
         self.is_running = profile_data.get('is_running', False)
@@ -68,63 +69,32 @@ class InviterProfileRow(QWidget):
         layout.setSpacing(10)
 
         # 1. Индикатор статуса и кнопка запуска
-        status_widget = self._create_status_widget()
-        layout.addWidget(status_widget)
+        layout.addWidget(self._create_status_widget())
+
+        layout.addWidget(self._create_start_button_widget())
 
         # 2. Название профиля
-        name_widget = self._create_name_widget()
-        layout.addWidget(name_widget)
+        layout.addWidget(self._create_name_widget())
 
         # 3. Тип инвайта
-        invite_type = self._create_invite_type_widget()
-        layout.addWidget(invite_type)
+        layout.addWidget(self._create_invite_type_widget())
 
         # 4. База пользователей
-        users_base = self._create_users_base_widget()
-        layout.addWidget(users_base)
+        layout.addWidget(self._create_users_base_widget())
 
         # 5. База чатов
-        chats_base = self._create_chats_base_widget()
-        layout.addWidget(chats_base)
-
-        # 6. Настройки потоков
-        threads_settings = self._create_threads_settings()
-        layout.addWidget(threads_settings)
-
-        # 7. Лимиты
-        limits_settings = self._create_limits_settings()
-        layout.addWidget(limits_settings)
-
-        # 8. Безопасность
-        security_settings = self._create_security_settings()
-        layout.addWidget(security_settings)
+        layout.addWidget(self._create_chats_base_widget())
 
         # 9. Кнопки управления
-        control_buttons = self._create_control_buttons()
-        layout.addWidget(control_buttons)
+        layout.addWidget(self._create_control_buttons())
 
         main_layout.addWidget(first_floor)
 
     def _create_second_floor(self, main_layout):
-        """Создает второй этаж со счетчиками и прогрессом"""
-        second_floor = QWidget()
-        layout = QHBoxLayout(second_floor)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(15)
-
-        # Прогресс бар общий
+        """Только один растянутый прогресс-бар"""
         progress_widget = self._create_progress_widget()
-        layout.addWidget(progress_widget)
-
-        # Счетчики
-        counters_widget = self._create_counters_widget()
-        layout.addWidget(counters_widget)
-
-        # Статус последнего действия
-        status_widget = self._create_last_status_widget()
-        layout.addWidget(status_widget)
-
-        main_layout.addWidget(second_floor)
+        progress_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        main_layout.addWidget(progress_widget)
 
     def _create_status_widget(self):
         """Индикатор статуса и кнопка запуска"""
@@ -145,98 +115,155 @@ class InviterProfileRow(QWidget):
             }}
         """)
 
-        # Кнопка запуска/остановки
-        self.start_stop_btn = QPushButton("▶️" if not self.is_running else "⏸️")
-        self.start_stop_btn.setFixedSize(30, 30)
-        self.start_stop_btn.clicked.connect(self._toggle_profile)
-
         layout.addWidget(self.status_indicator)
-        layout.addWidget(self.start_stop_btn)
 
         return widget
 
-    def _create_name_widget(self):
-        """Название профиля"""
+    def _create_start_button_widget(self):
+        """Кнопка Запустить/Стоп цветная."""
         widget = QWidget()
         widget.setFixedWidth(120)
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(Qt.AlignCenter)
 
-        name_label = QLabel("Профиль:")
-        name_label.setStyleSheet("font-size: 11px; color: rgba(255,255,255,0.6);")
+        # создаём кнопку
+        self.start_stop_btn = QPushButton()
+        self._update_start_button()  # задаст текст и цвет
+        self.start_stop_btn.setFixedSize(100, 40)
+        self.start_stop_btn.clicked.connect(self._toggle_profile)
 
-        self.name_value = QLabel(self.profile_name)
-        self.name_value.setStyleSheet("font-size: 13px; font-weight: 600; color: #FFFFFF;")
-
-        layout.addWidget(name_label)
-        layout.addWidget(self.name_value)
-
+        layout.addWidget(self.start_stop_btn)
         return widget
 
-    def _create_invite_type_widget(self):
-        """Тип инвайта"""
+    def _update_start_button(self):
+        """Обновляет текст и цвет кнопки в зависимости от состояния."""
+        if self.is_running:
+            self.start_stop_btn.setText("Стоп")
+            self.start_stop_btn.setStyleSheet("background: #EF4444; color: white; border-radius: 4px;")
+        else:
+            self.start_stop_btn.setText("Запустить")
+            self.start_stop_btn.setStyleSheet("background: #10B981; color: white; border-radius: 4px;")
+
+    def _create_name_widget(self):
+        """Название профиля — теперь редактируемое поле и побольше."""
         widget = QWidget()
-        widget.setFixedWidth(100)
+        # расширили ширину контейнера
+        widget.setFixedWidth(200)
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        type_label = QLabel("Тип:")
-        type_label.setStyleSheet("font-size: 11px; color: rgba(255,255,255,0.6);")
+        name_label = QLabel("Профиль:")
+        name_label.setStyleSheet("font-size: 12px; color: rgba(255,255,255,0.6);")
+
+        # теперь QLineEdit вместо QLabel
+        self.name_edit = QLineEdit(self.profile_name)
+        self.name_edit.setFixedWidth(180)   # увеличенная ширина
+        self.name_edit.setFixedHeight(28)   # чуть повыше
+        self.name_edit.setStyleSheet("""
+            QLineEdit {
+                background: #111827;
+                border: 1px solid #374151;
+                border-radius: 4px;
+                color: #FFFFFF;
+                font-size: 13px;
+                padding: 4px;
+            }
+            QLineEdit:focus {
+                border-color: #2563EB;
+            }
+        """)
+
+        layout.addWidget(name_label)
+        layout.addWidget(self.name_edit)
+        return widget
+
+
+    def _on_name_changed(self):
+        new_name = self.name_edit.text().strip() or self.profile_name
+        if new_name != self.profile_name:
+            self.profile_name = new_name
+            # эмитим сигнал, чтобы внешний код узнал об изменении
+            self.settings_changed.emit(self.profile_name, {'name': new_name})
+
+    def _create_invite_type_widget(self):
+        """Тип инвайта — увеличили размер выпадашки."""
+        widget = QWidget()
+        widget.setFixedWidth(200)   # расширили контейнер
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        type_label = QLabel("Тип инвайта:")
+        type_label.setStyleSheet("font-size: 12px; color: rgba(255,255,255,0.6);")
 
         self.invite_type_combo = QComboBox()
         self.invite_type_combo.addItems(["Классический", "Через админку"])
-        self.invite_type_combo.setFixedHeight(25)
+        self.invite_type_combo.setFixedWidth(180)  # увеличенная ширина
+        self.invite_type_combo.setFixedHeight(28)  # чуть повыше
+        self.invite_type_combo.setStyleSheet("""
+            QComboBox {
+                background: #111827;
+                border: 1px solid #374151;
+                border-radius: 4px;
+                color: #FFFFFF;
+                font-size: 13px;
+                padding: 4px 8px;
+            }
+            QComboBox:focus {
+                border-color: #2563EB;
+            }
+            QComboBox QAbstractItemView {
+                background: #1F2937;
+                border: 1px solid #374151;
+                selection-background-color: #2563EB;
+                color: #FFFFFF;
+                font-size: 13px;
+            }
+        """)
 
         layout.addWidget(type_label)
         layout.addWidget(self.invite_type_combo)
-
         return widget
 
     def _create_users_base_widget(self):
-        """База пользователей"""
+        """База пользователей — кнопка с большим шрифтом текста"""
         widget = QWidget()
-        widget.setFixedWidth(90)
+        widget.setFixedWidth(90)  # обратно к вашему фиксированному весу
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        users_label = QLabel("База юзеров:")
-        users_label.setStyleSheet("font-size: 11px; color: rgba(255,255,255,0.6);")
-
         users_count = len(self.users_list)
-        button_text = f"📝 {users_count} юзеров" if users_count > 0 else "📝 Настроить"
+        button_text = f"Юзеров: {users_count}" if users_count else "Юзеров: 0"
 
         self.users_btn = QPushButton(button_text)
-        self.users_btn.setFixedHeight(25)
+        self.users_btn.setFixedHeight(25)  # ваш исходный фиксированный рост
         self.users_btn.setStyleSheet("""
             QPushButton {
                 background: rgba(59, 130, 246, 0.2);
                 border: 1px solid rgba(59, 130, 246, 0.5);
                 border-radius: 4px;
                 color: #FFFFFF;
-                font-size: 10px;
+                font-size: 14px;         /* увеличили текст */
+                font-weight: 600;        /* можно чуть жирнее */
             }
             QPushButton:hover {
                 background: rgba(59, 130, 246, 0.3);
             }
         """)
 
-        layout.addWidget(users_label)
         layout.addWidget(self.users_btn)
-
         return widget
 
+
     def _create_chats_base_widget(self):
-        """База чатов"""
+        """База чатов — кнопка с большим шрифтом текста"""
         widget = QWidget()
         widget.setFixedWidth(90)
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        chats_label = QLabel("База чатов:")
-        chats_label.setStyleSheet("font-size: 11px; color: rgba(255,255,255,0.6);")
-
         chats_count = len(self.chats_list)
-        button_text = f"📝 {chats_count} чатов" if chats_count > 0 else "📝 Настроить"
+        button_text = f"Чатов: {chats_count}" if chats_count else "Чатов: 0"
 
         self.chats_btn = QPushButton(button_text)
         self.chats_btn.setFixedHeight(25)
@@ -246,16 +273,16 @@ class InviterProfileRow(QWidget):
                 border: 1px solid rgba(16, 185, 129, 0.5);
                 border-radius: 4px;
                 color: #FFFFFF;
-                font-size: 10px;
+                color: #FFFFFF;
+                font-size: 14px;         /* увеличили текст */
+                font-weight: 600;
             }
             QPushButton:hover {
                 background: rgba(16, 185, 129, 0.3);
             }
         """)
 
-        layout.addWidget(chats_label)
         layout.addWidget(self.chats_btn)
-
         return widget
 
     def _create_threads_settings(self):
@@ -368,13 +395,13 @@ class InviterProfileRow(QWidget):
         """Кнопки управления профилем"""
         widget = QWidget()
         widget.setFixedWidth(80)
-        layout = QVBoxLayout(widget)
+        layout = QHBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
 
         # Кнопка настроек
         self.settings_btn = QPushButton("⚙️")
-        self.settings_btn.setFixedSize(30, 25)
+        self.settings_btn.setFixedSize(36, 36)
         self.settings_btn.setToolTip("Расширенные настройки")
         self.settings_btn.setStyleSheet("""
             QPushButton {
@@ -391,7 +418,7 @@ class InviterProfileRow(QWidget):
 
         # Кнопка удаления
         self.delete_btn = QPushButton("🗑️")
-        self.delete_btn.setFixedSize(30, 25)
+        self.delete_btn.setFixedSize(36, 36)
         self.delete_btn.setToolTip("Удалить профиль")
         self.delete_btn.setStyleSheet("""
             QPushButton {
@@ -415,7 +442,6 @@ class InviterProfileRow(QWidget):
     def _create_progress_widget(self):
         """Общий прогресс бар"""
         widget = QWidget()
-        widget.setFixedWidth(200)
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
@@ -424,9 +450,14 @@ class InviterProfileRow(QWidget):
         progress_label.setStyleSheet("font-size: 11px; color: rgba(255,255,255,0.6);")
 
         self.progress_bar = QProgressBar()
-        self.progress_bar.setFixedHeight(20)
-        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setFixedHeight(24)
+        # максимум мы будем задавать динамически
+        self.progress_bar.setRange(0, 1)
         self.progress_bar.setValue(0)
+        # Показывать текст "сделано из всего"
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setFormat("%v из %m")
+
         self.progress_bar.setStyleSheet("""
             QProgressBar {
                 border: 1px solid rgba(255, 255, 255, 0.2);
@@ -472,7 +503,6 @@ class InviterProfileRow(QWidget):
     def _create_counter(self, label_text, value, color):
         """Создает отдельный счетчик"""
         widget = QWidget()
-        widget.setFixedWidth(80)
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
@@ -520,43 +550,45 @@ class InviterProfileRow(QWidget):
 
     def _apply_styles(self):
         """Применяет стили к строке профиля"""
+        # Обновлённая стилизация для чёткого выделения профиля
         self.setStyleSheet("""
             QWidget#InviterProfileRow {
-                background: rgba(255, 255, 255, 0.03);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                border-radius: 12px;
-                margin: 2px 0;
+                background: #1F2937; /* темно-серый фон */
+                border: 1px solid #4B5563; /* контрастная рамка */
+                border-radius: 8px;
+                padding: 8px;
+                margin: 6px 0;
             }
             QWidget#InviterProfileRow:hover {
-                background: rgba(255, 255, 255, 0.05);
-                border: 1px solid rgba(59, 130, 246, 0.3);
+                background: #374151; /* подсветка */
+                border: 1px solid #2563EB; /* синий акцент */
             }
             QSpinBox {
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: #111827;
+                border: 1px solid #374151;
                 border-radius: 4px;
                 color: #FFFFFF;
                 font-size: 11px;
                 padding: 2px;
             }
             QSpinBox:focus {
-                border-color: #3B82F6;
+                border-color: #2563EB;
             }
             QComboBox {
-                background: rgba(255, 255, 255, 0.1);
-                border: 1px solid rgba(255, 255, 255, 0.2);
+                background: #111827;
+                border: 1px solid #374151;
                 border-radius: 4px;
                 color: #FFFFFF;
                 font-size: 11px;
                 padding: 2px 4px;
             }
             QComboBox:focus {
-                border-color: #3B82F6;
+                border-color: #2563EB;
             }
             QComboBox QAbstractItemView {
-                background: rgba(30, 30, 30, 0.95);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                selection-background-color: rgba(59, 130, 246, 0.3);
+                background: #1F2937;
+                border: 1px solid #374151;
+                selection-background-color: #2563EB;
                 color: #FFFFFF;
             }
         """)
@@ -575,7 +607,7 @@ class InviterProfileRow(QWidget):
         """)
 
         # Обновляем кнопку
-        self.start_stop_btn.setText("⏸️" if self.is_running else "▶️")
+        self._update_start_button()
 
         # Эмитим сигнал
         if self.is_running:
@@ -628,9 +660,12 @@ class InviterProfileRow(QWidget):
         except Exception as e:
             logger.error(f"❌ Ошибка настройки профиля: {e}")
 
-    def update_progress(self, value):
-        """Обновляет прогресс бар"""
-        self.progress_bar.setValue(value)
+    def update_progress(self, done: int, total: int):
+        """Обновляем X из Y."""
+        # обновляем максимум
+        self.progress_bar.setRange(0, total)
+        # и текущее значение
+        self.progress_bar.setValue(done)
 
     def update_counters(self, success, errors, total):
         """Обновляет счетчики"""
@@ -745,19 +780,21 @@ class InviterTableWidget(QWidget):
             }
         ]
 
-        self.profile_rows = []
-        for profile_data in test_profiles:
-            profile_row = InviterProfileRow(profile_data)
+        for i, data in enumerate(test_profiles):
+            row = InviterProfileRow(data)
+            # … подключаем сигналы …
+            self.profiles_layout.addWidget(row)
 
-            # Подключаем сигналы
-            profile_row.profile_started.connect(self._on_profile_started)
-            profile_row.profile_stopped.connect(self._on_profile_stopped)
-            profile_row.profile_deleted.connect(self._on_profile_deleted)
+            # Добавляем разделитель сразу после строки
+            if i < len(test_profiles) - 1:
+                sep = QFrame()
+                sep.setFrameShape(QFrame.HLine)
+                sep.setFrameShadow(QFrame.Sunken)
+                # стиль линии — светло-серая
+                sep.setStyleSheet("color: rgba(255,255,255,0.1);")
+                sep.setFixedHeight(1)
+                self.profiles_layout.addWidget(sep)
 
-            self.profile_rows.append(profile_row)
-            self.profiles_layout.addWidget(profile_row)
-
-        # Добавляем растяжку в конце
         self.profiles_layout.addStretch()
 
     def _on_profile_started(self, profile_name):

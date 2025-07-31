@@ -7,9 +7,9 @@ from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
     QTextEdit, QLineEdit, QSpinBox, QCheckBox, QComboBox,
     QFrame, QScrollArea, QGroupBox, QGridLayout, QGraphicsOpacityEffect,
-    QGraphicsDropShadowEffect, QApplication
+    QGraphicsDropShadowEffect, QApplication, QWidget
 )
-from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, QRect
+from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, QRect,  QTimer
 from PySide6.QtGui import QFont, QColor
 from typing import List, Dict
 
@@ -24,9 +24,10 @@ class UsersBaseDialog(QDialog):
         self.setModal(True)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedSize(600, 500)
+        self.setFixedSize(1400, 1200)
         self.init_ui()
-        self._center_on_parent()
+        QTimer.singleShot(0, self._center_on_parent)
+
 
     def init_ui(self):
         # Основной контейнер
@@ -119,18 +120,26 @@ class UsersBaseDialog(QDialog):
 
         return layout
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._center_on_parent()
+
     def _center_on_parent(self):
-        """Центрирует диалог относительно родителя"""
-        if self.parent():
-            parent_rect = self.parent().geometry()
-            x = parent_rect.x() + (parent_rect.width() - self.width()) // 2
-            y = parent_rect.y() + (parent_rect.height() - self.height()) // 2
-            self.move(x, y)
+        """Центрируем диалог над top-level окном родителя, или по центру экрана."""
+        # Если есть родитель, берём его top-level окно (чтобы geometry был валидным)
+        parent = self.parent()
+        if parent:
+            parent = parent.window()
+        # Вычисляем прямоугольник, над которым будем центрировать
+        if isinstance(parent, QWidget):
+            target_rect = parent.frameGeometry()
         else:
-            screen = QApplication.primaryScreen().geometry()
-            x = (screen.width() - self.width()) // 2
-            y = (screen.height() - self.height()) // 2
-            self.move(x, y)
+            target_rect = QApplication.primaryScreen().geometry()
+        # Центр этого прямоугольника
+        center_point = target_rect.center()
+        # Сдвигаем левый-верхний угол диалога так, чтобы его центр совпал с центром target
+        self.move(center_point.x() - self.width() // 2,
+                  center_point.y() - self.height() // 2)
 
     def _apply_styles(self):
         """Применяет стили к диалогу"""
@@ -244,9 +253,9 @@ class ChatsBaseDialog(QDialog):
         self.setModal(True)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedSize(600, 500)
+        self.setFixedSize(1400, 1200)
         self.init_ui()
-        self._center_on_parent()
+        QTimer.singleShot(0, self._center_on_parent)
 
     def init_ui(self):
         # Основной контейнер
@@ -341,17 +350,25 @@ class ChatsBaseDialog(QDialog):
         return layout
 
     def _center_on_parent(self):
-        """Центрирует диалог относительно родителя"""
-        if self.parent():
-            parent_rect = self.parent().geometry()
-            x = parent_rect.x() + (parent_rect.width() - self.width()) // 2
-            y = parent_rect.y() + (parent_rect.height() - self.height()) // 2
-            self.move(x, y)
+        """Центрируем диалог над top-level окном родителя, или по центру экрана."""
+        # Если есть родитель, берём его top-level окно (чтобы geometry был валидным)
+        parent = self.parent()
+        if parent:
+            parent = parent.window()
+        # Вычисляем прямоугольник, над которым будем центрировать
+        if isinstance(parent, QWidget):
+            target_rect = parent.frameGeometry()
         else:
-            screen = QApplication.primaryScreen().geometry()
-            x = (screen.width() - self.width()) // 2
-            y = (screen.height() - self.height()) // 2
-            self.move(x, y)
+            target_rect = QApplication.primaryScreen().geometry()
+        # Центр этого прямоугольника
+        center_point = target_rect.center()
+        # Сдвигаем левый-верхний угол диалога так, чтобы его центр совпал с центром target
+        self.move(center_point.x() - self.width() // 2,
+                  center_point.y() - self.height() // 2)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._center_on_parent()
 
     def _apply_styles(self):
         """Применяет стили к диалогу"""
@@ -461,9 +478,9 @@ class ExtendedSettingsDialog(QDialog):
         self.setModal(True)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedSize(600, 700)
+        self.setFixedSize(1100, 900)
         self.init_ui()
-        self._center_on_parent()
+        QTimer.singleShot(0, self._center_on_parent)
 
     def init_ui(self):
         # Основной контейнер
@@ -502,17 +519,17 @@ class ExtendedSettingsDialog(QDialog):
         scroll_layout = QVBoxLayout(scroll_widget)
 
         # Группы настроек
-        timing_group = self._create_timing_group()
-        scroll_layout.addWidget(timing_group)
+        main_group = self._create_main_settings_group()
+        acc_sec_group = self._create_account_security_group()
+        chat_sec_group = self._create_chat_security_group()
 
-        proxy_group = self._create_proxy_group()
-        scroll_layout.addWidget(proxy_group)
-
-        advanced_group = self._create_advanced_group()
-        scroll_layout.addWidget(advanced_group)
+        scroll_layout.addWidget(main_group)
+        scroll_layout.addWidget(acc_sec_group)
+        scroll_layout.addWidget(chat_sec_group)
 
         scroll.setWidget(scroll_widget)
         scroll.setWidgetResizable(True)
+
 
         # Кнопки
         buttons_layout = self._create_buttons()
@@ -535,114 +552,114 @@ class ExtendedSettingsDialog(QDialog):
         shadow.setColor(QColor(0, 0, 0, 120))
         self.content_container.setGraphicsEffect(shadow)
 
-    def _create_timing_group(self) -> QGroupBox:
-        """Группа настроек тайминга"""
-        group = QGroupBox("Настройки времени")
-        group.setObjectName("SettingsGroup")
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._center_on_parent()
+
+    def _create_main_settings_group(self) -> QGroupBox:
+        group = QGroupBox("Основные параметры работы")
         layout = QGridLayout(group)
         layout.setSpacing(10)
 
-        # Минимальная задержка
-        layout.addWidget(QLabel("Мин. задержка (сек):"), 0, 0)
-        self.min_delay = QSpinBox()
-        self.min_delay.setObjectName("SettingsSpinBox")
-        self.min_delay.setRange(1, 3600)
-        self.min_delay.setValue(self.profile_data.get('min_delay', 10))
-        layout.addWidget(self.min_delay, 0, 1)
+        # 1) Количество одновременных потоков в одном чате
+        layout.addWidget(QLabel("Потоков на каждый чат:"), 0, 0)
+        self.threads_per_chat = QSpinBox()
+        self.threads_per_chat.setRange(1, 50)
+        self.threads_per_chat.setValue(self.profile_data.get('threads_per_chat', 2))
+        layout.addWidget(self.threads_per_chat, 0, 1)
 
-        # Максимальная задержка
-        layout.addWidget(QLabel("Макс. задержка (сек):"), 1, 0)
-        self.max_delay = QSpinBox()
-        self.max_delay.setObjectName("SettingsSpinBox")
-        self.max_delay.setRange(1, 3600)
-        self.max_delay.setValue(self.profile_data.get('max_delay', 60))
-        layout.addWidget(self.max_delay, 1, 1)
+        # 2) Максимум успешных приглашений в одном чате
+        layout.addWidget(QLabel("Максимум успешных приглашений на чат:"), 1, 0)
+        self.success_per_chat = QSpinBox()
+        self.success_per_chat.setRange(0, 10000)
+        self.success_per_chat.setValue(self.profile_data.get('success_per_chat', 0))
+        layout.addWidget(self.success_per_chat, 1, 1)
 
-        # Время работы
-        layout.addWidget(QLabel("Время работы (мин):"), 2, 0)
-        self.work_time = QSpinBox()
-        self.work_time.setObjectName("SettingsSpinBox")
-        self.work_time.setRange(1, 1440)  # До 24 часов
-        self.work_time.setValue(self.profile_data.get('work_time', 60))
-        layout.addWidget(self.work_time, 2, 1)
+        # 3) Максимум успешных приглашений с одного аккаунта
+        layout.addWidget(QLabel("Максимум успешных приглашений с аккаунта:"), 2, 0)
+        self.success_per_account = QSpinBox()
+        self.success_per_account.setRange(0, 10000)
+        self.success_per_account.setValue(self.profile_data.get('success_per_account', 0))
+        layout.addWidget(self.success_per_account, 2, 1)
 
-        # Время отдыха
-        layout.addWidget(QLabel("Время отдыха (мин):"), 3, 0)
-        self.rest_time = QSpinBox()
-        self.rest_time.setObjectName("SettingsSpinBox")
-        self.rest_time.setRange(1, 1440)
-        self.rest_time.setValue(self.profile_data.get('rest_time', 30))
-        layout.addWidget(self.rest_time, 3, 1)
+        # 4) Задержка после старта (в секундах)
+        layout.addWidget(QLabel("Задержка после старта, сек:"), 3, 0)
+        self.delay_after_start = QSpinBox()
+        self.delay_after_start.setRange(0, 3600)
+        self.delay_after_start.setValue(self.profile_data.get('delay_after_start', 0))
+        layout.addWidget(self.delay_after_start, 3, 1)
 
-        return group
-
-    def _create_proxy_group(self) -> QGroupBox:
-        """Группа настроек прокси"""
-        group = QGroupBox("Настройки прокси")
-        group.setObjectName("SettingsGroup")
-        layout = QVBoxLayout(group)
-        layout.setSpacing(10)
-
-        # Использовать прокси
-        self.use_proxy = QCheckBox("Использовать прокси")
-        self.use_proxy.setObjectName("SettingsCheckBox")
-        self.use_proxy.setChecked(self.profile_data.get('use_proxy', False))
-        layout.addWidget(self.use_proxy)
-
-        # Автосмена прокси
-        self.auto_proxy_change = QCheckBox("Автосмена прокси при ошибках")
-        self.auto_proxy_change.setObjectName("SettingsCheckBox")
-        self.auto_proxy_change.setChecked(self.profile_data.get('auto_proxy_change', True))
-        layout.addWidget(self.auto_proxy_change)
-
-        # Максимальные попытки смены прокси
-        proxy_attempts_layout = QHBoxLayout()
-        proxy_attempts_layout.addWidget(QLabel("Макс. попыток смены прокси:"))
-        self.max_proxy_attempts = QSpinBox()
-        self.max_proxy_attempts.setObjectName("SettingsSpinBox")
-        self.max_proxy_attempts.setRange(1, 20)
-        self.max_proxy_attempts.setValue(self.profile_data.get('max_proxy_attempts', 3))
-        proxy_attempts_layout.addWidget(self.max_proxy_attempts)
-        layout.addLayout(proxy_attempts_layout)
+        # 5) Задержка между приглашениями (в секундах)
+        layout.addWidget(QLabel("Задержка между приглашениями, сек:"), 4, 0)
+        self.delay_between = QSpinBox()
+        self.delay_between.setRange(0, 3600)
+        self.delay_between.setValue(self.profile_data.get('delay_between', 0))
+        layout.addWidget(self.delay_between, 4, 1)
 
         return group
 
-    def _create_advanced_group(self) -> QGroupBox:
-        """Группа дополнительных настроек"""
-        group = QGroupBox("Дополнительные настройки")
-        group.setObjectName("SettingsGroup")
-        layout = QVBoxLayout(group)
+
+    def _create_account_security_group(self) -> QGroupBox:
+        group = QGroupBox("Параметры безопасности аккаунта")
+        layout = QGridLayout(group)
         layout.setSpacing(10)
 
-        # Логирование
-        self.enable_logging = QCheckBox("Подробное логирование")
-        self.enable_logging.setObjectName("SettingsCheckBox")
-        self.enable_logging.setChecked(self.profile_data.get('enable_logging', True))
-        layout.addWidget(self.enable_logging)
+        # 1) Ошибок «спамблока» подряд – до исключения аккаунта
+        layout.addWidget(QLabel("Максимум ошибок спамблока на аккаунт:"), 0, 0)
+        self.acc_spam_limit = QSpinBox()
+        self.acc_spam_limit.setRange(0, 100)
+        self.acc_spam_limit.setValue(self.profile_data.get('acc_spam_limit', 3))
+        layout.addWidget(self.acc_spam_limit, 0, 1)
 
-        # Автоматическая остановка
-        self.auto_stop = QCheckBox("Автоостановка при достижении лимитов")
-        self.auto_stop.setObjectName("SettingsCheckBox")
-        self.auto_stop.setChecked(self.profile_data.get('auto_stop', True))
-        layout.addWidget(self.auto_stop)
+        # 2) Количество списаний денежных средств до исключения аккаунта
+        layout.addWidget(QLabel("Максимум списаний на аккаунт:"), 1, 0)
+        self.acc_writeoff_limit = QSpinBox()
+        self.acc_writeoff_limit.setRange(0, 100)
+        self.acc_writeoff_limit.setValue(self.profile_data.get('acc_writeoff_limit', 2))
+        layout.addWidget(self.acc_writeoff_limit, 1, 1)
 
-        # Уведомления
-        self.notifications = QCheckBox("Показывать уведомления")
-        self.notifications.setObjectName("SettingsCheckBox")
-        self.notifications.setChecked(self.profile_data.get('notifications', True))
-        layout.addWidget(self.notifications)
+        # 3) Количество блокировок приглашений до исключения аккаунта
+        layout.addWidget(QLabel("Максимум блокировок приглашений на аккаунт:"), 2, 0)
+        self.acc_block_invite_limit = QSpinBox()
+        self.acc_block_invite_limit.setRange(0, 100)
+        self.acc_block_invite_limit.setValue(self.profile_data.get('acc_block_invite_limit', 5))
+        layout.addWidget(self.acc_block_invite_limit, 2, 1)
 
-        # Сохранение логов в файл
-        self.save_logs = QCheckBox("Сохранять логи в файл")
-        self.save_logs.setObjectName("SettingsCheckBox")
-        self.save_logs.setChecked(self.profile_data.get('save_logs', False))
-        layout.addWidget(self.save_logs)
+        return group
 
-        # Автоматический перезапуск
-        self.auto_restart = QCheckBox("Автоматический перезапуск после ошибок")
-        self.auto_restart.setObjectName("SettingsCheckBox")
-        self.auto_restart.setChecked(self.profile_data.get('auto_restart', False))
-        layout.addWidget(self.auto_restart)
+
+    def _create_chat_security_group(self) -> QGroupBox:
+        group = QGroupBox("Параметры безопасности чата")
+        layout = QGridLayout(group)
+        layout.setSpacing(10)
+
+        # 1) Сколько аккаунтов подряд бросили «спамблок» – до отключения чата
+        layout.addWidget(QLabel("Максимум аккаунтов со спамблоком подряд:"), 0, 0)
+        self.chat_spam_accounts = QSpinBox()
+        self.chat_spam_accounts.setRange(0, 100)
+        self.chat_spam_accounts.setValue(self.profile_data.get('chat_spam_accounts', 3))
+        layout.addWidget(self.chat_spam_accounts, 0, 1)
+
+        # 2) Сколько аккаунтов подряд списали средства – до отключения чата
+        layout.addWidget(QLabel("Максимум аккаунтов со списаниями подряд:"), 1, 0)
+        self.chat_writeoff_accounts = QSpinBox()
+        self.chat_writeoff_accounts.setRange(0, 100)
+        self.chat_writeoff_accounts.setValue(self.profile_data.get('chat_writeoff_accounts', 2))
+        layout.addWidget(self.chat_writeoff_accounts, 1, 1)
+
+        # 3) Сколько аккаунтов подряд получили неизвестную ошибку – до отключения чата
+        layout.addWidget(QLabel("Максимум аккаунтов с неизвестной ошибкой подряд:"), 2, 0)
+        self.chat_unknown_error_accounts = QSpinBox()
+        self.chat_unknown_error_accounts.setRange(0, 100)
+        self.chat_unknown_error_accounts.setValue(self.profile_data.get('chat_unknown_error_accounts', 1))
+        layout.addWidget(self.chat_unknown_error_accounts, 2, 1)
+
+        # 4) Сколько аккаунтов подряд заморозили – до отключения чата
+        layout.addWidget(QLabel("Максимум аккаунтов с заморозкой подряд:"), 3, 0)
+        self.chat_freeze_accounts = QSpinBox()
+        self.chat_freeze_accounts.setRange(0, 100)
+        self.chat_freeze_accounts.setValue(self.profile_data.get('chat_freeze_accounts', 1))
+        layout.addWidget(self.chat_freeze_accounts, 3, 1)
 
         return group
 
@@ -670,17 +687,21 @@ class ExtendedSettingsDialog(QDialog):
         return layout
 
     def _center_on_parent(self):
-        """Центрирует диалог относительно родителя"""
-        if self.parent():
-            parent_rect = self.parent().geometry()
-            x = parent_rect.x() + (parent_rect.width() - self.width()) // 2
-            y = parent_rect.y() + (parent_rect.height() - self.height()) // 2
-            self.move(x, y)
+        """Центрируем диалог над top-level окном родителя, или по центру экрана."""
+        # Если есть родитель, берём его top-level окно (чтобы geometry был валидным)
+        parent = self.parent()
+        if parent:
+            parent = parent.window()
+        # Вычисляем прямоугольник, над которым будем центрировать
+        if isinstance(parent, QWidget):
+            target_rect = parent.frameGeometry()
         else:
-            screen = QApplication.primaryScreen().geometry()
-            x = (screen.width() - self.width()) // 2
-            y = (screen.height() - self.height()) // 2
-            self.move(x, y)
+            target_rect = QApplication.primaryScreen().geometry()
+        # Центр этого прямоугольника
+        center_point = target_rect.center()
+        # Сдвигаем левый-верхний угол диалога так, чтобы его центр совпал с центром target
+        self.move(center_point.x() - self.width() // 2,
+                  center_point.y() - self.height() // 2)
 
     def _apply_styles(self):
         """Применяет стили к диалогу"""
@@ -710,22 +731,35 @@ class ExtendedSettingsDialog(QDialog):
                 background: transparent;
                 border: none;
             }
-
-            QGroupBox#SettingsGroup {
-                font-size: 14px;
-                font-weight: 600;
-                color: rgba(255, 255, 255, 0.9);
-                border: 1px solid rgba(255, 255, 255, 0.1);
+            
+            QGroupBox {
+                background: rgba(40, 40, 40, 0.9);
+                border: 1px solid rgba(255, 255, 255, 0.15);
                 border-radius: 8px;
-                padding-top: 10px;
-                margin-top: 10px;
+                margin-top: 16px;
+                padding: 12px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                subcontrol-position: top left;
+                padding: 0 8px;
+                color: #FFFFFF;
+                background: rgba(20, 20, 20, 0.95);
+                font-weight: 600;
+            }
+            
+            
+            QGroupBox#SettingsGroup {
+                background: rgba(30, 30, 30, 0.8);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 8px;
+                padding: 16px;
+                margin-top: 20px;
+                font-size: 15px;
+                font-weight: 600;
+                color: #FFFFFF;
             }
 
-            QGroupBox#SettingsGroup::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px 0 5px;
-            }
 
             QSpinBox#SettingsSpinBox {
                 background: rgba(255, 255, 255, 0.05);
@@ -796,20 +830,24 @@ class ExtendedSettingsDialog(QDialog):
         """)
 
     def get_settings(self) -> Dict:
-        """Возвращает настройки"""
         return {
-            'min_delay': self.min_delay.value(),
-            'max_delay': self.max_delay.value(),
-            'work_time': self.work_time.value(),
-            'rest_time': self.rest_time.value(),
-            'use_proxy': self.use_proxy.isChecked(),
-            'auto_proxy_change': self.auto_proxy_change.isChecked(),
-            'max_proxy_attempts': self.max_proxy_attempts.value(),
-            'enable_logging': self.enable_logging.isChecked(),
-            'auto_stop': self.auto_stop.isChecked(),
-            'notifications': self.notifications.isChecked(),
-            'save_logs': self.save_logs.isChecked(),
-            'auto_restart': self.auto_restart.isChecked()
+            # главные
+            'threads_per_chat': self.threads_per_chat.value(),
+            'success_per_chat': self.success_per_chat.value(),
+            'success_per_account': self.success_per_account.value(),
+            'delay_after_start': self.delay_after_start.value(),
+            'delay_between': self.delay_between.value(),
+
+            # безопасность аккаунтов
+            'acc_spam_limit': self.acc_spam_limit.value(),
+            'acc_writeoff_limit': self.acc_writeoff_limit.value(),
+            'acc_block_invite_limit': self.acc_block_invite_limit.value(),
+
+            # безопасность чата
+            'chat_spam_accounts': self.chat_spam_accounts.value(),
+            'chat_writeoff_accounts': self.chat_writeoff_accounts.value(),
+            'chat_unknown_error_accounts': self.chat_unknown_error_accounts.value(),
+            'chat_freeze_accounts': self.chat_freeze_accounts.value(),
         }
 
 
@@ -822,81 +860,44 @@ class CreateProfileDialog(QDialog):
         self.setModal(True)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedSize(700, 800)
+        self.setFixedSize(400, 200)
         self.init_ui()
-        self._center_on_parent()
 
     def init_ui(self):
-        # Основной контейнер
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
 
-        # Контейнер для контента
-        self.content_container = QFrame()
-        self.content_container.setObjectName("DialogContainer")
-        content_layout = QVBoxLayout(self.content_container)
-        content_layout.setContentsMargins(30, 30, 30, 30)
-        content_layout.setSpacing(20)
+        container = QFrame()
+        container.setObjectName("DialogContainer")
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(12)
 
-        # Заголовок с иконкой
-        header_layout = QHBoxLayout()
-        header_layout.setSpacing(15)
+        label = QLabel("Введите название профиля:")
+        label.setStyleSheet("font-size:16px; color:#FFF; font-weight:bold;")
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("Название профиля")
+        self.name_input.setFixedHeight(30)
 
-        # Иконка
-        icon_label = QLabel("➕")
-        icon_label.setObjectName("DialogIcon")
-        icon_label.setFixedSize(48, 48)
-        icon_label.setAlignment(Qt.AlignCenter)
+        buttons = QHBoxLayout()
+        buttons.addStretch()
+        cancel = QPushButton("Отменить")
+        cancel.setFixedSize(100, 32)
+        cancel.clicked.connect(self.reject)
+        create = QPushButton("Создать")
+        create.setFixedSize(100, 32)
+        create.clicked.connect(self.accept)
+        buttons.addWidget(cancel)
+        buttons.addWidget(create)
 
-        # Заголовок
-        title_label = QLabel("Создание нового профиля")
-        title_label.setObjectName("DialogTitle")
-        title_label.setWordWrap(True)
+        layout.addWidget(label)
+        layout.addWidget(self.name_input)
+        layout.addLayout(buttons)
+        main_layout.addWidget(container)
 
-        header_layout.addWidget(icon_label)
-        header_layout.addWidget(title_label, 1)
-
-        # Скролл область для настроек
-        scroll = QScrollArea()
-        scroll.setObjectName("SettingsScroll")
-        scroll_widget = QWidget()
-        scroll_layout = QVBoxLayout(scroll_widget)
-
-        # Основные настройки
-        basic_group = self._create_basic_settings_group()
-        scroll_layout.addWidget(basic_group)
-
-        # Настройки работы
-        work_group = self._create_work_settings_group()
-        scroll_layout.addWidget(work_group)
-
-        # Настройки безопасности
-        security_group = self._create_security_settings_group()
-        scroll_layout.addWidget(security_group)
-
-        scroll.setWidget(scroll_widget)
-        scroll.setWidgetResizable(True)
-
-        # Кнопки
-        buttons_layout = self._create_buttons()
-
-        # Сборка
-        content_layout.addLayout(header_layout)
-        content_layout.addWidget(scroll, 1)
-        content_layout.addLayout(buttons_layout)
-
-        main_layout.addWidget(self.content_container)
-
-        # Стили
-        self._apply_styles()
-
-        # Тень
-        shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(30)
-        shadow.setXOffset(0)
-        shadow.setYOffset(10)
-        shadow.setColor(QColor(0, 0, 0, 120))
-        self.content_container.setGraphicsEffect(shadow)
+        container.setStyleSheet(
+            "QFrame#DialogContainer { background: rgba(20,20,20,0.95); border-radius:8px; }"
+        )
 
     def _create_basic_settings_group(self) -> QGroupBox:
         """Создает группу основных настроек"""
@@ -987,6 +988,10 @@ class CreateProfileDialog(QDialog):
 
         return group
 
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._center_on_parent()
+
     def _create_buttons(self):
         """Создает кнопки диалога"""
         layout = QHBoxLayout()
@@ -1011,17 +1016,21 @@ class CreateProfileDialog(QDialog):
         return layout
 
     def _center_on_parent(self):
-        """Центрирует диалог относительно родителя"""
-        if self.parent():
-            parent_rect = self.parent().geometry()
-            x = parent_rect.x() + (parent_rect.width() - self.width()) // 2
-            y = parent_rect.y() + (parent_rect.height() - self.height()) // 2
-            self.move(x, y)
+        """Центрируем диалог над top-level окном родителя, или по центру экрана."""
+        # Если есть родитель, берём его top-level окно (чтобы geometry был валидным)
+        parent = self.parent()
+        if parent:
+            parent = parent.window()
+        # Вычисляем прямоугольник, над которым будем центрировать
+        if isinstance(parent, QWidget):
+            target_rect = parent.frameGeometry()
         else:
-            screen = QApplication.primaryScreen().geometry()
-            x = (screen.width() - self.width()) // 2
-            y = (screen.height() - self.height()) // 2
-            self.move(x, y)
+            target_rect = QApplication.primaryScreen().geometry()
+        # Центр этого прямоугольника
+        center_point = target_rect.center()
+        # Сдвигаем левый-верхний угол диалога так, чтобы его центр совпал с центром target
+        self.move(center_point.x() - self.width() // 2,
+                  center_point.y() - self.height() // 2)
 
     def _apply_styles(self):
         """Применяет стили к диалогу"""
@@ -1150,16 +1159,16 @@ class CreateProfileDialog(QDialog):
         """)
 
     def get_profile_data(self) -> Dict:
-        """Возвращает данные профиля"""
+        name = self.name_input.text().strip() or "Новый профиль"
         return {
-            'name': self.profile_name.text() or "Новый профиль",
-            'invite_type': self.invite_type.currentText(),
-            'threads_per_chat': self.threads_per_chat.value(),
-            'chat_limit': self.chat_limit.value(),
-            'account_limit': self.account_limit.value(),
-            'invite_delay': self.invite_delay.value(),
-            'spam_errors': self.spam_errors.value(),
-            'writeoff_limit': self.writeoff_limit.value(),
+            'name': name,
+            'invite_type': 'Классический',
+            'threads_per_chat': 2,
+            'chat_limit': 50,
+            'account_limit': 100,
+            'invite_delay': 30,
+            'spam_errors': 3,
+            'writeoff_limit': 2,
             'is_running': False,
             'users_list': [],
             'chats_list': [],
