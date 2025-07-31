@@ -1,6 +1,7 @@
-# src/modules/impl/inviter/inviter_manager.py
+# src/modules/impl/inviter/inviter_manager.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 """
 Главный менеджер модуля инвайтера - координирует все операции инвайтинга
+ОБНОВЛЕННАЯ ВАЛИДАЦИЯ ЧЕРЕЗ PROFILE_MANAGER
 """
 
 from typing import Dict, List, Optional, Tuple
@@ -109,12 +110,12 @@ class InviterModuleManager:
             return []
 
     def update_profile_users(self, profile_name: str, users_list: List[str]) -> bool:
-        """Обновляет базу пользователей"""
+        """
+        Обновляет базу пользователей (ИСПОЛЬЗУЕТ ВАЛИДАЦИЮ ИЗ PROFILE_MANAGER)
+        """
         try:
-            # Валидируем пользователей
-            validated_users = self._validate_users_list(users_list)
-
-            success = self.profile_manager.update_users_database(profile_name, validated_users)
+            # Теперь вся валидация происходит в profile_manager
+            success = self.profile_manager.update_users_database(profile_name, users_list)
 
             if success:
                 self._update_stats_cache()
@@ -127,12 +128,12 @@ class InviterModuleManager:
             return False
 
     def update_profile_chats(self, profile_name: str, chats_list: List[str]) -> bool:
-        """Обновляет базу чатов"""
+        """
+        Обновляет базу чатов (ИСПОЛЬЗУЕТ ВАЛИДАЦИЮ ИЗ PROFILE_MANAGER)
+        """
         try:
-            # Валидируем чаты
-            validated_chats = self._validate_chats_list(chats_list)
-
-            success = self.profile_manager.update_chats_database(profile_name, validated_chats)
+            # Теперь вся валидация происходит в profile_manager
+            success = self.profile_manager.update_chats_database(profile_name, chats_list)
 
             if success:
                 self._update_stats_cache()
@@ -342,51 +343,8 @@ class InviterModuleManager:
             return {'exists': False, 'error': str(e)}
 
     # ═══════════════════════════════════════════════════════════════════
-    # 🔧 ВАЛИДАЦИЯ И СЛУЖЕБНЫЕ МЕТОДЫ
+    # 🔧 СЛУЖЕБНЫЕ МЕТОДЫ (УПРОЩЕННЫЕ, ВАЛИДАЦИЯ ВЫНЕСЕНА В PROFILE_MANAGER)
     # ═══════════════════════════════════════════════════════════════════
-
-    def _validate_users_list(self, users_list: List[str]) -> List[str]:
-        """Валидирует и очищает список пользователей"""
-        validated_users = []
-
-        for user in users_list:
-            user = user.strip()
-            if not user:
-                continue
-
-            # Убираем @ если есть
-            if user.startswith('@'):
-                user = user[1:]
-
-            # Простая валидация username
-            if user and len(user) >= 5 and user.replace('_', '').isalnum():
-                validated_users.append(user)
-            else:
-                logger.warning(f"⚠️ Невалидный username пропущен: {user}")
-
-        logger.debug(f"📝 Валидация пользователей: {len(users_list)} -> {len(validated_users)}")
-        return validated_users
-
-    def _validate_chats_list(self, chats_list: List[str]) -> List[str]:
-        """Валидирует и очищает список чатов"""
-        validated_chats = []
-
-        for chat in chats_list:
-            chat = chat.strip()
-            if not chat:
-                continue
-
-            # Проверяем что это похоже на ссылку или username
-            if (chat.startswith('https://t.me/') or
-                    chat.startswith('t.me/') or
-                    chat.startswith('@') or
-                    (not '://' in chat and len(chat) >= 5)):
-                validated_chats.append(chat)
-            else:
-                logger.warning(f"⚠️ Невалидная ссылка чата пропущена: {chat}")
-
-        logger.debug(f"💬 Валидация чатов: {len(chats_list)} -> {len(validated_chats)}")
-        return validated_chats
 
     def _validate_config(self, config: Dict) -> Dict:
         """Валидирует конфигурацию профиля"""
@@ -481,7 +439,7 @@ class InviterModuleManager:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 🌍 ГЛОБАЛЬНЫЙ ЭКЗЕМПЛЯР ДЛЯ МОДУЛЕЙ
+# 🌍 ГЛОБАЛЬНЫЙ ЭКЗЕМПЛЯР ДЛЯ МОДУЛЕЙ (БЕЗ ИЗМЕНЕНИЙ)
 # ═══════════════════════════════════════════════════════════════════
 
 _inviter_module_manager: Optional[InviterModuleManager] = None
@@ -506,7 +464,7 @@ async def init_inviter_module() -> InviterModuleManager:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 🎨 ФУНКЦИИ ДЛЯ GUI - обертки для удобства
+# 🎨 ФУНКЦИИ ДЛЯ GUI - обертки для удобства (БЕЗ ИЗМЕНЕНИЙ)
 # ═══════════════════════════════════════════════════════════════════
 
 def get_inviter_stats() -> List[Tuple[str, str, str, str]]:
