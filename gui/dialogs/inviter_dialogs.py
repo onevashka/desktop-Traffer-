@@ -471,9 +471,9 @@ class ChatsBaseDialog(QDialog):
 class ExtendedSettingsDialog(QDialog):
     """Диалог расширенных настроек профиля"""
 
-    def __init__(self, parent=None, profile_data: Dict = None):
+    def __init__(self, parent=None, current_settings: Dict = None):
         super().__init__(parent)
-        self.profile_data = profile_data or {}
+        self.current_settings = current_settings or {}
         self.setWindowTitle("Расширенные настройки")
         self.setModal(True)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
@@ -565,35 +565,35 @@ class ExtendedSettingsDialog(QDialog):
         layout.addWidget(QLabel("Потоков на каждый чат:"), 0, 0)
         self.threads_per_chat = QSpinBox()
         self.threads_per_chat.setRange(1, 50)
-        self.threads_per_chat.setValue(self.profile_data.get('threads_per_chat', 2))
+        self.threads_per_chat.setValue(self.current_settings.get('threads_per_chat', 2))
         layout.addWidget(self.threads_per_chat, 0, 1)
 
         # 2) Максимум успешных приглашений в одном чате
         layout.addWidget(QLabel("Максимум успешных приглашений на чат:"), 1, 0)
         self.success_per_chat = QSpinBox()
         self.success_per_chat.setRange(0, 10000)
-        self.success_per_chat.setValue(self.profile_data.get('success_per_chat', 0))
+        self.success_per_chat.setValue(self.current_settings.get('success_per_chat', 0))
         layout.addWidget(self.success_per_chat, 1, 1)
 
         # 3) Максимум успешных приглашений с одного аккаунта
         layout.addWidget(QLabel("Максимум успешных приглашений с аккаунта:"), 2, 0)
         self.success_per_account = QSpinBox()
         self.success_per_account.setRange(0, 10000)
-        self.success_per_account.setValue(self.profile_data.get('success_per_account', 0))
+        self.success_per_account.setValue(self.current_settings.get('success_per_account', 0))
         layout.addWidget(self.success_per_account, 2, 1)
 
         # 4) Задержка после старта (в секундах)
         layout.addWidget(QLabel("Задержка после старта, сек:"), 3, 0)
         self.delay_after_start = QSpinBox()
         self.delay_after_start.setRange(0, 3600)
-        self.delay_after_start.setValue(self.profile_data.get('delay_after_start', 0))
+        self.delay_after_start.setValue(self.current_settings.get('delay_after_start', 0))
         layout.addWidget(self.delay_after_start, 3, 1)
 
         # 5) Задержка между приглашениями (в секундах)
         layout.addWidget(QLabel("Задержка между приглашениями, сек:"), 4, 0)
         self.delay_between = QSpinBox()
         self.delay_between.setRange(0, 3600)
-        self.delay_between.setValue(self.profile_data.get('delay_between', 0))
+        self.delay_between.setValue(self.current_settings.get('delay_between', 0))
         layout.addWidget(self.delay_between, 4, 1)
 
         return group
@@ -608,21 +608,21 @@ class ExtendedSettingsDialog(QDialog):
         layout.addWidget(QLabel("Максимум ошибок спамблока на аккаунт:"), 0, 0)
         self.acc_spam_limit = QSpinBox()
         self.acc_spam_limit.setRange(0, 100)
-        self.acc_spam_limit.setValue(self.profile_data.get('acc_spam_limit', 3))
+        self.acc_spam_limit.setValue(self.current_settings.get('acc_spam_limit', 3))
         layout.addWidget(self.acc_spam_limit, 0, 1)
 
         # 2) Количество списаний денежных средств до исключения аккаунта
         layout.addWidget(QLabel("Максимум списаний на аккаунт:"), 1, 0)
         self.acc_writeoff_limit = QSpinBox()
         self.acc_writeoff_limit.setRange(0, 100)
-        self.acc_writeoff_limit.setValue(self.profile_data.get('acc_writeoff_limit', 2))
+        self.acc_writeoff_limit.setValue(self.current_settings.get('acc_writeoff_limit', 2))
         layout.addWidget(self.acc_writeoff_limit, 1, 1)
 
         # 3) Количество блокировок приглашений до исключения аккаунта
         layout.addWidget(QLabel("Максимум блокировок приглашений на аккаунт:"), 2, 0)
         self.acc_block_invite_limit = QSpinBox()
         self.acc_block_invite_limit.setRange(0, 100)
-        self.acc_block_invite_limit.setValue(self.profile_data.get('acc_block_invite_limit', 5))
+        self.acc_block_invite_limit.setValue(self.current_settings.get('acc_block_invite_limit', 5))
         layout.addWidget(self.acc_block_invite_limit, 2, 1)
 
         return group
@@ -637,28 +637,28 @@ class ExtendedSettingsDialog(QDialog):
         layout.addWidget(QLabel("Максимум аккаунтов со спамблоком подряд:"), 0, 0)
         self.chat_spam_accounts = QSpinBox()
         self.chat_spam_accounts.setRange(0, 100)
-        self.chat_spam_accounts.setValue(self.profile_data.get('chat_spam_accounts', 3))
+        self.chat_spam_accounts.setValue(self.current_settings.get('chat_spam_accounts', 3))
         layout.addWidget(self.chat_spam_accounts, 0, 1)
 
         # 2) Сколько аккаунтов подряд списали средства – до отключения чата
         layout.addWidget(QLabel("Максимум аккаунтов со списаниями подряд:"), 1, 0)
         self.chat_writeoff_accounts = QSpinBox()
         self.chat_writeoff_accounts.setRange(0, 100)
-        self.chat_writeoff_accounts.setValue(self.profile_data.get('chat_writeoff_accounts', 2))
+        self.chat_writeoff_accounts.setValue(self.current_settings.get('chat_writeoff_accounts', 2))
         layout.addWidget(self.chat_writeoff_accounts, 1, 1)
 
         # 3) Сколько аккаунтов подряд получили неизвестную ошибку – до отключения чата
         layout.addWidget(QLabel("Максимум аккаунтов с неизвестной ошибкой подряд:"), 2, 0)
         self.chat_unknown_error_accounts = QSpinBox()
         self.chat_unknown_error_accounts.setRange(0, 100)
-        self.chat_unknown_error_accounts.setValue(self.profile_data.get('chat_unknown_error_accounts', 1))
+        self.chat_unknown_error_accounts.setValue(self.current_settings.get('chat_unknown_error_accounts', 1))
         layout.addWidget(self.chat_unknown_error_accounts, 2, 1)
 
         # 4) Сколько аккаунтов подряд заморозили – до отключения чата
         layout.addWidget(QLabel("Максимум аккаунтов с заморозкой подряд:"), 3, 0)
         self.chat_freeze_accounts = QSpinBox()
         self.chat_freeze_accounts.setRange(0, 100)
-        self.chat_freeze_accounts.setValue(self.profile_data.get('chat_freeze_accounts', 1))
+        self.chat_freeze_accounts.setValue(self.current_settings.get('chat_freeze_accounts', 1))
         layout.addWidget(self.chat_freeze_accounts, 3, 1)
 
         return group
@@ -1201,9 +1201,9 @@ def show_create_profile_dialog(parent) -> Dict:
     return {}
 
 
-def show_extended_settings_dialog(parent, profile_data: Dict = None) -> Dict:
+def show_extended_settings_dialog(parent, current_settings: Dict = None) -> Dict:
     """Показывает диалог расширенных настроек"""
-    dialog = ExtendedSettingsDialog(parent, profile_data)
+    dialog = ExtendedSettingsDialog(parent, current_settings)
     if dialog.exec() == QDialog.Accepted:
         return dialog.get_settings()
-    return profile_data or {}
+    return None  # Возвращаем None если отменили

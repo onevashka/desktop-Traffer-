@@ -1,7 +1,7 @@
-# gui/component_inviter/inviter_table.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
+# gui/component_inviter/inviter_table.py - ИСПРАВЛЕННАЯ ВЕРСИЯ СОХРАНЕНИЯ
 """
 Компонент таблицы профилей инвайтера с двухэтажными строками
-ИСПРАВЛЕНА ИНИЦИАЛИЗАЦИЯ КНОПОК И СИГНАЛОВ
+ИСПРАВЛЕНО СОХРАНЕНИЕ В ФАЙЛЫ ЧЕРЕЗ МОДУЛЬ
 """
 
 from gui.dialogs.inviter_dialogs import (
@@ -498,54 +498,223 @@ class InviterProfileRow(QWidget):
         self.profile_deleted.emit(self.profile_name)
 
     def _on_users_settings(self):
-        """Настройка базы пользователей"""
+        """ИСПРАВЛЕНО: Настройка базы пользователей С СОХРАНЕНИЕМ ЧЕРЕЗ МОДУЛЬ"""
         try:
+            logger.info(f"🔧 Открываем настройки пользователей для профиля: {self.profile_name}")
+
             current_users = getattr(self, 'users_list', [])
+            logger.info(f"📝 Текущих пользователей в памяти: {len(current_users)}")
+            if current_users:
+                logger.info(f"📝 Первые 3 пользователя: {current_users[:3]}")
+
+            # Показываем диалог
             users = show_users_base_dialog(self, current_users)
 
             # ИСПРАВЛЕНО: Проверяем что вернулся не None и отличается от текущего
-            if users is not None and users != current_users:
-                self.users_list = users
-                users_count = len(users)
-                button_text = f"Юзеров: {users_count}"
-                if self.users_btn:
-                    self.users_btn.setText(button_text)
-                logger.info(f"🔄 Обновлена база пользователей для {self.profile_name}: {len(users)} пользователей")
+            if users is not None:
+                logger.info(f"📥 Получено пользователей из диалога: {len(users)}")
+                if users:
+                    logger.info(f"📥 Первые 3 полученных: {users[:3]}")
+
+                # КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Всегда сохраняем через модуль
+                logger.info(f"💾 Сохраняем пользователей через модуль для {self.profile_name}")
+
+                # Импортируем модуль
+                from src.modules.impl.inviter import update_profile_users
+
+                # Сохраняем в модуле (который сохранит в файл)
+                success = update_profile_users(self.profile_name, users)
+
+                if success:
+                    # ИСПРАВЛЕНО: Обновляем локальные данные ТОЛЬКО после успешного сохранения
+                    self.users_list = users
+                    users_count = len(users)
+                    button_text = f"Юзеров: {users_count}"
+                    if self.users_btn:
+                        self.users_btn.setText(button_text)
+
+                    logger.info(f"✅ База пользователей обновлена для {self.profile_name}: {users_count} пользователей")
+
+                    # Показываем уведомление об успехе
+                    try:
+                        from gui.notifications import show_success
+                        show_success(
+                            "База пользователей",
+                            f"✅ Сохранено {users_count} пользователей\nВ файл: База юзеров.txt"
+                        )
+                    except:
+                        pass
+
+                else:
+                    logger.error(f"❌ Не удалось сохранить пользователей для {self.profile_name}")
+                    try:
+                        from gui.notifications import show_error
+                        show_error(
+                            "Ошибка сохранения",
+                            "❌ Не удалось сохранить пользователей в файл"
+                        )
+                    except:
+                        pass
 
         except Exception as e:
             logger.error(f"❌ Ошибка настройки пользователей: {e}")
+            try:
+                from gui.notifications import show_error
+                show_error(
+                    "Критическая ошибка",
+                    f"❌ Ошибка настройки пользователей: {e}"
+                )
+            except:
+                pass
 
     def _on_chats_settings(self):
-        """Настройка базы чатов"""
+        """ИСПРАВЛЕНО: Настройка базы чатов С СОХРАНЕНИЕМ ЧЕРЕЗ МОДУЛЬ"""
         try:
+            logger.info(f"🔧 Открываем настройки чатов для профиля: {self.profile_name}")
+
             current_chats = getattr(self, 'chats_list', [])
+            logger.info(f"💬 Текущих чатов в памяти: {len(current_chats)}")
+            if current_chats:
+                logger.info(f"💬 Первые 3 чата: {current_chats[:3]}")
+
+            # Показываем диалог
             chats = show_chats_base_dialog(self, current_chats)
 
             # ИСПРАВЛЕНО: Проверяем что вернулся не None и отличается от текущего
-            if chats is not None and chats != current_chats:
-                self.chats_list = chats
-                chats_count = len(chats)
-                button_text = f"Чатов: {chats_count}"
-                if self.chats_btn:
-                    self.chats_btn.setText(button_text)
-                logger.info(f"🔄 Обновлена база чатов для {self.profile_name}: {len(chats)} чатов")
+            if chats is not None:
+                logger.info(f"📥 Получено чатов из диалога: {len(chats)}")
+                if chats:
+                    logger.info(f"📥 Первые 3 полученных: {chats[:3]}")
+
+                # КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Всегда сохраняем через модуль
+                logger.info(f"💾 Сохраняем чаты через модуль для {self.profile_name}")
+
+                # Импортируем модуль
+                from src.modules.impl.inviter import update_profile_chats
+
+                # Сохраняем в модуле (который сохранит в файл)
+                success = update_profile_chats(self.profile_name, chats)
+
+                if success:
+                    # ИСПРАВЛЕНО: Обновляем локальные данные ТОЛЬКО после успешного сохранения
+                    self.chats_list = chats
+                    chats_count = len(chats)
+                    button_text = f"Чатов: {chats_count}"
+                    if self.chats_btn:
+                        self.chats_btn.setText(button_text)
+
+                    logger.info(f"✅ База чатов обновлена для {self.profile_name}: {chats_count} чатов")
+
+                    # Показываем уведомление об успехе
+                    try:
+                        from gui.notifications import show_success
+                        show_success(
+                            "База чатов",
+                            f"✅ Сохранено {chats_count} чатов\nВ файл: База чатов.txt"
+                        )
+                    except:
+                        pass
+
+                else:
+                    logger.error(f"❌ Не удалось сохранить чаты для {self.profile_name}")
+                    try:
+                        from gui.notifications import show_error
+                        show_error(
+                            "Ошибка сохранения",
+                            "❌ Не удалось сохранить чаты в файл"
+                        )
+                    except:
+                        pass
 
         except Exception as e:
             logger.error(f"❌ Ошибка настройки чатов: {e}")
+            try:
+                from gui.notifications import show_error
+                show_error(
+                    "Критическая ошибка",
+                    f"❌ Ошибка настройки чатов: {e}"
+                )
+            except:
+                pass
 
     def _on_extended_settings(self):
         """Расширенные настройки профиля"""
         try:
-            current_settings = getattr(self, 'extended_settings', {})
-            settings = show_extended_settings_dialog(self, current_settings)
+            # Получаем актуальный профиль из модуля для гарантии свежих данных
+            from src.modules.impl.inviter.inviter_manager import _inviter_module_manager
 
-            # ИСПРАВЛЕНО: Проверяем что вернулся не None и отличается от текущего
-            if settings is not None and settings != current_settings:
-                self.extended_settings = settings
+            if _inviter_module_manager:
+                # Получаем свежие данные профиля
+                fresh_profile = _inviter_module_manager.profile_manager.get_profile(self.profile_name)
+                if fresh_profile:
+                    current_config = fresh_profile.get('config', {})
+                else:
+                    current_config = self.profile_data.get('config', {})
+            else:
+                current_config = self.profile_data.get('config', {})
+
+            logger.debug(f"📝 Загружаем настройки для {self.profile_name}: {current_config}")
+
+            # Показываем диалог с текущими настройками из конфига
+            new_settings = show_extended_settings_dialog(self, current_config)
+
+            # Проверяем что вернулся не None (пользователь нажал Сохранить)
+            if new_settings is not None:
+                # Сохраняем через модуль
+                self._save_extended_settings_to_module(new_settings)
+
                 logger.info(f"⚙️ Обновлены расширенные настройки для {self.profile_name}")
 
         except Exception as e:
             logger.error(f"❌ Ошибка настройки профиля: {e}")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка настройки профиля: {e}")
+
+    def _save_extended_settings_to_module(self, settings: dict):
+        """Сохраняет расширенные настройки через модуль"""
+        try:
+            from src.modules.impl.inviter import update_profile_config
+
+            # Отправляем в модуль для сохранения в JSON
+            success = update_profile_config(self.profile_name, settings)
+
+            if success:
+                # ВАЖНО: Обновляем локальные данные config
+                if 'config' not in self.profile_data:
+                    self.profile_data['config'] = {}
+
+                # Обновляем каждое поле в конфиге
+                self.profile_data['config'].update(settings)
+
+                # Обновляем и extended_settings для обратной совместимости
+                self.extended_settings = settings
+
+                logger.info(f"✅ Настройки сохранены в JSON для {self.profile_name}")
+                logger.debug(f"📝 Обновленный конфиг: {self.profile_data['config']}")
+
+                # Показываем уведомление об успехе
+                try:
+                    from gui.notifications import show_success
+                    show_success(
+                        "Настройки сохранены",
+                        f"Расширенные настройки профиля '{self.profile_name}' успешно сохранены"
+                    )
+                except:
+                    pass
+            else:
+                logger.error(f"❌ Не удалось сохранить настройки в модуль")
+                try:
+                    from gui.notifications import show_error
+                    show_error(
+                        "Ошибка сохранения",
+                        "Не удалось сохранить настройки в модуль"
+                    )
+                except:
+                    pass
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка сохранения настроек в модуль: {e}")
 
     def update_progress(self, done: int, total: int):
         """Обновляем X из Y."""
