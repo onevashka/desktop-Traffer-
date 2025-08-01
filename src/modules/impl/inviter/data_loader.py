@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import List, Tuple, Dict
 from loguru import logger
 
-from src.entities.modules.inviter import InviteUser, UserStatus, InviterConfig
+from src.entities.moduls.inviter import InviteUser, UserStatus, InviterConfig
 
 
 class InviterDataLoader:

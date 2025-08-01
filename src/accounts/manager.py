@@ -76,30 +76,43 @@ class AccountManager:
         logger.info(
             f"✅ Сканирование завершено: трафик={len(self.traffic_accounts)}, продажи={len(self.sales_accounts)}")
 
-    def get_free_account(self, module_name: str) -> Optional[AccountData]:
+    def get_free_accounts(self, module_name: str, count: int = 1) -> List[AccountData]:
         """
-        Получает свободный активный аккаунт из трафика
+        Универсальный метод получения свободных аккаунтов
 
         Args:
-            module_name: Название модуля который запрашивает аккаунт
+            module_name: Название модуля который запрашивает аккаунты
+            count: Количество нужных аккаунтов (по умолчанию 1)
 
         Returns:
-            AccountData или None если нет свободных
+            Список AccountData (может быть меньше запрошенного если не хватает свободных)
         """
+        if count <= 0:
+            logger.warning(f"⚠️ Запрошено некорректное количество аккаунтов: {count}")
+            return []
+
+        accounts = []
+
         # Ищем среди активных аккаунтов трафика
         for account_name, account_data in self.traffic_accounts.items():
-            # Проверяем что аккаунт активный и не занят
             if (account_data.status == "active" and
                     not account_data.is_busy):
+
                 # Помечаем как занятый
                 account_data.is_busy = True
                 account_data.busy_by = module_name
+                accounts.append(account_data)
 
-                logger.debug(f"🔒 Аккаунт {account_name} выдан модулю {module_name}")
-                return account_data
+                # Если набрали нужное количество - выходим
+                if len(accounts) >= count:
+                    break
 
-        logger.warning(f"⚠️ Нет свободных аккаунтов для {module_name}")
-        return None
+        if accounts:
+            logger.info(f"🔒 Выдано аккаунтов для {module_name}: {len(accounts)} из {count}")
+        else:
+            logger.warning(f"⚠️ Нет свободных аккаунтов для {module_name}")
+
+        return accounts
 
     def get_multiple_free_accounts(self, module_name: str, count: int) -> List[AccountData]:
         """
@@ -486,12 +499,21 @@ class AccountManager:
 _account_manager: Optional[AccountManager] = None
 
 
-def get_free_account(module_name: str) -> Optional[AccountData]:
-    """Быстрая функция получения свободного аккаунта"""
+def get_free_accounts(module_name: str, count: int = 1) -> List[AccountData]:
+    """
+    Универсальная функция получения свободных аккаунтов
+
+    Args:
+        module_name: Название модуля
+        count: Количество (по умолчанию 1)
+
+    Returns:
+        Список AccountData
+    """
     global _account_manager
     if _account_manager:
-        return _account_manager.get_free_account(module_name)
-    return None
+        return _account_manager.get_free_accounts(module_name, count)
+    return []
 
 
 def get_multiple_free_accounts(module_name: str, count: int) -> List[AccountData]:

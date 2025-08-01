@@ -1,4 +1,6 @@
 # TeleCRM/core/account.py
+import asyncio
+
 import phonenumbers
 
 from pathlib import Path
@@ -41,8 +43,7 @@ class Account:
             return
 
         cfg = self.account_data
-
-        # Получаем прокси для этого аккаунта
+        # Получаем прокси для э того аккаунта
         from src.proxies.manager import get_proxy_for_account
         proxy = get_proxy_for_account(self.name)
 
@@ -51,16 +52,17 @@ class Account:
         else:
             logger.warning(f"⚠️ Прокси не найден для {self.name}, подключаемся напрямую")
 
+
         # Создаём клиента с прокси
         self.client = TelegramClient(
             session=str(self.session_path),
-            api_id=cfg.get('api_id'),
-            api_hash=cfg.get('api_hash'),
-            proxy=(proxy.get('proxy_type'), proxy.get('host'), proxy.get('port'), proxy.get('rdns'), proxy.get('login'), proxy.get('password')),  # Может быть None или словарь
+            api_id=int(cfg.get('app_id')),
+            api_hash=cfg.get('app_hash'),
+            proxy=(proxy.get('proxy_type'), proxy.get('addr'), proxy.get('port'), proxy.get('rdns'), proxy.get('username'), proxy.get('password')),  # Может быть None или словарь
             lang_code=cfg.get('lang_code', 'en'),
-            device_model=cfg.get('device_model'),
+            device_model=cfg.get('device'),
             app_version=cfg.get('app_version'),
-            system_version=cfg.get('system_version'),
+            system_version=cfg.get('sdk'),
             system_lang_code=cfg.get('system_lang_code', 'en-US'),
         )
 
@@ -73,7 +75,9 @@ class Account:
         Коннектит клиент.
         Вызывается в асинхронном контексте.
         """
+
         try:
+
             await self.client.connect()
             if await self.client.is_user_authorized():
                 return True
@@ -88,6 +92,9 @@ class Account:
             logger.error(f"[{self.name}] Аккаунт деактивирован")
             return False
 
+        except Exception as e:
+            logger.error(f"[{self.name}] Ошибка при подклчюении аккаунта {e}")
+            return False
 
     async def disconnect(self) -> bool:
         """
@@ -99,6 +106,9 @@ class Account:
         except Exception as e:
             logger.error(f"Ошибка при отключении аккаунта: {e}")
             return False
+
+    async def join(self, link: str) -> bool:
+        pass
 
     def _sync_session_name(self):
         """

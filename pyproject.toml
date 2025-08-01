@@ -12,6 +12,7 @@ dependencies = [
     "loguru (>=0.7.3,<0.8.0)",
     "qasync (>=0.27.1,<0.28.0)",
     "phonenumbers (>=9.0.9,<10.0.0)",
+    "pysocks (>=1.7.1,<2.0.0)",
 ]
 
 

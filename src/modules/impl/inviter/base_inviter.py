@@ -110,17 +110,20 @@ class BaseInviterProcess(threading.Thread, ABC):
     def _check_accounts(self) -> bool:
         """Проверяет наличие активных аккаунтов"""
         # Получаем активные аккаунты из трафика
-        active_accounts = [
-            acc for acc in self.account_manager.traffic_accounts.values()
-            if acc.status == "active"
-        ]
+        try:
+            active_accounts = [
+                acc for acc in self.account_manager.traffic_accounts.values()
+                if acc.status == "active"
+            ]
 
-        if not active_accounts:
-            logger.error("❌ Нет активных аккаунтов в папке трафика")
-            return False
+            if not active_accounts:
+                logger.error("❌ Нет активных аккаунтов в папке трафика")
+                return False
 
-        logger.info(f"✅ Найдено активных аккаунтов: {len(active_accounts)}")
-        return True
+            logger.info(f"✅ Найдено активных аккаунтов: {len(active_accounts)}")
+            return True
+        except Exception as e:
+            logger.error(f'Ошибка при получении аккаунтов: {e}')
 
     def get_available_accounts(self) -> List:
         """Получает список доступных аккаунтов"""

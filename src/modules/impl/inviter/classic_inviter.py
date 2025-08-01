@@ -56,15 +56,37 @@ class ClassicInviterProcess(BaseInviterProcess):
         total_chats = self.chat_queue.qsize()
         logger.info(f"💬 Всего чатов для обработки: {total_chats}")
 
-        # Определяем сколько аккаунтов нужно на старте
-        initial_accounts_needed = min(
-            total_chats * self.config.threads_per_chat,
-            self.account_manager.get_free_accounts_count()
-        )
+        # НОВАЯ ЛОГИКА РАСЧЕТА АККАУНТОВ
+        # Рассчитываем общее количество требуемых успешных инвайтов
+        total_invites_needed = total_chats * self.config.success_per_chat
+        logger.info(f"📊 Требуется успешных инвайтов всего: {total_invites_needed}")
+
+        # Рассчитываем сколько аккаунтов нужно исходя из лимита на аккаунт
+        if self.config.success_per_account > 0:
+            accounts_needed = (
+                                          total_invites_needed + self.config.success_per_account - 1) // self.config.success_per_account
+            logger.info(
+                f"📊 Расчетное количество аккаунтов: {accounts_needed} (по {self.config.success_per_account} инвайтов с аккаунта)")
+        else:
+            # Если лимит не установлен, используем старую логику
+            accounts_needed = total_chats * self.config.threads_per_chat
+            logger.info(f"📊 Лимит на аккаунт не установлен, используем {accounts_needed} аккаунтов")
+
+        # Проверяем доступность аккаунтов
+        available_accounts = self.account_manager.get_free_accounts_count()
+        logger.info(f"📊 Доступно свободных аккаунтов: {available_accounts}")
+
+        # Определяем сколько аккаунтов запросить на старте
+        initial_accounts_to_request = min(accounts_needed, available_accounts)
+
+        if initial_accounts_to_request < accounts_needed:
+            logger.warning(f"⚠️ Недостаточно аккаунтов! Требуется: {accounts_needed}, доступно: {available_accounts}")
+            logger.info(
+                f"📊 Будет использовано {initial_accounts_to_request} аккаунтов, работа может выполниться не полностью")
 
         # Получаем начальные аккаунты
         module_name = f"inviter_{self.profile_name}"
-        allocated_accounts = self.account_manager.get_free_accounts(module_name, initial_accounts_needed)
+        allocated_accounts = self.account_manager.get_free_accounts(module_name, initial_accounts_to_request)
 
         if not allocated_accounts:
             logger.error("❌ Не удалось получить свободные аккаунты")
@@ -241,84 +263,142 @@ class ChatWorkerThread(threading.Thread):
             loop.close()
 
     async def _work(self):
-        """Основная работа с чатом"""
+        """Основная работа с чатом - ИСПРАВЛЕННАЯ ВЕРСИЯ С ПОТОКАМИ"""
         logger.info(f"🚀 [Chat-{self.chat_id}] Начинаем работу с {self.chat_link}")
         logger.info(f"👥 [Chat-{self.chat_id}] Доступно аккаунтов: {len(self.accounts)}")
 
         # Флаг завершения работы чата
         chat_completed = False
 
+        # Счетчик активных воркеров для этого чата
+        active_workers = []
+        active_workers_lock = threading.Lock()
+
         # Пока не завершена работа с чатом
         while not chat_completed and not self.parent.stop_flag.is_set():
-            # Запускаем воркеров с текущими аккаунтами
-            tasks = []
+            # Запускаем воркеров в отдельных потоках
+            worker_threads = []
+
             for i, account_data in enumerate(self.accounts):
-                task = asyncio.create_task(
-                    self._run_worker(i + 1, account_data)
+                # Создаем поток для каждого аккаунта
+                worker_thread = threading.Thread(
+                    target=self._run_worker_in_thread,
+                    args=(i + 1, account_data, active_workers, active_workers_lock),
+                    name=f"Chat-{self.chat_id}-Worker-{i + 1}"
                 )
-                tasks.append(task)
+                worker_thread.start()
+                worker_threads.append(worker_thread)
 
-            # Ждем завершения всех воркеров
-            await asyncio.gather(*tasks, return_exceptions=True)
+            logger.info(f"🚀 [Chat-{self.chat_id}] Запущено {len(worker_threads)} потоков воркеров")
 
-            # Освобождаем использованные аккаунты
+            # НЕ ЖДЕМ завершения всех! Просто проверяем статус периодически
+            while not self.parent.stop_flag.is_set():
+                # Ждем немного
+                await asyncio.sleep(2)
+
+                # Проверяем сколько воркеров еще работает
+                with active_workers_lock:
+                    still_working = len(active_workers)
+
+                if still_working == 0:
+                    logger.info(f"✅ [Chat-{self.chat_id}] Все воркеры завершили работу")
+                    break
+
+                # Проверяем условия завершения
+                if self.parent.config.success_per_chat > 0 and self.chat_success >= self.parent.config.success_per_chat:
+                    logger.success(f"✅ [Chat-{self.chat_id}] Достигнут лимит успешных инвайтов: {self.chat_success}")
+                    chat_completed = True
+                    break
+
+                if self.parent.user_queue.empty():
+                    logger.info(f"✅ [Chat-{self.chat_id}] Закончились пользователи для инвайта")
+                    # Даем воркерам доработать текущих пользователей
+                    await asyncio.sleep(5)
+                    chat_completed = True
+                    break
+
+                logger.debug(
+                    f"📊 [Chat-{self.chat_id}] Активных воркеров: {still_working}, успешных инвайтов: {self.chat_success}")
+
+            # Теперь освобождаем аккаунты которые уже закончили работу
             module_name = f"inviter_{self.parent.profile_name}"
+            released_count = 0
+
             for account_data in self.accounts:
-                self.parent.account_manager.release_account(account_data.name, module_name)
+                # Проверяем не работает ли еще этот аккаунт
+                account_working = False
+                with active_workers_lock:
+                    account_working = account_data.name in active_workers
 
-            logger.info(f"🔓 [Chat-{self.chat_id}] Освобождено аккаунтов: {len(self.accounts)}")
+                if not account_working:
+                    self.parent.account_manager.release_account(account_data.name, module_name)
+                    released_count += 1
 
-            # Проверяем условия завершения
-            # 1. Достигнут лимит успешных инвайтов для чата
-            if self.parent.config.success_per_chat > 0 and self.chat_success >= self.parent.config.success_per_chat:
-                logger.success(f"✅ [Chat-{self.chat_id}] Достигнут лимит успешных инвайтов: {self.chat_success}")
-                chat_completed = True
+            logger.info(f"🔓 [Chat-{self.chat_id}] Освобождено завершивших работу аккаунтов: {released_count}")
+
+            # Проверяем нужно ли продолжать работу
+            if chat_completed:
                 break
 
-            # 2. Закончились пользователи
-            if self.parent.user_queue.empty():
-                logger.info(f"✅ [Chat-{self.chat_id}] Закончились пользователи для инвайта")
-                chat_completed = True
-                break
+            # Если есть пользователи и работа не завершена - запрашиваем новые аккаунты
+            if not self.parent.user_queue.empty():
+                logger.info(f"🔄 [Chat-{self.chat_id}] Запрашиваем новые аккаунты для продолжения работы")
 
-            # 3. Если есть пользователи, но работа не завершена - запрашиваем новые аккаунты
-            logger.info(
-                f"🔄 [Chat-{self.chat_id}] Работа не завершена. Успешных инвайтов: {self.chat_success}/{self.parent.config.success_per_chat or '∞'}")
-            logger.info(f"👥 [Chat-{self.chat_id}] Пользователей в очереди: {self.parent.user_queue.qsize()}")
-
-            # Запрашиваем новые аккаунты
-            new_accounts = self.parent.account_manager.get_free_accounts(
-                module_name,
-                self.parent.config.threads_per_chat
-            )
-
-            if not new_accounts:
-                logger.warning(f"⚠️ [Chat-{self.chat_id}] Нет свободных аккаунтов для продолжения работы")
-
-                # Ждем немного, может освободятся аккаунты от других чатов
-                await asyncio.sleep(5)
-
-                # Пробуем еще раз
-                new_accounts = self.parent.account_manager.get_free_accounts(
+                new_accounts = self.parent.account_manager.get_multiple_free_accounts(
                     module_name,
                     self.parent.config.threads_per_chat
                 )
 
                 if not new_accounts:
-                    logger.error(f"❌ [Chat-{self.chat_id}] Не удалось получить аккаунты, завершаем работу с чатом")
+                    logger.warning(f"⚠️ [Chat-{self.chat_id}] Нет свободных аккаунтов, завершаем работу с чатом")
                     chat_completed = True
                     break
 
-            # Обновляем список аккаунтов для следующей итерации
-            self.accounts = new_accounts
-            logger.info(f"✅ [Chat-{self.chat_id}] Получено новых аккаунтов: {len(new_accounts)}")
+                self.accounts = new_accounts
+                logger.info(f"✅ [Chat-{self.chat_id}] Получено новых аккаунтов: {len(new_accounts)}")
 
-            # Небольшая пауза перед следующей итерацией
-            await asyncio.sleep(2)
+        # Финальная очистка - ждем оставшиеся потоки
+        logger.info(f"🧹 [Chat-{self.chat_id}] Ожидаем завершения оставшихся воркеров...")
+
+        # Даем воркерам время завершиться
+        await asyncio.sleep(5)
+
+        # Освобождаем все оставшиеся аккаунты
+        module_name = f"inviter_{self.parent.profile_name}"
+        for account_data in self.accounts:
+            self.parent.account_manager.release_account(account_data.name, module_name)
 
         logger.info(f"✅ [Chat-{self.chat_id}] Работа завершена")
         logger.info(
             f"📊 [Chat-{self.chat_id}] Итоговая статистика: обработано={self.chat_processed}, успешно={self.chat_success}, ошибок={self.chat_errors}")
+
+    def _run_worker_in_thread(self, worker_id: int, account_data, active_workers: list, lock: threading.Lock):
+        """Обертка для запуска воркера в отдельном потоке"""
+        # Добавляем себя в список активных
+        with lock:
+            active_workers.append(account_data.name)
+
+        try:
+            # Создаем новый event loop для этого потока
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            # Запускаем асинхронного воркера
+            loop.run_until_complete(self._run_worker(worker_id, account_data))
+
+            loop.close()
+        except Exception as e:
+            logger.error(f"❌ [Worker-{worker_id}] Ошибка в потоке: {e}")
+        finally:
+            # Удаляем себя из списка активных
+            with lock:
+                if account_data.name in active_workers:
+                    active_workers.remove(account_data.name)
+
+            # Освобождаем аккаунт сразу после завершения работы
+            module_name = f"inviter_{self.parent.profile_name}"
+            self.parent.account_manager.release_account(account_data.name, module_name)
+            logger.info(f"🔓 [Worker-{worker_id}] Аккаунт {account_data.name} освобожден")
 
     async def _run_worker(self, worker_id: int, account_data):
         """Воркер для инвайтинга"""
