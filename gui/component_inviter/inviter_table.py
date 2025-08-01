@@ -1,7 +1,7 @@
-# gui/component_inviter/inviter_table.py - ИСПРАВЛЕННАЯ ВЕРСИЯ СОХРАНЕНИЯ
+# gui/component_inviter/inviter_table.py - ФИНАЛЬНАЯ ВЕРСИЯ
 """
 Компонент таблицы профилей инвайтера с двухэтажными строками
-ИСПРАВЛЕНО СОХРАНЕНИЕ В ФАЙЛЫ ЧЕРЕЗ МОДУЛЬ
+ФИНАЛЬНАЯ ВЕРСИЯ С АВТОМАТИЧЕСКОЙ СМЕНОЙ КНОПОК И УЛУЧШЕННЫМ UI
 """
 
 from gui.dialogs.inviter_dialogs import (
@@ -21,7 +21,7 @@ from loguru import logger
 
 
 class InviterProfileRow(QWidget):
-    """Двухэтажная строка профиля инвайтера"""
+    """Двухэтажная строка профиля инвайтера с прогресс-баром"""
 
     # Сигналы
     profile_started = Signal(str)  # profile_name
@@ -40,10 +40,29 @@ class InviterProfileRow(QWidget):
         self.chats_list = profile_data.get('chats_list', [])
         self.extended_settings = profile_data.get('extended_settings', {})
 
+        # Статистика процесса для прогресс-бара
+        self.process_stats = profile_data.get('process_stats', {})
+
+        # Сохраненные данные прогресса (чтобы не терять при остановке)
+        self.saved_progress = {
+            'success': 0,
+            'errors': 0,
+            'total_goal': 0,
+            'stop_reason': None
+        }
+
+        # Таймер для обновления прогресс-бара
+        self.progress_timer = QTimer()
+        self.progress_timer.timeout.connect(self._update_progress_from_module)
+
+        # Таймер для проверки завершения процесса
+        self.completion_timer = QTimer()
+        self.completion_timer.timeout.connect(self._check_process_completion)
+
         self.setObjectName("InviterProfileRow")
         self.setFixedHeight(140)  # Двухэтажная высота
 
-        # ИСПРАВЛЕНО: Инициализируем кнопки как None
+        # Инициализируем кнопки как None
         self.users_btn = None
         self.chats_btn = None
         self.settings_btn = None
@@ -65,8 +84,13 @@ class InviterProfileRow(QWidget):
         # Стили
         self._apply_styles()
 
-        # ИСПРАВЛЕНО: Подключаем обработчики ПОСЛЕ создания всех кнопок
+        # Подключаем обработчики ПОСЛЕ создания всех кнопок
         self._connect_signals()
+
+        # Запускаем обновление прогресса если профиль запущен
+        if self.is_running:
+            self.progress_timer.start(1000)  # Обновляем каждую секунду
+            self.completion_timer.start(2000)  # Проверяем завершение каждые 2 секунды
 
     def _connect_signals(self):
         """Подключает все сигналы к кнопкам"""
@@ -107,7 +131,6 @@ class InviterProfileRow(QWidget):
 
         # 1. Индикатор статуса и кнопка запуска
         layout.addWidget(self._create_status_widget())
-
         layout.addWidget(self._create_start_button_widget())
 
         # 2. Название профиля
@@ -128,13 +151,25 @@ class InviterProfileRow(QWidget):
         main_layout.addWidget(first_floor)
 
     def _create_second_floor(self, main_layout):
-        """Только один растянутый прогресс-бар"""
+        """Второй этаж с прогресс-баром и статистикой"""
+        second_floor = QWidget()
+        layout = QVBoxLayout(second_floor)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+
+        # Прогресс-бар
         progress_widget = self._create_progress_widget()
         progress_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        main_layout.addWidget(progress_widget)
+        layout.addWidget(progress_widget)
+
+        # Дополнительная статистика
+        stats_widget = self._create_stats_widget()
+        layout.addWidget(stats_widget)
+
+        main_layout.addWidget(second_floor)
 
     def _create_status_widget(self):
-        """Индикатор статуса и кнопка запуска"""
+        """Индикатор статуса"""
         widget = QWidget()
         widget.setFixedWidth(80)
         layout = QVBoxLayout(widget)
@@ -164,11 +199,10 @@ class InviterProfileRow(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setAlignment(Qt.AlignCenter)
 
-        # ИСПРАВЛЕНО: создаём кнопку и сохраняем ссылку
+        # Создаём кнопку и сохраняем ссылку
         self.start_stop_btn = QPushButton()
         self._update_start_button()  # задаст текст и цвет
         self.start_stop_btn.setFixedSize(100, 40)
-        # НЕ подключаем сигнал здесь - это делается в _connect_signals()
 
         layout.addWidget(self.start_stop_btn)
         return widget
@@ -180,15 +214,42 @@ class InviterProfileRow(QWidget):
 
         if self.is_running:
             self.start_stop_btn.setText("Стоп")
-            self.start_stop_btn.setStyleSheet("background: #EF4444; color: white; border-radius: 4px;")
+            self.start_stop_btn.setStyleSheet("""
+                QPushButton {
+                    background: #EF4444;
+                    color: white;
+                    border-radius: 6px;
+                    font-weight: 600;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background: #DC2626;
+                }
+                QPushButton:pressed {
+                    background: #B91C1C;
+                }
+            """)
         else:
             self.start_stop_btn.setText("Запустить")
-            self.start_stop_btn.setStyleSheet("background: #10B981; color: white; border-radius: 4px;")
+            self.start_stop_btn.setStyleSheet("""
+                QPushButton {
+                    background: #10B981;
+                    color: white;
+                    border-radius: 6px;
+                    font-weight: 600;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background: #059669;
+                }
+                QPushButton:pressed {
+                    background: #047857;
+                }
+            """)
 
     def _create_name_widget(self):
-        """Название профиля — теперь редактируемое поле и побольше."""
+        """Название профиля — редактируемое поле"""
         widget = QWidget()
-        # расширили ширину контейнера
         widget.setFixedWidth(200)
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -196,10 +257,9 @@ class InviterProfileRow(QWidget):
         name_label = QLabel("Профиль:")
         name_label.setStyleSheet("font-size: 12px; color: rgba(255,255,255,0.6);")
 
-        # ИСПРАВЛЕНО: теперь QLineEdit вместо QLabel и сохраняем ссылку
         self.name_edit = QLineEdit(self.profile_name)
-        self.name_edit.setFixedWidth(180)  # увеличенная ширина
-        self.name_edit.setFixedHeight(28)  # чуть повыше
+        self.name_edit.setFixedWidth(180)
+        self.name_edit.setFixedHeight(28)
         self.name_edit.setStyleSheet("""
             QLineEdit {
                 background: #111827;
@@ -213,7 +273,6 @@ class InviterProfileRow(QWidget):
                 border-color: #2563EB;
             }
         """)
-        # НЕ подключаем сигнал здесь - это делается в _connect_signals()
 
         layout.addWidget(name_label)
         layout.addWidget(self.name_edit)
@@ -227,13 +286,12 @@ class InviterProfileRow(QWidget):
         new_name = self.name_edit.text().strip() or self.profile_name
         if new_name != self.profile_name:
             self.profile_name = new_name
-            # эмитим сигнал, чтобы внешний код узнал об изменении
             self.settings_changed.emit(self.profile_name, {'name': new_name})
 
     def _create_invite_type_widget(self):
-        """Тип инвайта — увеличили размер выпадашки."""
+        """Тип инвайта"""
         widget = QWidget()
-        widget.setFixedWidth(200)  # расширили контейнер
+        widget.setFixedWidth(200)
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -242,8 +300,8 @@ class InviterProfileRow(QWidget):
 
         self.invite_type_combo = QComboBox()
         self.invite_type_combo.addItems(["Классический", "Через админку"])
-        self.invite_type_combo.setFixedWidth(180)  # увеличенная ширина
-        self.invite_type_combo.setFixedHeight(28)  # чуть повыше
+        self.invite_type_combo.setFixedWidth(180)
+        self.invite_type_combo.setFixedHeight(28)
         self.invite_type_combo.setStyleSheet("""
             QComboBox {
                 background: #111827;
@@ -270,64 +328,75 @@ class InviterProfileRow(QWidget):
         return widget
 
     def _create_users_base_widget(self):
-        """База пользователей — кнопка с большим шрифтом текста"""
+        """База пользователей с улучшенным отображением"""
         widget = QWidget()
-        widget.setFixedWidth(90)  # обратно к вашему фиксированному весу
+        widget.setFixedWidth(120)  # Увеличили ширину
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
 
         users_count = len(self.users_list)
-        button_text = f"Юзеров: {users_count}" if users_count else "Юзеров: 0"
 
-        # ИСПРАВЛЕНО: сохраняем ссылку на кнопку
+        # Форматируем большие числа
+        if users_count >= 1000000:
+            button_text = f"👥 {users_count // 1000000}.{(users_count % 1000000) // 100000}M"
+        elif users_count >= 1000:
+            button_text = f"👥 {users_count // 1000}K"
+        else:
+            button_text = f"👥 {users_count}"
+
         self.users_btn = QPushButton(button_text)
-        self.users_btn.setFixedHeight(25)  # ваш исходный фиксированный рост
+        self.users_btn.setFixedHeight(30)  # Увеличили высоту
+        self.users_btn.setToolTip(f"Всего пользователей: {users_count:,}")  # Показываем полное число в подсказке
         self.users_btn.setStyleSheet("""
             QPushButton {
                 background: rgba(59, 130, 246, 0.2);
                 border: 1px solid rgba(59, 130, 246, 0.5);
                 border-radius: 4px;
                 color: #FFFFFF;
-                font-size: 14px;         /* увеличили текст */
-                font-weight: 600;        /* можно чуть жирнее */
+                font-size: 13px;
+                font-weight: 600;
+                padding: 0 8px;
             }
             QPushButton:hover {
                 background: rgba(59, 130, 246, 0.3);
             }
         """)
-        # НЕ подключаем сигнал здесь - это делается в _connect_signals()
 
         layout.addWidget(self.users_btn)
         return widget
 
     def _create_chats_base_widget(self):
-        """База чатов — кнопка с большим шрифтом текста"""
+        """База чатов с улучшенным отображением"""
         widget = QWidget()
-        widget.setFixedWidth(90)
+        widget.setFixedWidth(120)  # Увеличили ширину
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
 
         chats_count = len(self.chats_list)
-        button_text = f"Чатов: {chats_count}" if chats_count else "Чатов: 0"
 
-        # ИСПРАВЛЕНО: сохраняем ссылку на кнопку
+        # Форматируем большие числа
+        if chats_count >= 1000:
+            button_text = f"💬 {chats_count // 1000}K"
+        else:
+            button_text = f"💬 {chats_count}"
+
         self.chats_btn = QPushButton(button_text)
-        self.chats_btn.setFixedHeight(25)
+        self.chats_btn.setFixedHeight(30)  # Увеличили высоту
+        self.chats_btn.setToolTip(f"Всего чатов: {chats_count:,}")  # Показываем полное число в подсказке
         self.chats_btn.setStyleSheet("""
             QPushButton {
                 background: rgba(16, 185, 129, 0.2);
                 border: 1px solid rgba(16, 185, 129, 0.5);
                 border-radius: 4px;
                 color: #FFFFFF;
-                color: #FFFFFF;
-                font-size: 14px;         /* увеличили текст */
+                font-size: 13px;
                 font-weight: 600;
+                padding: 0 8px;
             }
             QPushButton:hover {
                 background: rgba(16, 185, 129, 0.3);
             }
         """)
-        # НЕ подключаем сигнал здесь - это делается в _connect_signals()
 
         layout.addWidget(self.chats_btn)
         return widget
@@ -340,7 +409,6 @@ class InviterProfileRow(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
 
-        # ИСПРАВЛЕНО: сохраняем ссылки на кнопки
         # Кнопка настроек
         self.settings_btn = QPushButton("⚙️")
         self.settings_btn.setFixedSize(36, 36)
@@ -357,7 +425,6 @@ class InviterProfileRow(QWidget):
                 background: rgba(156, 163, 175, 0.3);
             }
         """)
-        # НЕ подключаем сигнал здесь - это делается в _connect_signals()
 
         # Кнопка удаления
         self.delete_btn = QPushButton("🗑️")
@@ -375,7 +442,6 @@ class InviterProfileRow(QWidget):
                 background: rgba(239, 68, 68, 0.3);
             }
         """)
-        # НЕ подключаем сигнал здесь - это делается в _connect_signals()
 
         layout.addWidget(self.settings_btn)
         layout.addWidget(self.delete_btn)
@@ -383,23 +449,21 @@ class InviterProfileRow(QWidget):
         return widget
 
     def _create_progress_widget(self):
-        """Общий прогресс бар"""
+        """Создает виджет с прогресс-баром"""
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
-        progress_label = QLabel("Общий прогресс:")
+        progress_label = QLabel("Прогресс инвайтов:")
         progress_label.setStyleSheet("font-size: 11px; color: rgba(255,255,255,0.6);")
 
         self.progress_bar = QProgressBar()
         self.progress_bar.setFixedHeight(24)
-        # максимум мы будем задавать динамически
-        self.progress_bar.setRange(0, 1)
+        self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
-        # Показывать текст "сделано из всего"
         self.progress_bar.setTextVisible(True)
-        self.progress_bar.setFormat("%v из %m")
+        self.progress_bar.setFormat("%v из %m (%p%)")
 
         self.progress_bar.setStyleSheet("""
             QProgressBar {
@@ -422,54 +486,63 @@ class InviterProfileRow(QWidget):
 
         return widget
 
+    def _create_stats_widget(self):
+        """Создает виджет со статистикой"""
+        widget = QWidget()
+        layout = QHBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(20)
+
+        # Статус
+        self.status_label = QLabel("Ожидание...")
+        self.status_label.setStyleSheet("font-size: 11px; color: rgba(255,255,255,0.7);")
+
+        # Счетчики
+        self.success_label = QLabel("✅ Успешно: 0")
+        self.success_label.setStyleSheet("font-size: 11px; color: #10B981;")
+
+        self.errors_label = QLabel("❌ Ошибок: 0")
+        self.errors_label.setStyleSheet("font-size: 11px; color: #EF4444;")
+
+        self.speed_label = QLabel("⚡ Скорость: 0/мин")
+        self.speed_label.setStyleSheet("font-size: 11px; color: #F59E0B;")
+
+        layout.addWidget(self.status_label)
+        layout.addStretch()
+        layout.addWidget(self.success_label)
+        layout.addWidget(self.errors_label)
+        layout.addWidget(self.speed_label)
+
+        return widget
+
     def _apply_styles(self):
         """Применяет стили к строке профиля"""
-        # Обновлённая стилизация для чёткого выделения профиля
         self.setStyleSheet("""
             QWidget#InviterProfileRow {
-                background: #1F2937; /* темно-серый фон */
-                border: 1px solid #4B5563; /* контрастная рамка */
+                background: #1F2937;
+                border: 1px solid #4B5563;
                 border-radius: 8px;
                 padding: 8px;
                 margin: 6px 0;
             }
             QWidget#InviterProfileRow:hover {
-                background: #374151; /* подсветка */
-                border: 1px solid #2563EB; /* синий акцент */
-            }
-            QSpinBox {
-                background: #111827;
-                border: 1px solid #374151;
-                border-radius: 4px;
-                color: #FFFFFF;
-                font-size: 11px;
-                padding: 2px;
-            }
-            QSpinBox:focus {
-                border-color: #2563EB;
-            }
-            QComboBox {
-                background: #111827;
-                border: 1px solid #374151;
-                border-radius: 4px;
-                color: #FFFFFF;
-                font-size: 11px;
-                padding: 2px 4px;
-            }
-            QComboBox:focus {
-                border-color: #2563EB;
-            }
-            QComboBox QAbstractItemView {
-                background: #1F2937;
-                border: 1px solid #374151;
-                selection-background-color: #2563EB;
-                color: #FFFFFF;
+                background: #374151;
+                border: 1px solid #2563EB;
             }
         """)
 
     def _toggle_profile(self):
         """Переключает состояние профиля"""
-        self.is_running = not self.is_running
+        if self.is_running:
+            # Останавливаем
+            self.profile_stopped.emit(self.profile_name)
+        else:
+            # Запускаем
+            self.profile_started.emit(self.profile_name)
+
+    def update_running_state(self, is_running: bool):
+        """Обновляет состояние запуска профиля"""
+        self.is_running = is_running
 
         # Обновляем индикатор
         self.status_indicator.setStyleSheet(f"""
@@ -483,55 +556,178 @@ class InviterProfileRow(QWidget):
         # Обновляем кнопку
         self._update_start_button()
 
-        # Эмитим сигнал
+        # Управляем таймерами
         if self.is_running:
-            self.profile_started.emit(self.profile_name)
-            if hasattr(self, 'last_action_label'):
-                self.last_action_label.setText("Запущен...")
+            self.progress_timer.start(1000)  # Обновляем каждую секунду
+            self.completion_timer.start(2000)  # Проверяем завершение
+            self.status_label.setText("Запущен...")
         else:
-            self.profile_stopped.emit(self.profile_name)
-            if hasattr(self, 'last_action_label'):
-                self.last_action_label.setText("Остановлен")
+            self.progress_timer.stop()
+            self.completion_timer.stop()
+            # НЕ сбрасываем прогресс при остановке!
+            # self.progress_bar.setValue(0)
+
+    def _update_progress_from_module(self):
+        """Обновляет прогресс-бар из данных модуля"""
+        try:
+            # Получаем актуальные данные из модуля
+            from src.modules.impl.inviter import get_profile_progress
+
+            progress_data = get_profile_progress(self.profile_name)
+
+            if progress_data:
+                # Обновляем прогресс-бар относительно ЦЕЛИ
+                total_goal = progress_data.get('total_goal', 0)
+                success = progress_data.get('success', 0)
+                errors = progress_data.get('errors', 0)
+
+                # Сохраняем данные прогресса
+                self.saved_progress['success'] = success
+                self.saved_progress['errors'] = errors
+                self.saved_progress['total_goal'] = total_goal
+
+                if total_goal > 0:
+                    # Прогресс-бар показывает успешные инвайты относительно цели
+                    self.progress_bar.setRange(0, total_goal)
+                    self.progress_bar.setValue(success)
+                    self.progress_bar.setFormat(
+                        f"{success} из {total_goal} ({success * 100 // total_goal if total_goal > 0 else 0}%)")
+
+                    # Обновляем счетчики
+                    self.success_label.setText(f"✅ Успешно: {success}")
+                    self.errors_label.setText(f"❌ Ошибок: {errors}")
+
+                    # Рассчитываем скорость
+                    speed = progress_data.get('speed', 0)
+                    self.speed_label.setText(f"⚡ Скорость: {speed}/мин")
+
+                    # Обновляем статус
+                    status = progress_data.get('status', 'Работает...')
+                    active_accounts = progress_data.get('active_accounts', 0)
+                    finished_accounts = progress_data.get('finished_accounts', 0)
+
+                    # Добавляем информацию об аккаунтах в статус
+                    if finished_accounts > 0:
+                        status += f" | Отработало: {finished_accounts} акк."
+
+                    self.status_label.setText(status)
+
+                    # Если цель достигнута
+                    if success >= total_goal:
+                        self.status_label.setText("✅ Цель достигнута!")
+                        self.saved_progress['stop_reason'] = "Цель достигнута"
+                        self.progress_bar.setStyleSheet("""
+                            QProgressBar {
+                                border: 1px solid rgba(16, 185, 129, 0.5);
+                                border-radius: 8px;
+                                background: rgba(16, 185, 129, 0.1);
+                                text-align: center;
+                                color: #FFFFFF;
+                                font-size: 10px;
+                            }
+                            QProgressBar::chunk {
+                                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                                    stop:0 #10B981, stop:1 #059669);
+                                border-radius: 8px;
+                            }
+                        """)
+                else:
+                    # Если цель не определена, показываем количество обработанных
+                    processed = progress_data.get('processed', 0)
+                    self.progress_bar.setRange(0, 100)
+                    self.progress_bar.setValue(min(processed, 100))
+                    self.progress_bar.setFormat(f"Обработано: {processed}")
+            else:
+                # Процесс завершен, используем сохраненные данные
+                if self.saved_progress['total_goal'] > 0:
+                    success = self.saved_progress['success']
+                    total_goal = self.saved_progress['total_goal']
+
+                    # Показываем финальный статус
+                    if self.saved_progress['stop_reason']:
+                        self.status_label.setText(f"⏹️ Остановлен: {self.saved_progress['stop_reason']}")
+                    else:
+                        self.status_label.setText("⏹️ Остановлен пользователем")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка обновления прогресса для {self.profile_name}: {e}")
+
+    def _check_process_completion(self):
+        """Проверяет завершился ли процесс и автоматически меняет кнопку"""
+        try:
+            from src.modules.impl.inviter import get_profile_progress
+
+            progress_data = get_profile_progress(self.profile_name)
+
+            if not progress_data or not progress_data.get('is_running', False):
+                # Процесс завершен
+                if self.is_running:
+                    logger.info(f"🏁 Процесс {self.profile_name} завершен, обновляем UI")
+
+                    # Определяем причину остановки
+                    if self.saved_progress.get('success', 0) >= self.saved_progress.get('total_goal', 1):
+                        self.saved_progress['stop_reason'] = "✅ Цель достигнута"
+                    elif not self.saved_progress.get('stop_reason'):
+                        # Пытаемся определить причину из последних данных
+                        if progress_data:
+                            status = progress_data.get('status', '')
+                            if 'завершен' in status.lower():
+                                self.saved_progress['stop_reason'] = "Работа завершена"
+                            elif 'ошибк' in status.lower():
+                                self.saved_progress['stop_reason'] = "Остановлен из-за ошибок"
+                            elif 'нет аккаунтов' in status.lower():
+                                self.saved_progress['stop_reason'] = "Нет доступных аккаунтов"
+                            elif 'нет пользователей' in status.lower():
+                                self.saved_progress['stop_reason'] = "Закончились пользователи"
+                            else:
+                                self.saved_progress['stop_reason'] = "Процесс завершен"
+
+                    # Автоматически переключаем состояние на остановленное
+                    self.update_running_state(False)
+
+                    # Обновляем финальный статус
+                    if self.saved_progress['stop_reason']:
+                        self.status_label.setText(f"⏹️ {self.saved_progress['stop_reason']}")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка проверки завершения для {self.profile_name}: {e}")
 
     def _delete_profile(self):
         """Удаляет профиль"""
         self.profile_deleted.emit(self.profile_name)
 
     def _on_users_settings(self):
-        """ИСПРАВЛЕНО: Настройка базы пользователей С СОХРАНЕНИЕМ ЧЕРЕЗ МОДУЛЬ"""
+        """Настройка базы пользователей"""
         try:
             logger.info(f"🔧 Открываем настройки пользователей для профиля: {self.profile_name}")
 
             current_users = getattr(self, 'users_list', [])
-            logger.info(f"📝 Текущих пользователей в памяти: {len(current_users)}")
-            if current_users:
-                logger.info(f"📝 Первые 3 пользователя: {current_users[:3]}")
-
-            # Показываем диалог
             users = show_users_base_dialog(self, current_users)
 
-            # ИСПРАВЛЕНО: Проверяем что вернулся не None и отличается от текущего
             if users is not None:
                 logger.info(f"📥 Получено пользователей из диалога: {len(users)}")
-                if users:
-                    logger.info(f"📥 Первые 3 полученных: {users[:3]}")
-
-                # КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Всегда сохраняем через модуль
-                logger.info(f"💾 Сохраняем пользователей через модуль для {self.profile_name}")
 
                 # Импортируем модуль
                 from src.modules.impl.inviter import update_profile_users
 
-                # Сохраняем в модуле (который сохранит в файл)
+                # Сохраняем в модуле
                 success = update_profile_users(self.profile_name, users)
 
                 if success:
-                    # ИСПРАВЛЕНО: Обновляем локальные данные ТОЛЬКО после успешного сохранения
                     self.users_list = users
                     users_count = len(users)
-                    button_text = f"Юзеров: {users_count}"
+
+                    # Форматируем большие числа
+                    if users_count >= 1000000:
+                        button_text = f"👥 {users_count // 1000000}.{(users_count % 1000000) // 100000}M"
+                    elif users_count >= 1000:
+                        button_text = f"👥 {users_count // 1000}K"
+                    else:
+                        button_text = f"👥 {users_count}"
+
                     if self.users_btn:
                         self.users_btn.setText(button_text)
+                        self.users_btn.setToolTip(f"Всего пользователей: {users_count:,}")
 
                     logger.info(f"✅ База пользователей обновлена для {self.profile_name}: {users_count} пользователей")
 
@@ -540,7 +736,7 @@ class InviterProfileRow(QWidget):
                         from gui.notifications import show_success
                         show_success(
                             "База пользователей",
-                            f"✅ Сохранено {users_count} пользователей\nВ файл: База юзеров.txt"
+                            f"✅ Сохранено {users_count:,} пользователей\nВ файл: База юзеров.txt"
                         )
                     except:
                         pass
@@ -558,50 +754,37 @@ class InviterProfileRow(QWidget):
 
         except Exception as e:
             logger.error(f"❌ Ошибка настройки пользователей: {e}")
-            try:
-                from gui.notifications import show_error
-                show_error(
-                    "Критическая ошибка",
-                    f"❌ Ошибка настройки пользователей: {e}"
-                )
-            except:
-                pass
 
     def _on_chats_settings(self):
-        """ИСПРАВЛЕНО: Настройка базы чатов С СОХРАНЕНИЕМ ЧЕРЕЗ МОДУЛЬ"""
+        """Настройка базы чатов"""
         try:
             logger.info(f"🔧 Открываем настройки чатов для профиля: {self.profile_name}")
 
             current_chats = getattr(self, 'chats_list', [])
-            logger.info(f"💬 Текущих чатов в памяти: {len(current_chats)}")
-            if current_chats:
-                logger.info(f"💬 Первые 3 чата: {current_chats[:3]}")
-
-            # Показываем диалог
             chats = show_chats_base_dialog(self, current_chats)
 
-            # ИСПРАВЛЕНО: Проверяем что вернулся не None и отличается от текущего
             if chats is not None:
                 logger.info(f"📥 Получено чатов из диалога: {len(chats)}")
-                if chats:
-                    logger.info(f"📥 Первые 3 полученных: {chats[:3]}")
-
-                # КЛЮЧЕВОЕ ИСПРАВЛЕНИЕ: Всегда сохраняем через модуль
-                logger.info(f"💾 Сохраняем чаты через модуль для {self.profile_name}")
 
                 # Импортируем модуль
                 from src.modules.impl.inviter import update_profile_chats
 
-                # Сохраняем в модуле (который сохранит в файл)
+                # Сохраняем в модуле
                 success = update_profile_chats(self.profile_name, chats)
 
                 if success:
-                    # ИСПРАВЛЕНО: Обновляем локальные данные ТОЛЬКО после успешного сохранения
                     self.chats_list = chats
                     chats_count = len(chats)
-                    button_text = f"Чатов: {chats_count}"
+
+                    # Форматируем большие числа
+                    if chats_count >= 1000:
+                        button_text = f"💬 {chats_count // 1000}K"
+                    else:
+                        button_text = f"💬 {chats_count}"
+
                     if self.chats_btn:
                         self.chats_btn.setText(button_text)
+                        self.chats_btn.setToolTip(f"Всего чатов: {chats_count:,}")
 
                     logger.info(f"✅ База чатов обновлена для {self.profile_name}: {chats_count} чатов")
 
@@ -610,7 +793,7 @@ class InviterProfileRow(QWidget):
                         from gui.notifications import show_success
                         show_success(
                             "База чатов",
-                            f"✅ Сохранено {chats_count} чатов\nВ файл: База чатов.txt"
+                            f"✅ Сохранено {chats_count:,} чатов\nВ файл: База чатов.txt"
                         )
                     except:
                         pass
@@ -628,23 +811,13 @@ class InviterProfileRow(QWidget):
 
         except Exception as e:
             logger.error(f"❌ Ошибка настройки чатов: {e}")
-            try:
-                from gui.notifications import show_error
-                show_error(
-                    "Критическая ошибка",
-                    f"❌ Ошибка настройки чатов: {e}"
-                )
-            except:
-                pass
 
     def _on_extended_settings(self):
         """Расширенные настройки профиля"""
         try:
-            # Получаем актуальный профиль из модуля для гарантии свежих данных
             from src.modules.impl.inviter.inviter_manager import _inviter_module_manager
 
             if _inviter_module_manager:
-                # Получаем свежие данные профиля
                 fresh_profile = _inviter_module_manager.profile_manager.get_profile(self.profile_name)
                 if fresh_profile:
                     current_config = fresh_profile.get('config', {})
@@ -655,18 +828,11 @@ class InviterProfileRow(QWidget):
 
             logger.debug(f"📝 Загружаем настройки для {self.profile_name}: {current_config}")
 
-            # Показываем диалог с текущими настройками из конфига
             new_settings = show_extended_settings_dialog(self, current_config)
 
-            # Проверяем что вернулся не None (пользователь нажал Сохранить)
             if new_settings is not None:
-                # Сохраняем через модуль
                 self._save_extended_settings_to_module(new_settings)
-
                 logger.info(f"⚙️ Обновлены расширенные настройки для {self.profile_name}")
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка настройки профиля: {e}")
 
         except Exception as e:
             logger.error(f"❌ Ошибка настройки профиля: {e}")
@@ -676,24 +842,17 @@ class InviterProfileRow(QWidget):
         try:
             from src.modules.impl.inviter import update_profile_config
 
-            # Отправляем в модуль для сохранения в JSON
             success = update_profile_config(self.profile_name, settings)
 
             if success:
-                # ВАЖНО: Обновляем локальные данные config
                 if 'config' not in self.profile_data:
                     self.profile_data['config'] = {}
 
-                # Обновляем каждое поле в конфиге
                 self.profile_data['config'].update(settings)
-
-                # Обновляем и extended_settings для обратной совместимости
                 self.extended_settings = settings
 
                 logger.info(f"✅ Настройки сохранены в JSON для {self.profile_name}")
-                logger.debug(f"📝 Обновленный конфиг: {self.profile_data['config']}")
 
-                # Показываем уведомление об успехе
                 try:
                     from gui.notifications import show_success
                     show_success(
@@ -717,22 +876,22 @@ class InviterProfileRow(QWidget):
             logger.error(f"❌ Ошибка сохранения настроек в модуль: {e}")
 
     def update_progress(self, done: int, total: int):
-        """Обновляем X из Y."""
+        """Обновляем прогресс-бар напрямую"""
         if self.progress_bar:
-            # обновляем максимум
             self.progress_bar.setRange(0, total)
-            # и текущее значение
             self.progress_bar.setValue(done)
 
     def update_counters(self, success, errors, total):
         """Обновляет счетчики"""
-        # Найдем виджеты счетчиков и обновим их
-        pass  # TODO: Реализовать обновление счетчиков
+        if hasattr(self, 'success_label'):
+            self.success_label.setText(f"✅ Успешно: {success}")
+        if hasattr(self, 'errors_label'):
+            self.errors_label.setText(f"❌ Ошибок: {errors}")
 
     def update_last_action(self, action_text):
         """Обновляет текст последнего действия"""
-        if hasattr(self, 'last_action_label'):
-            self.last_action_label.setText(action_text)
+        if hasattr(self, 'status_label'):
+            self.status_label.setText(action_text)
 
 
 class InviterTableWidget(QWidget):
@@ -743,7 +902,7 @@ class InviterTableWidget(QWidget):
         self.setObjectName("InviterTableWidget")
 
         # Список строк профилей для отслеживания
-        self.profile_rows = []
+        self.profile_rows = {}  # Словарь для быстрого доступа
 
         # Основной layout
         layout = QVBoxLayout(self)
@@ -844,13 +1003,13 @@ class InviterTableWidget(QWidget):
         for i, data in enumerate(test_profiles):
             row = InviterProfileRow(data)
 
-            # ИСПРАВЛЕНО: Подключаем сигналы после создания строки
+            # Подключаем сигналы после создания строки
             row.profile_started.connect(self._on_profile_started)
             row.profile_stopped.connect(self._on_profile_stopped)
             row.profile_deleted.connect(self._on_profile_deleted)
 
-            # Добавляем в список для отслеживания
-            self.profile_rows.append(row)
+            # Добавляем в словарь для отслеживания
+            self.profile_rows[data['name']] = row
             self.profiles_layout.addWidget(row)
 
             # Добавляем разделитель сразу после строки
@@ -858,7 +1017,6 @@ class InviterTableWidget(QWidget):
                 sep = QFrame()
                 sep.setFrameShape(QFrame.HLine)
                 sep.setFrameShadow(QFrame.Sunken)
-                # стиль линии — светло-серая
                 sep.setStyleSheet("color: rgba(255,255,255,0.1);")
                 sep.setFixedHeight(1)
                 self.profiles_layout.addWidget(sep)
@@ -868,10 +1026,15 @@ class InviterTableWidget(QWidget):
     def _on_profile_started(self, profile_name):
         """Обработка запуска профиля"""
         logger.info(f"🚀 Профиль запущен: {profile_name}")
-        # TODO: Запустить логику инвайтера для профиля через модуль
+
         try:
             from src.modules.impl.inviter import start_profile
             success = start_profile(profile_name)
+
+            # Обновляем состояние строки
+            if profile_name in self.profile_rows:
+                self.profile_rows[profile_name].update_running_state(success)
+
             if success:
                 logger.info(f"✅ Профиль {profile_name} успешно запущен через модуль")
             else:
@@ -882,10 +1045,17 @@ class InviterTableWidget(QWidget):
     def _on_profile_stopped(self, profile_name):
         """Обработка остановки профиля"""
         logger.info(f"⏸️ Профиль остановлен: {profile_name}")
-        # TODO: Остановить логику инвайтера для профиля через модуль
+
         try:
             from src.modules.impl.inviter import stop_profile
             success = stop_profile(profile_name)
+
+            # Обновляем состояние строки
+            if profile_name in self.profile_rows:
+                self.profile_rows[profile_name].update_running_state(False)
+                # Устанавливаем причину остановки
+                self.profile_rows[profile_name].saved_progress['stop_reason'] = "Остановлен пользователем"
+
             if success:
                 logger.info(f"✅ Профиль {profile_name} успешно остановлен через модуль")
             else:
@@ -896,13 +1066,13 @@ class InviterTableWidget(QWidget):
     def _on_profile_deleted(self, profile_name):
         """Обработка удаления профиля"""
         logger.info(f"🗑️ Удаление профиля: {profile_name}")
-        # TODO: Показать диалог подтверждения и удалить профиль через модуль
+
         try:
             from src.modules.impl.inviter import delete_profile
             result = delete_profile(profile_name)
+
             if result.get('success'):
                 logger.info(f"✅ Профиль {profile_name} успешно удален через модуль")
-                # Удаляем строку из интерфейса
                 self.remove_profile(profile_name)
             else:
                 logger.warning(f"⚠️ Не удалось удалить профиль {profile_name}: {result.get('message')}")
@@ -911,6 +1081,12 @@ class InviterTableWidget(QWidget):
 
     def add_profile(self, profile_data):
         """Добавляет новый профиль"""
+        profile_name = profile_data.get('name')
+
+        # Удаляем старый если есть
+        if profile_name in self.profile_rows:
+            self.remove_profile(profile_name)
+
         profile_row = InviterProfileRow(profile_data)
 
         # Подключаем сигналы
@@ -918,43 +1094,42 @@ class InviterTableWidget(QWidget):
         profile_row.profile_stopped.connect(self._on_profile_stopped)
         profile_row.profile_deleted.connect(self._on_profile_deleted)
 
-        self.profile_rows.append(profile_row)
+        self.profile_rows[profile_name] = profile_row
 
         # Вставляем перед растяжкой
         self.profiles_layout.insertWidget(len(self.profile_rows) - 1, profile_row)
 
     def remove_profile(self, profile_name):
         """Удаляет профиль из интерфейса"""
-        for i, profile_row in enumerate(self.profile_rows):
-            if profile_row.profile_name == profile_name:
-                profile_row.deleteLater()
-                self.profile_rows.pop(i)
-                logger.info(f"🗑️ Строка профиля {profile_name} удалена из интерфейса")
-                break
+        if profile_name in self.profile_rows:
+            profile_row = self.profile_rows[profile_name]
+            profile_row.deleteLater()
+            del self.profile_rows[profile_name]
+            logger.info(f"🗑️ Строка профиля {profile_name} удалена из интерфейса")
 
     def clear_profiles(self):
         """Очищает все профили"""
-        for profile_row in self.profile_rows:
+        for profile_row in self.profile_rows.values():
             profile_row.deleteLater()
         self.profile_rows.clear()
         logger.info("🧹 Все профили очищены из интерфейса")
 
     def start_all_profiles(self):
         """Запускает все профили"""
-        for profile_row in self.profile_rows:
+        for profile_row in self.profile_rows.values():
             if not profile_row.is_running:
                 profile_row._toggle_profile()
 
     def stop_all_profiles(self):
         """Останавливает все профили"""
-        for profile_row in self.profile_rows:
+        for profile_row in self.profile_rows.values():
             if profile_row.is_running:
                 profile_row._toggle_profile()
 
     def refresh_data(self):
         """Обновляет данные профилей"""
         logger.info("🔄 Обновляем данные профилей инвайтера...")
-        # TODO: Реализовать обновление данных через модуль
+
         try:
             from src.modules.impl.inviter import get_all_profiles_for_gui
 

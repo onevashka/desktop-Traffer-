@@ -584,3 +584,102 @@ def refresh_inviter_module():
     global _inviter_module_manager
     if _inviter_module_manager:
         _inviter_module_manager.refresh_all()
+
+
+def get_profile_progress(profile_name: str) -> Optional[Dict]:
+    """Получает прогресс выполнения профиля относительно целей"""
+    global _inviter_module_manager
+    if _inviter_module_manager and profile_name in _inviter_module_manager.active_processes:
+        process = _inviter_module_manager.active_processes[profile_name]
+
+        # Базовые данные прогресса
+        progress_data = {
+            'profile_name': profile_name,
+            'is_running': process.is_alive() if hasattr(process, 'is_alive') else False
+        }
+
+        # Получаем данные из процесса если доступны
+        if hasattr(process, 'total_processed'):
+            progress_data['processed'] = process.total_processed
+        else:
+            progress_data['processed'] = 0
+
+        if hasattr(process, 'total_success'):
+            progress_data['success'] = process.total_success
+        else:
+            progress_data['success'] = 0
+
+        if hasattr(process, 'total_errors'):
+            progress_data['errors'] = process.total_errors
+        else:
+            progress_data['errors'] = 0
+
+        # ВАЖНО: Рассчитываем цель на основе конфигурации
+        if hasattr(process, 'config'):
+            config = process.config
+            chats_count = process.chat_queue.qsize() if hasattr(process, 'chat_queue') else 0
+
+            # Если есть начальное количество чатов
+            if hasattr(process, 'initial_chats_count'):
+                chats_count = process.initial_chats_count
+
+            # Рассчитываем общую цель инвайтов
+            if config.success_per_chat > 0:
+                # Если есть лимит на чат - цель = количество чатов * лимит на чат
+                total_goal = chats_count * config.success_per_chat
+            elif config.success_per_account > 0:
+                # Если есть лимит на аккаунт - цель = количество аккаунтов * лимит на аккаунт
+                accounts_count = len(process.account_stats) if hasattr(process, 'account_stats') else 1
+                total_goal = accounts_count * config.success_per_account
+            else:
+                # Если нет лимитов - цель = количество пользователей
+                total_goal = len(process.processed_users) + process.user_queue.qsize() if hasattr(process,
+                                                                                                  'user_queue') else 100
+
+            progress_data['total_goal'] = total_goal
+            progress_data['total_users'] = total_goal  # Для совместимости
+        else:
+            progress_data['total_goal'] = 100
+            progress_data['total_users'] = 100
+
+        # Скорость обработки
+        if hasattr(process, 'started_at') and process.started_at:
+            from datetime import datetime
+            elapsed = (datetime.now() - process.started_at).total_seconds()
+            if elapsed > 0:
+                speed = int((progress_data['success'] / elapsed) * 60)  # успешных в минуту
+                progress_data['speed'] = speed
+            else:
+                progress_data['speed'] = 0
+        else:
+            progress_data['speed'] = 0
+
+        # Детальный статус процесса
+        if progress_data['is_running']:
+            if hasattr(process, 'chat_threads'):
+                active_threads = sum(1 for t in process.chat_threads if t.is_alive())
+                if active_threads > 0:
+                    progress_data['status'] = f"Работает ({active_threads} потоков)"
+                else:
+                    progress_data['status'] = "Завершение работы..."
+            else:
+                progress_data['status'] = "Инициализация..."
+
+            # Проверяем достигнута ли цель
+            if progress_data['success'] >= progress_data['total_goal'] and progress_data['total_goal'] > 0:
+                progress_data['status'] = "✅ Цель достигнута!"
+        else:
+            progress_data['status'] = "Остановлен"
+
+        # Добавляем информацию об активных аккаунтах
+        if hasattr(process, 'account_stats'):
+            active_accounts = sum(1 for stats in process.account_stats.values()
+                                  if hasattr(stats, 'status') and stats.status == 'working')
+            finished_accounts = sum(1 for stats in process.account_stats.values()
+                                    if hasattr(stats, 'status') and stats.status == 'finished')
+            progress_data['active_accounts'] = active_accounts
+            progress_data['finished_accounts'] = finished_accounts
+
+        return progress_data
+
+    return None

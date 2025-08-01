@@ -18,7 +18,8 @@ from .inviter_manager import (
     update_profile_config,
     start_all_profiles,
     stop_all_profiles,
-    refresh_inviter_module
+    refresh_inviter_module,
+    get_profile_progress
 )
 
 from .profile_manager import InviterProfileManager
@@ -52,5 +53,8 @@ __all__ = [
     'update_profile_config',
 
     # Функции обслуживания
-    'refresh_inviter_module'
+    'refresh_inviter_module',
+
+    # Функции прогресса
+    'get_profile_progress'
 ]
