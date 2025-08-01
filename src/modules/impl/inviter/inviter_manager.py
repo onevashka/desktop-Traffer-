@@ -101,7 +101,13 @@ class InviterModuleManager:
                 # Добавляем статистику процесса если есть
                 if profile_name in self.active_processes:
                     process = self.active_processes[profile_name]
-                    profile['process_stats'] = process.get('stats', {})
+
+                    # Базовая статистика процесса
+                    profile['process_stats'] = {
+                        'is_running': process.is_alive() if hasattr(process, 'is_alive') else True,
+                        'profile_name': profile_name,
+                        'started_at': process.started_at if hasattr(process, 'started_at') else None
+                    }
 
             return profiles
 
@@ -184,33 +190,41 @@ class InviterModuleManager:
                 logger.error(f"❌ Профиль не готов к запуску: {validation['message']}")
                 return False
 
-            # TODO: Создать и запустить реальный процесс инвайтинга
-            # inviter_process = InviterProcess(profile)
-            # await inviter_process.start()
+            # Получаем AccountManager
+            from src.accounts.manager import _account_manager
+            if not _account_manager:
+                logger.error("❌ AccountManager не инициализирован")
+                return False
 
-            # Пока что заглушка
-            self.active_processes[profile_name] = {
-                'status': 'running',
-                'started_at': 'now',
-                'profile_data': profile,
-                'stats': {
-                    'success': 0,
-                    'errors': 0,
-                    'total_processed': 0,
-                    'current_chat': None,
-                    'current_user': None
-                }
-            }
+            # Создаем процесс инвайтинга в зависимости от типа
+            invite_type = profile.get('config', {}).get('invite_type', 'classic')
+
+            if invite_type == 'classic':
+                from .classic_inviter import ClassicInviterProcess
+                inviter_process = ClassicInviterProcess(
+                    profile_name=profile_name,
+                    profile_data=profile,
+                    account_manager=_account_manager
+                )
+            else:
+                logger.error(f"❌ Неизвестный тип инвайта: {invite_type}")
+                return False
+
+            # Запускаем поток
+            inviter_process.start()
+
+            # Сохраняем процесс
+            self.active_processes[profile_name] = inviter_process
 
             # Обновляем статус в профиле
             self.profile_manager.set_profile_running(profile_name, True)
             self._update_stats_cache()
 
-            logger.info(f"🚀 Профиль запущен через модуль: {profile_name}")
+            logger.info(f"🚀 Профиль запущен: {profile_name}")
             return True
 
         except Exception as e:
-            logger.error(f"❌ Ошибка запуска профиля в модуле {profile_name}: {e}")
+            logger.error(f"❌ Ошибка запуска профиля {profile_name}: {e}")
             return False
 
     def stop_profile(self, profile_name: str) -> bool:
@@ -220,9 +234,18 @@ class InviterModuleManager:
                 logger.warning(f"⚠️ Профиль не запущен: {profile_name}")
                 return True
 
-            # TODO: Остановить реальный процесс
-            # process = self.active_processes[profile_name]
-            # await process.stop()
+            # Получаем процесс
+            process = self.active_processes[profile_name]
+
+            # Останавливаем процесс
+            if hasattr(process, 'stop'):
+                process.stop()
+
+                # Ждем завершения (максимум 10 секунд)
+                process.join(timeout=10)
+
+                if process.is_alive():
+                    logger.warning(f"⚠️ Процесс {profile_name} не завершился в течение 10 секунд")
 
             del self.active_processes[profile_name]
 
@@ -230,11 +253,11 @@ class InviterModuleManager:
             self.profile_manager.set_profile_running(profile_name, False)
             self._update_stats_cache()
 
-            logger.info(f"⏸️ Профиль остановлен через модуль: {profile_name}")
+            logger.info(f"⏸️ Профиль остановлен: {profile_name}")
             return True
 
         except Exception as e:
-            logger.error(f"❌ Ошибка остановки профиля в модуле {profile_name}: {e}")
+            logger.error(f"❌ Ошибка остановки профиля {profile_name}: {e}")
             return False
 
     def start_all_profiles(self) -> Dict[str, bool]:
@@ -377,27 +400,28 @@ class InviterModuleManager:
         users_list = profile_data.get('users_list', [])
         if not users_list:
             errors.append("База пользователей пуста")
-        elif len(users_list) < 1:
-            errors.append("В базе пользователей должен быть хотя бы 1 пользователь")
 
         # Проверяем базу чатов
         chats_list = profile_data.get('chats_list', [])
         if not chats_list:
             errors.append("База чатов пуста")
-        elif len(chats_list) < 1:
-            errors.append("В базе чатов должен быть хотя бы 1 чат")
 
         # Проверяем конфигурацию
         config = profile_data.get('config', {})
         if not config:
             errors.append("Отсутствует конфигурация профиля")
 
-        # TODO: Проверить доступность аккаунтов для инвайтинга
-        # from src.accounts.manager import _account_manager
-        # if _account_manager:
-        #     active_accounts = len(_account_manager.traffic_accounts)
-        #     if active_accounts == 0:
-        #         errors.append("Нет активных аккаунтов для инвайтинга")
+        # Проверяем доступность аккаунтов
+        from src.accounts.manager import _account_manager
+        if _account_manager:
+            active_accounts = [
+                acc for acc in _account_manager.traffic_accounts.values()
+                if acc.status == "active"
+            ]
+            if not active_accounts:
+                errors.append("Нет активных аккаунтов для инвайтинга")
+        else:
+            errors.append("AccountManager не инициализирован")
 
         if errors:
             return {

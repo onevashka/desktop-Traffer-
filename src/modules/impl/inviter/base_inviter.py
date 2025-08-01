@@ -1,6 +1,6 @@
-# src/modules/impl/inviter/base_inviter_simple.py
+# src/modules/impl/inviter/base_inviter.py
 """
-Упрощенный базовый класс для всех режимов инвайтинга
+Простой базовый класс для инвайтера
 """
 
 import threading
@@ -13,19 +13,21 @@ from loguru import logger
 
 from src.entities.modules.inviter import InviterConfig
 from .data_loader import InviterDataLoader
-from .account_pool import AccountPool
 
 
 class BaseInviterProcess(threading.Thread, ABC):
     """Базовый класс для процессов инвайтинга"""
 
-    def __init__(self, profile_name: str, profile_data: Dict, accounts_list: List):
+    def __init__(self, profile_name: str, profile_data: Dict, account_manager):
         super().__init__(name=f"Inviter-{profile_name}")
 
         # Основные данные
         self.profile_name = profile_name
         self.profile_data = profile_data
         self.profile_folder = Path(profile_data['folder_path'])
+
+        # AccountManager для получения аккаунтов
+        self.account_manager = account_manager
 
         # Загрузчик данных
         self.data_loader = InviterDataLoader(self.profile_folder)
@@ -34,12 +36,8 @@ class BaseInviterProcess(threading.Thread, ABC):
         config_dict = profile_data.get('config', {})
         self.config = self.data_loader.load_config(config_dict)
 
-        # Пул аккаунтов
-        self.account_pool = AccountPool(accounts_list)
-
         # Флаги управления
         self.stop_flag = threading.Event()
-        self.pause_flag = threading.Event()
         self.is_running = False
 
         # Очереди данных
@@ -62,12 +60,17 @@ class BaseInviterProcess(threading.Thread, ABC):
             self.is_running = True
             self.started_at = datetime.now()
 
-            # 1. Загружаем данные
+            # 1. Загружаем данные (чаты и пользователей)
             if not self._load_data():
                 logger.error("❌ Не удалось загрузить данные")
                 return
 
-            # 2. Запускаем основную работу (реализуется в наследниках)
+            # 2. Проверяем есть ли активные аккаунты
+            if not self._check_accounts():
+                logger.error("❌ Нет активных аккаунтов")
+                return
+
+            # 3. Запускаем основную работу
             self._run_inviting()
 
         except Exception as e:
@@ -84,6 +87,7 @@ class BaseInviterProcess(threading.Thread, ABC):
             # Загружаем чаты
             chats, chat_count = self.data_loader.load_chats()
             if not chats:
+                logger.error("❌ Нет чатов для инвайта")
                 return False
 
             for chat in chats:
@@ -103,6 +107,29 @@ class BaseInviterProcess(threading.Thread, ABC):
         except Exception as e:
             logger.error(f"❌ Ошибка загрузки данных: {e}")
             return False
+
+    def _check_accounts(self) -> bool:
+        """Проверяет наличие активных аккаунтов"""
+        # Получаем активные аккаунты из трафика
+        active_accounts = [
+            acc for acc in self.account_manager.traffic_accounts.values()
+            if acc.status == "active"
+        ]
+
+        if not active_accounts:
+            logger.error("❌ Нет активных аккаунтов в папке трафика")
+            return False
+
+        logger.info(f"✅ Найдено активных аккаунтов: {len(active_accounts)}")
+        return True
+
+    def get_available_accounts(self) -> List:
+        """Получает список доступных аккаунтов"""
+        # Возвращаем все активные аккаунты из трафика
+        return [
+            acc for acc in self.account_manager.traffic_accounts.values()
+            if acc.status == "active"
+        ]
 
     @abstractmethod
     def _run_inviting(self):
@@ -128,11 +155,3 @@ class BaseInviterProcess(threading.Thread, ABC):
         """Останавливает процесс"""
         logger.info(f"⏸️ Остановка процесса: {self.profile_name}")
         self.stop_flag.set()
-
-    def pause(self):
-        """Ставит на паузу"""
-        self.pause_flag.set()
-
-    def resume(self):
-        """Возобновляет работу"""
-        self.pause_flag.clear()

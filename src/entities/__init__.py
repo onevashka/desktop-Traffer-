@@ -1,6 +1,6 @@
 from .proxy import *
 from .account import *
-from .module import *
+from .moduls import *
 
 
 __all__ = ["ProxyTelethon", "AccountData"]

@@ -1,29 +1,36 @@
-# src/modules/impl/inviter/classic_inviter_simple.py
+# src/modules/impl/inviter/classic_inviter.py
 """
-Классический режим инвайтинга - упрощенная версия
+Классический режим инвайтинга - простая версия
 """
 
 import threading
 import asyncio
 import queue
-from typing import Dict, Optional
+import random
+from typing import Dict, List
 from datetime import datetime
 from loguru import logger
 
-from .base_inviter_simple import BaseInviterProcess
+from .base_inviter import BaseInviterProcess
 from src.entities.modules.inviter import InviteUser, UserStatus
 
 
 class ClassicInviterProcess(BaseInviterProcess):
     """Классический инвайтер - один поток на чат"""
 
-    def __init__(self, profile_name: str, profile_data: Dict, accounts_list: list):
-        super().__init__(profile_name, profile_data, accounts_list)
+    def __init__(self, profile_name: str, profile_data: Dict, account_manager):
+        super().__init__(profile_name, profile_data, account_manager)
         self.chat_threads = []
 
     def _run_inviting(self):
         """Запускает классический инвайтинг"""
         logger.info("🚀 Запуск классического инвайтинга")
+
+        # Получаем доступные аккаунты
+        available_accounts = self.get_available_accounts()
+        if not available_accounts:
+            logger.error("❌ Нет доступных аккаунтов")
+            return
 
         # Задержка после старта
         if self.config.delay_after_start > 0:
@@ -34,6 +41,10 @@ class ClassicInviterProcess(BaseInviterProcess):
         chat_count = self.chat_queue.qsize()
         logger.info(f"💬 Создаем потоки для {chat_count} чатов")
 
+        # Распределяем аккаунты между чатами
+        accounts_per_chat = max(1, len(available_accounts) // chat_count)
+
+        account_index = 0
         for i in range(chat_count):
             if self.stop_flag.is_set():
                 break
@@ -41,16 +52,28 @@ class ClassicInviterProcess(BaseInviterProcess):
             try:
                 chat = self.chat_queue.get_nowait()
 
+                # Выделяем аккаунты для этого чата
+                chat_accounts = []
+                for j in range(self.config.threads_per_chat):
+                    if account_index < len(available_accounts):
+                        chat_accounts.append(available_accounts[account_index])
+                        account_index += 1
+
+                if not chat_accounts:
+                    logger.warning(f"⚠️ Нет аккаунтов для чата #{i + 1}")
+                    continue
+
                 # Создаем поток для чата
                 thread = ChatWorkerThread(
                     chat_id=i + 1,
                     chat_link=chat,
+                    accounts=chat_accounts,
                     parent=self
                 )
                 thread.start()
                 self.chat_threads.append(thread)
 
-                logger.info(f"✅ Запущен поток для чата #{i + 1}: {chat}")
+                logger.info(f"✅ Запущен поток для чата #{i + 1}: {chat} (аккаунтов: {len(chat_accounts)})")
 
             except queue.Empty:
                 break
@@ -69,12 +92,7 @@ class ClassicInviterProcess(BaseInviterProcess):
                 logger.info("✅ Все потоки завершены")
                 break
 
-            # Проверяем условия остановки
-            if self.account_pool.get_active_count() == 0:
-                logger.error("❌ Нет активных аккаунтов")
-                self.stop()
-                break
-
+            # Проверяем условие остановки
             if self.user_queue.empty() and len(self.processed_users) > 0:
                 logger.info("✅ Все пользователи обработаны")
                 self.stop()
@@ -91,10 +109,11 @@ class ClassicInviterProcess(BaseInviterProcess):
 class ChatWorkerThread(threading.Thread):
     """Рабочий поток для одного чата"""
 
-    def __init__(self, chat_id: int, chat_link: str, parent: ClassicInviterProcess):
+    def __init__(self, chat_id: int, chat_link: str, accounts: List, parent: ClassicInviterProcess):
         super().__init__(name=f"Chat-{chat_id}")
         self.chat_id = chat_id
         self.chat_link = chat_link
+        self.accounts = accounts  # Аккаунты выделенные для этого чата
         self.parent = parent
 
     def run(self):
@@ -115,16 +134,13 @@ class ChatWorkerThread(threading.Thread):
     async def _work(self):
         """Основная работа с чатом"""
         logger.info(f"🚀 [Chat-{self.chat_id}] Начинаем работу с {self.chat_link}")
-
-        # Создаем worker-ы согласно настройке
-        workers_count = self.parent.config.threads_per_chat
-        logger.info(f"🔧 [Chat-{self.chat_id}] Создаем {workers_count} воркеров")
+        logger.info(f"👥 [Chat-{self.chat_id}] Доступно аккаунтов: {len(self.accounts)}")
 
         # Запускаем воркеров
         tasks = []
-        for i in range(workers_count):
+        for i, account_data in enumerate(self.accounts):
             task = asyncio.create_task(
-                self._run_worker(i + 1)
+                self._run_worker(i + 1, account_data)
             )
             tasks.append(task)
 
@@ -133,28 +149,22 @@ class ChatWorkerThread(threading.Thread):
 
         logger.info(f"✅ [Chat-{self.chat_id}] Работа завершена")
 
-    async def _run_worker(self, worker_id: int):
+    async def _run_worker(self, worker_id: int, account_data):
         """Воркер для инвайтинга"""
-        logger.info(f"👷 [Chat-{self.chat_id}][Worker-{worker_id}] Запуск")
-
-        # Получаем аккаунт
-        account = self.parent.account_pool.get_account()
-        if not account:
-            logger.error(f"❌ [Worker-{worker_id}] Нет доступных аккаунтов")
-            return
-
-        account_name = account.get('name', 'unknown')
+        account_name = account_data.name
+        logger.info(f"👷 [Chat-{self.chat_id}][Worker-{worker_id}] Запуск с аккаунтом {account_name}")
 
         try:
             # TODO: Здесь будет инициализация Telethon
+            # account = account_data.account
+            # await account.create_client()
+            # await account.connect()
+
+            invites_count = 0
+            errors_count = 0
 
             # Основной цикл
             while not self.parent.stop_flag.is_set():
-                # Проверяем паузу
-                if self.parent.pause_flag.is_set():
-                    await asyncio.sleep(1)
-                    continue
-
                 # Получаем пользователя
                 try:
                     user = self.parent.user_queue.get_nowait()
@@ -165,47 +175,43 @@ class ChatWorkerThread(threading.Thread):
                 # Инвайтим пользователя
                 success = await self._invite_user(user, account_name, worker_id)
 
-                # Обновляем статистику
-                self.parent.account_pool.update_stats(
-                    account_name,
-                    success=success,
-                    error_type='spam_block' if not success else None
-                )
+                if success:
+                    invites_count += 1
+                else:
+                    errors_count += 1
 
-                # Проверяем нужно ли заблокировать аккаунт
-                if self.parent.account_pool.should_block_account(
-                        account_name,
-                        self.parent.config.__dict__
-                ):
-                    logger.warning(f"🚫 [Worker-{worker_id}] Аккаунт заблокирован")
-                    break
+                # Проверяем лимиты
+                if self.parent.config.success_per_account > 0:
+                    if invites_count >= self.parent.config.success_per_account:
+                        logger.info(f"🎯 [Worker-{worker_id}] Достигнут лимит инвайтов: {invites_count}")
+                        break
 
                 # Задержка между инвайтами
                 if self.parent.config.delay_between > 0:
                     await asyncio.sleep(self.parent.config.delay_between)
 
-        finally:
-            # Возвращаем аккаунт
-            should_block = self.parent.account_pool.should_block_account(
-                account_name,
-                self.parent.config.__dict__
-            )
-            self.parent.account_pool.release_account(account, block=should_block)
+            logger.info(f"📊 [Worker-{worker_id}] Завершен. Инвайтов: {invites_count}, ошибок: {errors_count}")
 
-            logger.info(f"⏹️ [Worker-{worker_id}] Завершен")
+        except Exception as e:
+            logger.error(f"❌ [Worker-{worker_id}] Критическая ошибка: {e}")
 
-    async def _invite_user(self, user: InviteUser, account_name: str,
-                           worker_id: int) -> bool:
+    async def _invite_user(self, user: InviteUser, account_name: str, worker_id: int) -> bool:
         """Инвайт пользователя (заглушка)"""
         logger.info(f"📨 [Worker-{worker_id}][{account_name}] Инвайт @{user.username}")
 
         # TODO: Здесь будет реальный инвайт через Telethon
-        # Пока симулируем
+        # Пока симулируем с рандомным результатом
         await asyncio.sleep(1)
 
-        # Обновляем статус
-        user.status = UserStatus.INVITED
-        user.last_attempt = datetime.now()
-        self.parent.processed_users[user.username] = user
-
-        return True
+        # Симулируем результат
+        if random.random() > 0.1:  # 90% успех
+            user.status = UserStatus.INVITED
+            user.last_attempt = datetime.now()
+            self.parent.processed_users[user.username] = user
+            return True
+        else:
+            user.status = UserStatus.ERROR
+            user.last_attempt = datetime.now()
+            user.error_message = "Симуляция ошибки"
+            self.parent.processed_users[user.username] = user
+            return False

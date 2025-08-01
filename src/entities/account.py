@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 # Используем TYPE_CHECKING для типизации без реального импорта
 if TYPE_CHECKING:
@@ -14,3 +14,7 @@ class AccountData:
     status: str  # папка где лежит: "active", "dead", "frozen", etc.
     account: "Account"  # объект аккаунта с данными
     info: dict  # кешированная информация из account.get_info()
+
+    # Информация о занятости
+    is_busy: bool = False  # Занят ли аккаунт
+    busy_by: Optional[str] = None  # Кем занят (название модуля)

@@ -67,6 +67,7 @@ class AccountManager:
         storages = await scanner.scan_all_folders()
 
         self.traffic_accounts = storages['traffic']
+        print(self.traffic_accounts)
         self.sales_accounts = storages['sales']
 
         # Обновляем зависимые сервисы
@@ -74,6 +75,184 @@ class AccountManager:
 
         logger.info(
             f"✅ Сканирование завершено: трафик={len(self.traffic_accounts)}, продажи={len(self.sales_accounts)}")
+
+    def get_free_account(self, module_name: str) -> Optional[AccountData]:
+        """
+        Получает свободный активный аккаунт из трафика
+
+        Args:
+            module_name: Название модуля который запрашивает аккаунт
+
+        Returns:
+            AccountData или None если нет свободных
+        """
+        # Ищем среди активных аккаунтов трафика
+        for account_name, account_data in self.traffic_accounts.items():
+            # Проверяем что аккаунт активный и не занят
+            if (account_data.status == "active" and
+                    not account_data.is_busy):
+                # Помечаем как занятый
+                account_data.is_busy = True
+                account_data.busy_by = module_name
+
+                logger.debug(f"🔒 Аккаунт {account_name} выдан модулю {module_name}")
+                return account_data
+
+        logger.warning(f"⚠️ Нет свободных аккаунтов для {module_name}")
+        return None
+
+    def get_multiple_free_accounts(self, module_name: str, count: int) -> List[AccountData]:
+        """
+        Получает несколько свободных аккаунтов
+
+        Args:
+            module_name: Название модуля
+            count: Количество нужных аккаунтов
+
+        Returns:
+            Список AccountData (может быть меньше запрошенного)
+        """
+        accounts = []
+
+        for account_name, account_data in self.traffic_accounts.items():
+            if (account_data.status == "active" and
+                    not account_data.is_busy):
+
+                # Помечаем как занятый
+                account_data.is_busy = True
+                account_data.busy_by = module_name
+                accounts.append(account_data)
+
+                if len(accounts) >= count:
+                    break
+
+        logger.info(f"🔒 Выдано аккаунтов для {module_name}: {len(accounts)} из {count}")
+        return accounts
+
+    def release_account(self, account_name: str, module_name: str = None) -> bool:
+        """
+        Освобождает аккаунт
+
+        Args:
+            account_name: Имя аккаунта
+            module_name: Модуль который освобождает (для проверки)
+
+        Returns:
+            True если успешно освобожден
+        """
+        if account_name not in self.traffic_accounts:
+            logger.debug(f"❓ Аккаунт {account_name} не найден в трафике")
+            return False
+
+        account_data = self.traffic_accounts[account_name]
+
+        if not account_data.is_busy:
+            logger.debug(f"🔓 Аккаунт {account_name} не был занят")
+            return True
+
+        # Проверяем что освобождает тот же модуль
+        if module_name and account_data.busy_by != module_name:
+            logger.warning(f"⚠️ Модуль {module_name} пытается освободить чужой аккаунт {account_name}")
+            return False
+
+        # Освобождаем
+        account_data.is_busy = False
+        account_data.busy_by = None
+
+        logger.debug(f"🔓 Аккаунт {account_name} освобожден")
+        return True
+
+    def release_all_module_accounts(self, module_name: str) -> int:
+        """
+        Освобождает все аккаунты занятые модулем
+
+        Args:
+            module_name: Название модуля
+
+        Returns:
+            Количество освобожденных аккаунтов
+        """
+        released_count = 0
+
+        for account_name, account_data in self.traffic_accounts.items():
+            if account_data.is_busy and account_data.busy_by == module_name:
+                account_data.is_busy = False
+                account_data.busy_by = None
+                released_count += 1
+
+        logger.info(f"🔓 Освобождено аккаунтов модуля {module_name}: {released_count}")
+        return released_count
+
+    def get_free_accounts_count(self) -> int:
+        """
+        Возвращает количество свободных активных аккаунтов
+
+        Returns:
+            Количество свободных аккаунтов
+        """
+        free_count = sum(
+            1 for account_data in self.traffic_accounts.values()
+            if account_data.status == "active" and not account_data.is_busy
+        )
+        return free_count
+
+    def get_busy_accounts_info(self) -> List[Dict]:
+        """
+        Возвращает информацию о занятых аккаунтах
+
+        Returns:
+            Список словарей с информацией
+        """
+        busy_info = []
+
+        for account_name, account_data in self.traffic_accounts.items():
+            if account_data.is_busy:
+                busy_info.append({
+                    'name': account_name,
+                    'busy_by': account_data.busy_by,
+                    'phone': account_data.info.get('phone', '?'),
+                    'full_name': account_data.info.get('full_name', '?')
+                })
+
+        return busy_info
+
+    def is_account_busy(self, account_name: str) -> bool:
+        """
+        Проверяет занят ли аккаунт
+
+        Args:
+            account_name: Имя аккаунта
+
+        Returns:
+            True если занят
+        """
+        if account_name in self.traffic_accounts:
+            return self.traffic_accounts[account_name].is_busy
+        return False
+
+    def reset_all_busy_status(self) -> int:
+        """
+        Сбрасывает статус занятости у всех аккаунтов
+        Используется при старте приложения для очистки
+
+        Returns:
+            Количество сброшенных
+        """
+        reset_count = 0
+
+        for account_data in self.traffic_accounts.values():
+            if account_data.is_busy:
+                account_data.is_busy = False
+                account_data.busy_by = None
+                reset_count += 1
+
+        if reset_count > 0:
+            logger.info(f"🧹 Сброшен статус занятости у {reset_count} аккаунтов")
+
+        return reset_count
+
+
+
 
     # ═══════════════════════════════════════════════════════════════════
     # 📊 СТАТИСТИКА - делегируем StatisticsService
@@ -305,6 +484,54 @@ class AccountManager:
 # ═══════════════════════════════════════════════════════════════════
 
 _account_manager: Optional[AccountManager] = None
+
+
+def get_free_account(module_name: str) -> Optional[AccountData]:
+    """Быстрая функция получения свободного аккаунта"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.get_free_account(module_name)
+    return None
+
+
+def get_multiple_free_accounts(module_name: str, count: int) -> List[AccountData]:
+    """Быстрая функция получения нескольких аккаунтов"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.get_multiple_free_accounts(module_name, count)
+    return []
+
+
+def release_account(account_name: str, module_name: str = None) -> bool:
+    """Быстрая функция освобождения аккаунта"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.release_account(account_name, module_name)
+    return False
+
+
+def release_all_module_accounts(module_name: str) -> int:
+    """Быстрая функция освобождения всех аккаунтов модуля"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.release_all_module_accounts(module_name)
+    return 0
+
+
+def get_free_accounts_count() -> int:
+    """Быстрая функция подсчета свободных аккаунтов"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.get_free_accounts_count()
+    return 0
+
+
+def reset_all_busy_status() -> int:
+    """Сбрасывает все статусы занятости (при старте)"""
+    global _account_manager
+    if _account_manager:
+        return _account_manager.reset_all_busy_status()
+    return 0
 
 
 async def get_account_manager() -> AccountManager:
