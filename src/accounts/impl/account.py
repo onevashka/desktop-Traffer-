@@ -107,8 +107,105 @@ class Account:
             logger.error(f"Ошибка при отключении аккаунта: {e}")
             return False
 
-    async def join(self, link: str) -> bool:
-        pass
+    async def join(self, link: str):
+        """
+        Присоединяется к чату/каналу по ссылке
+
+        Args:
+            link: Ссылка на чат/канал
+
+        Returns:
+            chat_entity - информация о чате, или код ошибки
+        """
+        from telethon.tl.functions.messages import ImportChatInviteRequest
+        from telethon.tl.functions.channels import JoinChannelRequest
+        from telethon.errors import UserAlreadyParticipantError
+
+        try:
+            if not self.client or not await self.client.is_user_authorized():
+                logger.error(f"[{self.name}] Клиент не подключен или не авторизован")
+                return "NOT_CONNECTED"
+
+            # Приватный чат/канал
+            if link.startswith("https://t.me/+"):
+                invite_hash = link.split("+")[1]
+                result = await self.client(ImportChatInviteRequest(invite_hash))
+                logger.info(f"[{self.name}] Вступил в приватный чат {link}")
+
+                # Получаем информацию о чате
+                if hasattr(result, 'chats') and result.chats:
+                    chat_entity = result.chats[0]
+                    return chat_entity
+                return result
+
+            # Публичный чат/канал
+            else:
+                # Извлекаем username из ссылки
+                if link.startswith("https://t.me/"):
+                    username = link.split("/")[-1]
+                elif link.startswith("@"):
+                    username = link[1:]
+                else:
+                    username = link
+
+                result = await self.client(JoinChannelRequest(username))
+                logger.info(f"[{self.name}] Вступил в публичный чат {link}")
+
+                # Получаем entity чата
+                try:
+                    chat_entity = await self.client.get_entity(username)
+                    return chat_entity
+                except:
+                    return result
+
+        except UserAlreadyParticipantError:
+            logger.warning(f"[{self.name}] Уже участник чата {link}")
+
+            # Пытаемся получить entity чата даже если уже участник
+            try:
+                if link.startswith("https://t.me/+"):
+                    # Для приватных чатов сложнее, но попробуем
+                    return "ALREADY_PARTICIPANT"
+                else:
+                    # Для публичных можем получить entity
+                    username = link.split("/")[-1] if "/" in link else link
+                    username = username[1:] if username.startswith("@") else username
+                    chat_entity = await self.client.get_entity(username)
+                    return chat_entity
+            except:
+                return "ALREADY_PARTICIPANT"
+
+        except Exception as e:
+            error_text = str(e)
+
+            # Анализируем различные типы ошибок
+            if "No user has" in error_text or "FROZEN_METHOD_INVALID" in error_text:
+                logger.error(f"[{self.name}] Аккаунт заморожен")
+                return "FROZEN_ACCOUNT"
+
+            elif "Nobody is using this username" in error_text or "username is unacceptable" in error_text:
+                logger.error(f"[{self.name}] Чат не существует или неверная ссылка: {link}")
+                return "CHAT_NOT_FOUND"
+
+            elif "successfully requested to join" in error_text:
+                logger.warning(f"[{self.name}] Отправлен запрос на вступление в {link}")
+                return "REQUEST_SENT"
+
+            elif "deleted/deactivated" in error_text:
+                logger.error(f"[{self.name}] Аккаунт удален или заблокирован")
+                return "ACCOUNT_DEACTIVATED"
+
+            elif "key is not registered" in error_text:
+                logger.error(f"[{self.name}] Неверный invite hash для {link}")
+                return "INVALID_INVITE"
+
+            elif "flood" in error_text.lower():
+                logger.error(f"[{self.name}] Флуд при попытке вступить в {link}")
+                return "FLOOD_WAIT"
+
+            else:
+                logger.error(f"[{self.name}] Ошибка при вступлении в {link}: {e}")
+                return f"ERROR: {error_text[:100]}"
 
     def _sync_session_name(self):
         """
