@@ -11,7 +11,6 @@ from typing import Dict, List
 from datetime import datetime
 from loguru import logger
 
-from src.entities.modules.inviter import InviterConfig
 from .data_loader import InviterDataLoader
 
 

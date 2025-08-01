@@ -26,7 +26,6 @@ class Account:
         self.session_path = session_path
         self.json_path = json_path
         self.account_data: dict = load_json_data(self.json_path)
-        self.proxy: ProxyTelethon | None = None
 
         self._sync_session_name()
 
@@ -37,23 +36,34 @@ class Account:
     async def create_client(self):
         """
         Ленивое создание и конфигурация TelegramClient.
-        Вызывать только после установки proxy, если он нужен.
         """
         if self.client:
             return
+
         cfg = self.account_data
-        # Создаём клиента, proxy по умолчанию может быть None
+
+        # Получаем прокси для этого аккаунта
+        from src.proxies.manager import get_proxy_for_account
+        proxy = get_proxy_for_account(self.name)
+
+        if proxy:
+            logger.debug(f"🌐 Используем прокси для {self.name}: {proxy['addr']}:{proxy['port']}")
+        else:
+            logger.warning(f"⚠️ Прокси не найден для {self.name}, подключаемся напрямую")
+
+        # Создаём клиента с прокси
         self.client = TelegramClient(
             session=str(self.session_path),
             api_id=cfg.get('api_id'),
             api_hash=cfg.get('api_hash'),
-            proxy=self.proxy,
+            proxy=(proxy.get('proxy_type'), proxy.get('host'), proxy.get('port'), proxy.get('rdns'), proxy.get('login'), proxy.get('password')),  # Может быть None или словарь
             lang_code=cfg.get('lang_code', 'en'),
             device_model=cfg.get('device_model'),
             app_version=cfg.get('app_version'),
             system_version=cfg.get('system_version'),
             system_lang_code=cfg.get('system_lang_code', 'en-US'),
         )
+
         if lp := cfg.get('lang_pack'):
             self.client._init_request.lang_pack = lp
 

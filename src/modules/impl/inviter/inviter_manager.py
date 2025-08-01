@@ -199,7 +199,7 @@ class InviterModuleManager:
             # Создаем процесс инвайтинга в зависимости от типа
             invite_type = profile.get('config', {}).get('invite_type', 'classic')
 
-            if invite_type == 'classic':
+            if invite_type == 'Классический':
                 from .classic_inviter import ClassicInviterProcess
                 inviter_process = ClassicInviterProcess(
                     profile_name=profile_name,

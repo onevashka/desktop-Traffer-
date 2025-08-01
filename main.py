@@ -16,6 +16,7 @@ from paths import ensure_folder_structure
 from gui.log_console import LogConsole
 from gui.main_window import MainWindow
 from src.accounts.manager import init_account_manager
+from src.proxies.manager import get_proxy_manager
 from loguru import logger
 
 log_console = None
@@ -51,7 +52,18 @@ async def async_main():
     except Exception as e:
         logger.error(f"❌ Ошибка инициализации AccountManager: {e}")
 
-    # 4. НОВОЕ: Инициализируем модуль инвайтера
+    try:
+        logger.info("🌐 Инициализация ProxyManager...")
+        proxy_manager = get_proxy_manager()
+        total_proxies = proxy_manager.get_total_proxies()
+
+        if total_proxies > 0:
+            logger.info(f"✅ ProxyManager готов. Прокси в файле: {total_proxies}")
+        else:
+            logger.warning("⚠️ Файл прокси пуст или не найден")
+    except Exception as e:
+        logger.error(f"❌ Ошибка инициализации ProxyManager: {e}")
+
     try:
         logger.info("📨 Инициализация модуля инвайтера...")
         from src.modules.impl.inviter import init_inviter_module
