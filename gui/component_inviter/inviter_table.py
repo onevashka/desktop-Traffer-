@@ -9,6 +9,7 @@ from gui.dialogs.inviter_dialogs import (
     show_chats_base_dialog,
     show_extended_settings_dialog
 )
+from gui.dialogs.bot_holders_dialog import show_bot_holders_dialog
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QFrame,
@@ -16,8 +17,10 @@ from PySide6.QtWidgets import (
     QProgressBar, QSizePolicy, QGraphicsOpacityEffect, QLineEdit
 )
 from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, Signal
+
 from PySide6.QtGui import QFont, QColor
 from loguru import logger
+from typing import Optional, Dict
 
 
 class InviterProfileRow(QWidget):
@@ -92,6 +95,10 @@ class InviterProfileRow(QWidget):
             self.progress_timer.start(1000)  # Обновляем каждую секунду
             self.completion_timer.start(2000)  # Проверяем завершение каждые 2 секунды
 
+        self.bot_account = profile_data.get('bot_account', None)
+        if not self.bot_account and profile_data.get('config', {}).get('bot_account'):
+            self.bot_account = profile_data['config']['bot_account']
+
     def _connect_signals(self):
         """Подключает все сигналы к кнопкам"""
         try:
@@ -146,7 +153,8 @@ class InviterProfileRow(QWidget):
         layout.addWidget(self._create_chats_base_widget())
 
         # 9. Кнопки управления
-        layout.addWidget(self._create_control_buttons())
+        self.control_buttons_widget = self._create_control_buttons()
+        layout.addWidget(self.control_buttons_widget)
 
         main_layout.addWidget(first_floor)
 
@@ -246,6 +254,111 @@ class InviterProfileRow(QWidget):
                     background: #047857;
                 }
             """)
+
+    def _on_invite_type_changed(self, new_type: str):
+        """Обработчик изменения типа инвайта"""
+        try:
+            logger.info(f"🔄 Изменен тип инвайта: {new_type}")
+
+            if new_type == "Через админку":
+                # Показываем диалог выбора аккаунта для бота
+                from gui.notifications import show_info
+                show_info(
+                    "Инвайт через админку",
+                    "Необходимо выбрать аккаунт для управления ботом"
+                )
+
+                # Показываем диалог
+                selected_accounts = show_bot_holders_dialog(self)
+
+                if selected_accounts:
+                    # Берем первый выбранный аккаунт
+                    bot_account = selected_accounts[0]
+                    self.bot_account = bot_account
+
+                    # Сохраняем в конфигурацию
+                    self._save_invite_type_settings('admin', bot_account)
+
+                    # Показываем уведомление
+                    from gui.notifications import show_success
+                    show_success(
+                        "Бот назначен",
+                        f"🤖 Аккаунт {bot_account['name']} будет управлять ботом"
+                    )
+
+                    # Обновляем UI
+                    self._update_bot_info_display()
+                else:
+                    # Отменили выбор - возвращаем классический
+                    self.invite_type_combo.setCurrentText("Классический")
+                    logger.info("❌ Выбор аккаунта отменен, возвращаем классический режим")
+            else:
+                # Классический режим
+                self.bot_account = None
+                self._save_invite_type_settings('classic', None)
+                self._update_bot_info_display()
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка изменения типа инвайта: {e}")
+            # В случае ошибки возвращаем классический
+            self.invite_type_combo.setCurrentText("Классический")
+
+    def _save_invite_type_settings(self, invite_type: str, bot_account: Optional[Dict]):
+        """Сохраняет настройки типа инвайта"""
+        try:
+            config_update = {
+                'invite_type': invite_type
+            }
+
+            if bot_account:
+                config_update['bot_account'] = {
+                    'name': bot_account['name'],
+                    'phone': bot_account.get('phone', ''),
+                    'full_name': bot_account.get('full_name', '')
+                }
+            else:
+                config_update['bot_account'] = None
+
+            # Сохраняем через модуль
+            from src.modules.impl.inviter import update_profile_config
+            success = update_profile_config(self.profile_name, config_update)
+
+            if success:
+                # Обновляем локальные данные
+                if 'config' not in self.profile_data:
+                    self.profile_data['config'] = {}
+                self.profile_data['config'].update(config_update)
+
+                logger.info(f"✅ Настройки типа инвайта сохранены: {invite_type}")
+            else:
+                logger.error("❌ Не удалось сохранить настройки типа инвайта")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка сохранения настроек типа инвайта: {e}")
+
+    def _update_bot_info_display(self):
+        """Обновляет отображение информации о боте"""
+        # Пересоздаем виджет кнопок управления с новой информацией
+        if hasattr(self, 'control_buttons_widget'):
+            # Находим старый виджет в layout
+            first_floor_widget = self.findChild(QWidget, "FirstFloor")
+            if first_floor_widget:
+                layout = first_floor_widget.layout()
+                if layout:
+                    # Удаляем старый виджет
+                    old_widget = self.control_buttons_widget
+                    layout.removeWidget(old_widget)
+                    old_widget.deleteLater()
+
+                    # Создаем новый с обновленной информацией
+                    self.control_buttons_widget = self._create_control_buttons()
+                    layout.addWidget(self.control_buttons_widget)
+
+        # Логируем информацию
+        if self.bot_account:
+            logger.info(f"🤖 Профиль использует бот: {self.bot_account['name']}")
+        else:
+            logger.info("📝 Профиль использует классический режим инвайта")
 
     def _create_name_widget(self):
         """Название профиля — редактируемое поле"""
@@ -404,44 +517,62 @@ class InviterProfileRow(QWidget):
     def _create_control_buttons(self):
         """Кнопки управления профилем"""
         widget = QWidget()
-        widget.setFixedWidth(80)
+        widget.setFixedWidth(200)  # Увеличили ширину для информации о боте
         layout = QHBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
+
+        # Информация о боте (если есть)
+        if self.bot_account:
+            bot_info = QLabel(f"🤖 {self.bot_account.get('name', 'Bot')}")
+            bot_info.setToolTip(f"Управляется ботом: {self.bot_account.get('name', '')}")
+            bot_info.setStyleSheet("""
+                   QLabel {
+                       background: rgba(59, 130, 246, 0.1);
+                       border: 1px solid rgba(59, 130, 246, 0.3);
+                       border-radius: 4px;
+                       padding: 4px 8px;
+                       color: #3B82F6;
+                       font-size: 11px;
+                       font-weight: 600;
+                   }
+               """)
+            layout.addWidget(bot_info)
+            layout.addStretch()
 
         # Кнопка настроек
         self.settings_btn = QPushButton("⚙️")
         self.settings_btn.setFixedSize(36, 36)
         self.settings_btn.setToolTip("Расширенные настройки")
         self.settings_btn.setStyleSheet("""
-            QPushButton {
-                background: rgba(156, 163, 175, 0.2);
-                border: 1px solid rgba(156, 163, 175, 0.5);
-                border-radius: 4px;
-                color: #FFFFFF;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background: rgba(156, 163, 175, 0.3);
-            }
-        """)
+               QPushButton {
+                   background: rgba(156, 163, 175, 0.2);
+                   border: 1px solid rgba(156, 163, 175, 0.5);
+                   border-radius: 4px;
+                   color: #FFFFFF;
+                   font-size: 12px;
+               }
+               QPushButton:hover {
+                   background: rgba(156, 163, 175, 0.3);
+               }
+           """)
 
         # Кнопка удаления
         self.delete_btn = QPushButton("🗑️")
         self.delete_btn.setFixedSize(36, 36)
         self.delete_btn.setToolTip("Удалить профиль")
         self.delete_btn.setStyleSheet("""
-            QPushButton {
-                background: rgba(239, 68, 68, 0.2);
-                border: 1px solid rgba(239, 68, 68, 0.5);
-                border-radius: 4px;
-                color: #FFFFFF;
-                font-size: 12px;
-            }
-            QPushButton:hover {
-                background: rgba(239, 68, 68, 0.3);
-            }
-        """)
+               QPushButton {
+                   background: rgba(239, 68, 68, 0.2);
+                   border: 1px solid rgba(239, 68, 68, 0.5);
+                   border-radius: 4px;
+                   color: #FFFFFF;
+                   font-size: 12px;
+               }
+               QPushButton:hover {
+                   background: rgba(239, 68, 68, 0.3);
+               }
+           """)
 
         layout.addWidget(self.settings_btn)
         layout.addWidget(self.delete_btn)

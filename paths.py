@@ -36,7 +36,7 @@ INVALID_TRAFFER_FORMAT_FOLDER = WORK_TRAFFER_FOLDER / "Неверный форм
 #--------------- Инвайтер --------------------------
 
 WORK_INVITER_FOLDER = WORK_TRAFFER_FOLDER / "Инвайт"
-
+BOT_HOLDERS_FOLDER  = WORK_INVITER_FOLDER / "Держатели_ботов"
 
 #--------------- Продажи ---------------
 WORK_SALES_FOLDER = BASE_PATH / "Продажи"
@@ -74,7 +74,8 @@ ALL_FOLDERS = [
     SESSIONS_JSON_FOLDER,
     WORK_ACCOUNTS_SALE_FOLDER,
     WORK_ACCOUNTS_TRAFFER_FOLDER,
-    WORK_INVITER_FOLDER
+    WORK_INVITER_FOLDER,
+    BOT_HOLDERS_FOLDER
 ]
 
 # Список всех файлов для создания
