@@ -1,7 +1,7 @@
 {
   "profile_name": "выавыаывавыавыавыавыа",
   "created_at": "2025-07-31T14:17:08.449818",
-  "updated_at": "2025-08-04T11:20:23.848776",
+  "updated_at": "2025-08-04T17:01:39.144918",
   "version": "1.0",
   "invite_type": "admin",
   "threads_per_chat": 1,
@@ -26,9 +26,5 @@
   "users_list": [],
   "chats_list": [],
   "extended_settings": {},
-  "bot_account": {
-    "name": "79024014916",
-    "phone": "79024014916",
-    "full_name": "Р РЋР С•РЎвЂћР В° Р СљР ВµРЎвЂЎР Р…Р С‘Р С”Р С•Р Р†Р В°"
-  }
+  "bot_account": null
 }

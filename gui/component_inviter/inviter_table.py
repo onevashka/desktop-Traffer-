@@ -8,7 +8,7 @@ from gui.dialogs.inviter_dialogs import (
     show_chats_base_dialog,
     show_extended_settings_dialog
 )
-from gui.dialogs.bot_holders_dialog import show_bot_holders_dialog
+from src.modules.impl.inviter.profile_manager import InviterProfileManager
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QFrame,

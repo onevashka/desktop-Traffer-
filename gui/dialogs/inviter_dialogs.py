@@ -12,6 +12,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, Signal, QPropertyAnimation, QEasingCurve, QRect,  QTimer
 from PySide6.QtGui import QFont, QColor
 from typing import List, Dict
+from loguru import logger
+
+from gui.dialogs.main_admins_dialog import show_main_admins_dialog
+from gui.dialogs.bot_token_dialog import show_bot_token_dialog, load_bot_token_from_profile
+
 
 
 class UsersBaseDialog(QDialog):
@@ -1207,3 +1212,156 @@ def show_extended_settings_dialog(parent, current_settings: Dict = None) -> Dict
     if dialog.exec() == QDialog.Accepted:
         return dialog.get_settings()
     return None  # Возвращаем None если отменили
+
+
+def show_main_admins_setup_dialog(parent, profile_name: str) -> Dict[str, any]:
+    """
+    НОВАЯ ФУНКЦИЯ: Показывает полный диалог настройки админ-логики
+    Объединяет выбор главных админов и ввод токена бота
+
+    Args:
+        parent: Родительский виджет
+        profile_name: Имя профиля
+
+    Returns:
+        Dict: Результат настройки с главными админами и токеном
+    """
+    try:
+        result = {
+            'main_admins': [],
+            'bot_token': '',
+            'success': False
+        }
+
+        # Шаг 1: Выбор главных админов
+        logger.info(f"👑 Настройка главных админов для профиля: {profile_name}")
+
+        selected_admins = show_main_admins_dialog(parent, profile_name)
+
+        if not selected_admins:
+            logger.info("❌ Выбор главных админов отменен")
+            return result
+
+        result['main_admins'] = selected_admins
+
+        # Шаг 2: Ввод токена бота
+        logger.info(f"🤖 Настройка токена бота для профиля: {profile_name}")
+
+        current_token = load_bot_token_from_profile(profile_name)
+        bot_token = show_bot_token_dialog(parent, profile_name, current_token)
+
+        if not bot_token:
+            logger.info("❌ Ввод токена бота отменен")
+            return result
+
+        result['bot_token'] = bot_token
+        result['success'] = True
+
+        logger.info(f"✅ Админ-логика настроена для {profile_name}: {len(selected_admins)} админов, токен настроен")
+
+        return result
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка настройки админ-логики: {e}")
+        return {'main_admins': [], 'bot_token': '', 'success': False}
+
+
+def validate_admin_inviter_setup(profile_name: str) -> Dict[str, any]:
+    """
+    НОВАЯ ФУНКЦИЯ: Валидирует готовность профиля для админ-инвайтера
+
+    Args:
+        profile_name: Имя профиля
+
+    Returns:
+        Dict: Результат валидации
+    """
+    try:
+        from paths import get_main_admins_list, load_bot_token, validate_profile_structure
+
+        # Базовая валидация структуры
+        validation = validate_profile_structure(profile_name)
+
+        if validation['errors']:
+            return {
+                'ready': False,
+                'errors': validation['errors'],
+                'message': 'Ошибки в структуре профиля'
+            }
+
+        # Проверяем главных админов
+        main_admins = get_main_admins_list(profile_name)
+        if not main_admins:
+            return {
+                'ready': False,
+                'errors': ['Не назначены главные админы'],
+                'message': 'Назначьте хотя бы одного главного админа'
+            }
+
+        # Проверяем токен бота
+        bot_token = load_bot_token(profile_name)
+        if not bot_token:
+            return {
+                'ready': False,
+                'errors': ['Не настроен токен бота'],
+                'message': 'Настройте токен бота для управления правами'
+            }
+
+        # Все проверки пройдены
+        return {
+            'ready': True,
+            'errors': [],
+            'warnings': validation['warnings'],
+            'info': validation['info'],
+            'message': f'Профиль готов: {len(main_admins)} админов, токен настроен',
+            'main_admins_count': len(main_admins),
+            'has_bot_token': True
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка валидации профиля {profile_name}: {e}")
+        return {
+            'ready': False,
+            'errors': [f'Ошибка валидации: {e}'],
+            'message': 'Ошибка при проверке профиля'
+        }
+
+
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ для интеграции
+
+def get_profile_admin_info(profile_name: str) -> Dict[str, any]:
+    """
+    НОВАЯ ФУНКЦИЯ: Получает информацию об админ-настройках профиля
+
+    Args:
+        profile_name: Имя профиля
+
+    Returns:
+        Dict: Информация об админах и боте
+    """
+    try:
+        from paths import get_main_admins_list, load_bot_token
+
+        main_admins = get_main_admins_list(profile_name)
+        bot_token = load_bot_token(profile_name)
+
+        return {
+            'profile_name': profile_name,
+            'main_admins': main_admins,
+            'main_admins_count': len(main_admins),
+            'has_bot_token': bool(bot_token),
+            'bot_token_length': len(bot_token) if bot_token else 0,
+            'ready_for_admin_invite': len(main_admins) > 0 and bool(bot_token)
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения информации об админах: {e}")
+        return {
+            'profile_name': profile_name,
+            'main_admins': [],
+            'main_admins_count': 0,
+            'has_bot_token': False,
+            'bot_token_length': 0,
+            'ready_for_admin_invite': False,
+            'error': str(e)
+        }
