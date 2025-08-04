@@ -1,7 +1,6 @@
-# gui/component_inviter/inviter_table.py - ФИНАЛЬНАЯ ВЕРСИЯ
+# gui/component_inviter/inviter_table.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 """
-Компонент таблицы профилей инвайтера с двухэтажными строками
-ФИНАЛЬНАЯ ВЕРСИЯ С АВТОМАТИЧЕСКОЙ СМЕНОЙ КНОПОК И УЛУЧШЕННЫМ UI
+Компонент таблицы профилей инвайтера с исправленным выбором ботов
 """
 
 from gui.dialogs.inviter_dialogs import (
@@ -24,7 +23,7 @@ from typing import Optional, Dict
 
 
 class InviterProfileRow(QWidget):
-    """Двухэтажная строка профиля инвайтера с прогресс-баром"""
+    """Двухэтажная строка профиля инвайтера с исправленным управлением ботами"""
 
     # Сигналы
     profile_started = Signal(str)  # profile_name
@@ -54,6 +53,11 @@ class InviterProfileRow(QWidget):
             'stop_reason': None
         }
 
+        # ВАЖНО: Инициализируем bot_account СРАЗУ в начале
+        self.bot_account = profile_data.get('bot_account', None)
+        if not self.bot_account and profile_data.get('config', {}).get('bot_account'):
+            self.bot_account = profile_data['config']['bot_account']
+
         # Таймер для обновления прогресс-бара
         self.progress_timer = QTimer()
         self.progress_timer.timeout.connect(self._update_progress_from_module)
@@ -72,6 +76,8 @@ class InviterProfileRow(QWidget):
         self.delete_btn = None
         self.start_stop_btn = None
         self.name_edit = None
+        self.invite_type_combo = None
+        self.bot_select_btn = None  # НОВАЯ КНОПКА
 
         # Основной layout
         main_layout = QVBoxLayout(self)
@@ -94,10 +100,6 @@ class InviterProfileRow(QWidget):
         if self.is_running:
             self.progress_timer.start(1000)  # Обновляем каждую секунду
             self.completion_timer.start(2000)  # Проверяем завершение каждые 2 секунды
-
-        self.bot_account = profile_data.get('bot_account', None)
-        if not self.bot_account and profile_data.get('config', {}).get('bot_account'):
-            self.bot_account = profile_data['config']['bot_account']
 
     def _connect_signals(self):
         """Подключает все сигналы к кнопкам"""
@@ -126,12 +128,23 @@ class InviterProfileRow(QWidget):
                 self.name_edit.textChanged.connect(self._on_name_changed)
                 logger.debug(f"✅ Подключен сигнал name_edit для {self.profile_name}")
 
+            # ИСПРАВЛЕНО: Подключаем сигнал смены типа инвайта БЕЗ автоматического диалога
+            if self.invite_type_combo:
+                self.invite_type_combo.currentTextChanged.connect(self._on_invite_type_changed_simple)
+                logger.debug(f"✅ Подключен сигнал invite_type_combo для {self.profile_name}")
+
+            # НОВОЕ: Подключаем кнопку выбора бота
+            if self.bot_select_btn:
+                self.bot_select_btn.clicked.connect(self._on_select_bot_account)
+                logger.debug(f"✅ Подключен сигнал bot_select_btn для {self.profile_name}")
+
         except Exception as e:
             logger.error(f"❌ Ошибка подключения сигналов для {self.profile_name}: {e}")
 
     def _create_first_floor(self, main_layout):
         """Создает первый этаж с основными настройками"""
         first_floor = QWidget()
+        first_floor.setObjectName("FirstFloor")  # Добавляем ObjectName для поиска
         layout = QHBoxLayout(first_floor)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(10)
@@ -143,7 +156,7 @@ class InviterProfileRow(QWidget):
         # 2. Название профиля
         layout.addWidget(self._create_name_widget())
 
-        # 3. Тип инвайта
+        # 3. Тип инвайта + кнопка выбора бота
         layout.addWidget(self._create_invite_type_widget())
 
         # 4. База пользователей
@@ -152,156 +165,158 @@ class InviterProfileRow(QWidget):
         # 5. База чатов
         layout.addWidget(self._create_chats_base_widget())
 
-        # 9. Кнопки управления
+        # 6. Кнопки управления
         self.control_buttons_widget = self._create_control_buttons()
         layout.addWidget(self.control_buttons_widget)
 
         main_layout.addWidget(first_floor)
 
-    def _create_second_floor(self, main_layout):
-        """Второй этаж с прогресс-баром и статистикой"""
-        second_floor = QWidget()
-        layout = QVBoxLayout(second_floor)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(5)
-
-        # Прогресс-бар
-        progress_widget = self._create_progress_widget()
-        progress_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        layout.addWidget(progress_widget)
-
-        # Дополнительная статистика
-        stats_widget = self._create_stats_widget()
-        layout.addWidget(stats_widget)
-
-        main_layout.addWidget(second_floor)
-
-    def _create_status_widget(self):
-        """Индикатор статуса"""
+    def _create_invite_type_widget(self):
+        """ИСПРАВЛЕНО: Тип инвайта + кнопка выбора бота"""
         widget = QWidget()
-        widget.setFixedWidth(80)
+        widget.setFixedWidth(280)  # Увеличили ширину для кнопки
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
 
-        # Индикатор статуса
-        self.status_indicator = QLabel("●")
-        self.status_indicator.setAlignment(Qt.AlignCenter)
-        self.status_indicator.setStyleSheet(f"""
-            QLabel {{
-                font-size: 16px;
-                color: {'#10B981' if self.is_running else '#6B7280'};
-                font-weight: bold;
-            }}
+        # Заголовок
+        type_label = QLabel("Тип инвайта:")
+        type_label.setStyleSheet("font-size: 12px; color: rgba(255,255,255,0.6);")
+
+        # Горизонтальный layout для комбобокса и кнопки
+        controls_layout = QHBoxLayout()
+        controls_layout.setSpacing(6)
+
+        # Комбобокс типа инвайта
+        self.invite_type_combo = QComboBox()
+        self.invite_type_combo.addItems(["Классический", "Через админку"])
+        self.invite_type_combo.setFixedWidth(140)
+        self.invite_type_combo.setFixedHeight(28)
+        self.invite_type_combo.setStyleSheet("""
+            QComboBox {
+                background: #111827;
+                border: 1px solid #374151;
+                border-radius: 4px;
+                color: #FFFFFF;
+                font-size: 13px;
+                padding: 4px 8px;
+            }
+            QComboBox:focus {
+                border-color: #2563EB;
+            }
+            QComboBox QAbstractItemView {
+                background: #1F2937;
+                border: 1px solid #374151;
+                selection-background-color: #2563EB;
+                color: #FFFFFF;
+                font-size: 13px;
+            }
         """)
 
-        layout.addWidget(self.status_indicator)
-
-        return widget
-
-    def _create_start_button_widget(self):
-        """Кнопка Запустить/Стоп цветная."""
-        widget = QWidget()
-        widget.setFixedWidth(120)
-        layout = QVBoxLayout(widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setAlignment(Qt.AlignCenter)
-
-        # Создаём кнопку и сохраняем ссылку
-        self.start_stop_btn = QPushButton()
-        self._update_start_button()  # задаст текст и цвет
-        self.start_stop_btn.setFixedSize(100, 40)
-
-        layout.addWidget(self.start_stop_btn)
-        return widget
-
-    def _update_start_button(self):
-        """Обновляет текст и цвет кнопки в зависимости от состояния."""
-        if not self.start_stop_btn:
-            return
-
-        if self.is_running:
-            self.start_stop_btn.setText("Стоп")
-            self.start_stop_btn.setStyleSheet("""
-                QPushButton {
-                    background: #EF4444;
-                    color: white;
-                    border-radius: 6px;
-                    font-weight: 600;
-                    font-size: 14px;
-                }
-                QPushButton:hover {
-                    background: #DC2626;
-                }
-                QPushButton:pressed {
-                    background: #B91C1C;
-                }
-            """)
+        # Устанавливаем текущий тип
+        current_type = self.profile_data.get('config', {}).get('invite_type', 'classic')
+        if current_type == 'admin':
+            self.invite_type_combo.setCurrentText("Через админку")
         else:
-            self.start_stop_btn.setText("Запустить")
-            self.start_stop_btn.setStyleSheet("""
-                QPushButton {
-                    background: #10B981;
-                    color: white;
-                    border-radius: 6px;
-                    font-weight: 600;
-                    font-size: 14px;
-                }
-                QPushButton:hover {
-                    background: #059669;
-                }
-                QPushButton:pressed {
-                    background: #047857;
-                }
-            """)
+            self.invite_type_combo.setCurrentText("Классический")
 
-    def _on_invite_type_changed(self, new_type: str):
-        """Обработчик изменения типа инвайта"""
+        # НОВАЯ КНОПКА: Выбрать бота (показывается только для режима "Через админку")
+        self.bot_select_btn = QPushButton("🤖 Выбрать бота")
+        self.bot_select_btn.setFixedSize(120, 28)
+        self.bot_select_btn.setStyleSheet("""
+            QPushButton {
+                background: rgba(59, 130, 246, 0.2);
+                border: 1px solid rgba(59, 130, 246, 0.5);
+                border-radius: 4px;
+                color: #FFFFFF;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 0 8px;
+            }
+            QPushButton:hover {
+                background: rgba(59, 130, 246, 0.3);
+            }
+            QPushButton:pressed {
+                background: rgba(59, 130, 246, 0.4);
+            }
+        """)
+
+        controls_layout.addWidget(self.invite_type_combo)
+        controls_layout.addWidget(self.bot_select_btn)
+
+        layout.addWidget(type_label)
+        layout.addLayout(controls_layout)
+
+        # Изначально скрываем кнопку если режим классический
+        self._update_bot_button_visibility()
+
+        return widget
+
+    def _on_invite_type_changed_simple(self, new_type: str):
+        """ИСПРАВЛЕНО: Простая смена типа без автоматического диалога"""
         try:
-            logger.info(f"🔄 Изменен тип инвайта: {new_type}")
+            logger.info(f"🔄 Изменен тип инвайта на: {new_type}")
 
+            # Сохраняем тип в конфигурацию
             if new_type == "Через админку":
-                # Показываем диалог выбора аккаунта для бота
-                from gui.notifications import show_info
-                show_info(
-                    "Инвайт через админку",
-                    "Необходимо выбрать аккаунт для управления ботом"
-                )
-
-                # Показываем диалог
-                selected_accounts = show_bot_holders_dialog(self)
-
-                if selected_accounts:
-                    # Берем первый выбранный аккаунт
-                    bot_account = selected_accounts[0]
-                    self.bot_account = bot_account
-
-                    # Сохраняем в конфигурацию
-                    self._save_invite_type_settings('admin', bot_account)
-
-                    # Показываем уведомление
-                    from gui.notifications import show_success
-                    show_success(
-                        "Бот назначен",
-                        f"🤖 Аккаунт {bot_account['name']} будет управлять ботом"
-                    )
-
-                    # Обновляем UI
-                    self._update_bot_info_display()
-                else:
-                    # Отменили выбор - возвращаем классический
-                    self.invite_type_combo.setCurrentText("Классический")
-                    logger.info("❌ Выбор аккаунта отменен, возвращаем классический режим")
+                self._save_invite_type_settings('admin', self.bot_account)
             else:
-                # Классический режим
-                self.bot_account = None
                 self._save_invite_type_settings('classic', None)
-                self._update_bot_info_display()
+                # При переключении на классический сбрасываем бота
+                self.bot_account = None
+
+            # Обновляем видимость кнопки
+            self._update_bot_button_visibility()
+
+            # Обновляем UI
+            self._update_bot_info_display()
 
         except Exception as e:
             logger.error(f"❌ Ошибка изменения типа инвайта: {e}")
-            # В случае ошибки возвращаем классический
-            self.invite_type_combo.setCurrentText("Классический")
+
+    def _on_select_bot_account(self):
+        """НОВЫЙ МЕТОД: Обработчик кнопки выбора бота"""
+        try:
+            logger.info(f"🤖 Открываем диалог выбора бота для {self.profile_name}")
+
+            # Показываем диалог выбора аккаунтов
+            selected_accounts = show_bot_holders_dialog(self)
+
+            if selected_accounts:
+                # Берем первый выбранный аккаунт
+                bot_account = selected_accounts[0]
+                self.bot_account = bot_account
+
+                # Сохраняем в конфигурацию
+                self._save_invite_type_settings('admin', bot_account)
+
+                # Показываем уведомление
+                from gui.notifications import show_success
+                show_success(
+                    "Бот назначен",
+                    f"🤖 Аккаунт {bot_account['name']} будет управлять ботом"
+                )
+
+                # Обновляем UI
+                self._update_bot_info_display()
+
+                logger.info(f"✅ Выбран бот-аккаунт: {bot_account['name']}")
+            else:
+                logger.info("❌ Выбор бота отменен")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка выбора бота: {e}")
+
+    def _update_bot_button_visibility(self):
+        """Обновляет видимость кнопки выбора бота"""
+        if self.bot_select_btn and self.invite_type_combo:
+            current_type = self.invite_type_combo.currentText()
+
+            if current_type == "Через админку":
+                self.bot_select_btn.setVisible(True)
+                self.bot_select_btn.setEnabled(True)
+            else:
+                self.bot_select_btn.setVisible(False)
 
     def _save_invite_type_settings(self, invite_type: str, bot_account: Optional[Dict]):
         """Сохраняет настройки типа инвайта"""
@@ -401,44 +416,84 @@ class InviterProfileRow(QWidget):
             self.profile_name = new_name
             self.settings_changed.emit(self.profile_name, {'name': new_name})
 
-    def _create_invite_type_widget(self):
-        """Тип инвайта"""
+    def _create_status_widget(self):
+        """Индикатор статуса"""
         widget = QWidget()
-        widget.setFixedWidth(200)
+        widget.setFixedWidth(80)
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
 
-        type_label = QLabel("Тип инвайта:")
-        type_label.setStyleSheet("font-size: 12px; color: rgba(255,255,255,0.6);")
-
-        self.invite_type_combo = QComboBox()
-        self.invite_type_combo.addItems(["Классический", "Через админку"])
-        self.invite_type_combo.setFixedWidth(180)
-        self.invite_type_combo.setFixedHeight(28)
-        self.invite_type_combo.setStyleSheet("""
-            QComboBox {
-                background: #111827;
-                border: 1px solid #374151;
-                border-radius: 4px;
-                color: #FFFFFF;
-                font-size: 13px;
-                padding: 4px 8px;
-            }
-            QComboBox:focus {
-                border-color: #2563EB;
-            }
-            QComboBox QAbstractItemView {
-                background: #1F2937;
-                border: 1px solid #374151;
-                selection-background-color: #2563EB;
-                color: #FFFFFF;
-                font-size: 13px;
-            }
+        # Индикатор статуса
+        self.status_indicator = QLabel("●")
+        self.status_indicator.setAlignment(Qt.AlignCenter)
+        self.status_indicator.setStyleSheet(f"""
+            QLabel {{
+                font-size: 16px;
+                color: {'#10B981' if self.is_running else '#6B7280'};
+                font-weight: bold;
+            }}
         """)
 
-        layout.addWidget(type_label)
-        layout.addWidget(self.invite_type_combo)
+        layout.addWidget(self.status_indicator)
+
         return widget
+
+    def _create_start_button_widget(self):
+        """Кнопка Запустить/Стоп цветная."""
+        widget = QWidget()
+        widget.setFixedWidth(120)
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setAlignment(Qt.AlignCenter)
+
+        # Создаём кнопку и сохраняем ссылку
+        self.start_stop_btn = QPushButton()
+        self._update_start_button()  # задаст текст и цвет
+        self.start_stop_btn.setFixedSize(100, 40)
+
+        layout.addWidget(self.start_stop_btn)
+        return widget
+
+    def _update_start_button(self):
+        """Обновляет текст и цвет кнопки в зависимости от состояния."""
+        if not self.start_stop_btn:
+            return
+
+        if self.is_running:
+            self.start_stop_btn.setText("Стоп")
+            self.start_stop_btn.setStyleSheet("""
+                QPushButton {
+                    background: #EF4444;
+                    color: white;
+                    border-radius: 6px;
+                    font-weight: 600;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background: #DC2626;
+                }
+                QPushButton:pressed {
+                    background: #B91C1C;
+                }
+            """)
+        else:
+            self.start_stop_btn.setText("Запустить")
+            self.start_stop_btn.setStyleSheet("""
+                QPushButton {
+                    background: #10B981;
+                    color: white;
+                    border-radius: 6px;
+                    font-weight: 600;
+                    font-size: 14px;
+                }
+                QPushButton:hover {
+                    background: #059669;
+                }
+                QPushButton:pressed {
+                    background: #047857;
+                }
+            """)
 
     def _create_users_base_widget(self):
         """База пользователей с улучшенным отображением"""
@@ -578,6 +633,25 @@ class InviterProfileRow(QWidget):
         layout.addWidget(self.delete_btn)
 
         return widget
+
+    # Остальные методы остаются без изменений
+    def _create_second_floor(self, main_layout):
+        """Второй этаж с прогресс-баром и статистикой"""
+        second_floor = QWidget()
+        layout = QVBoxLayout(second_floor)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(5)
+
+        # Прогресс-бар
+        progress_widget = self._create_progress_widget()
+        progress_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        layout.addWidget(progress_widget)
+
+        # Дополнительная статистика
+        stats_widget = self._create_stats_widget()
+        layout.addWidget(stats_widget)
+
+        main_layout.addWidget(second_floor)
 
     def _create_progress_widget(self):
         """Создает виджет с прогресс-баром"""
@@ -1093,6 +1167,7 @@ class InviterTableWidget(QWidget):
             }
         """)
 
+    # Остальные методы класса остаются без изменений...
     def _load_test_profiles(self):
         """Загружает тестовые профили"""
         test_profiles = [

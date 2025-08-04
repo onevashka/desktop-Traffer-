@@ -1,52 +1,68 @@
 # gui/dialogs/bot_holders_dialog.py
 """
-Диалог выбора аккаунтов-держателей ботов для инвайта через админку
+Диалог выбора аккаунтов для создания ботов
 """
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTabWidget, QListWidget, QListWidgetItem, QFrame,
-    QGraphicsDropShadowEffect, QSizePolicy, QWidget,
-    QScrollArea, QCheckBox
+    QFrame, QScrollArea, QWidget, QCheckBox, QTabWidget,
+    QApplication, QGraphicsDropShadowEffect
 )
-from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QFont
-from typing import List, Dict, Optional
+from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtGui import QColor
 from loguru import logger
-from pathlib import Path
+from typing import List, Dict
 
 
 class AccountListWidget(QWidget):
-    """Виджет для отображения списка аккаунтов с чекбоксами"""
+    """Виджет со списком аккаунтов"""
 
-    def __init__(self, title: str, accounts: List[Dict], checkable: bool = True):
+    def __init__(self, title: str, accounts: List[Dict], checkable: bool = False):
         super().__init__()
+        self.accounts = accounts
         self.checkable = checkable
         self.checked_accounts = []
+        self.account_items = []
 
+        self.init_ui(title)
+
+    def init_ui(self, title: str):
+        """Инициализация UI"""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(10)
 
         # Заголовок
-        header = QLabel(title)
-        header.setStyleSheet("""
+        title_label = QLabel(title)
+        title_label.setStyleSheet("""
             QLabel {
-                font-size: 14px;
+                font-size: 16px;
                 font-weight: 600;
-                color: rgba(255, 255, 255, 0.9);
-                padding: 10px;
-                background: rgba(255, 255, 255, 0.05);
-                border-radius: 6px;
-                margin-bottom: 10px;
+                color: #FFFFFF;
+                padding: 10px 0;
             }
         """)
-        layout.addWidget(header)
+        layout.addWidget(title_label)
 
-        # Скролл для списка
+        # Информация о количестве
+        self.info_label = QLabel()
+        self.info_label.setStyleSheet("""
+            QLabel {
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.7);
+                padding-bottom: 10px;
+            }
+        """)
+        layout.addWidget(self.info_label)
+
+        # Скролл область
         scroll = QScrollArea()
+        scroll.setObjectName("AccountsScroll")
         scroll.setWidgetResizable(True)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll.setStyleSheet("""
-            QScrollArea {
+            QScrollArea#AccountsScroll {
                 background: transparent;
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 border-radius: 8px;
@@ -55,6 +71,7 @@ class AccountListWidget(QWidget):
                 background: rgba(255, 255, 255, 0.05);
                 width: 8px;
                 border-radius: 4px;
+                margin: 0;
             }
             QScrollBar::handle:vertical {
                 background: rgba(255, 255, 255, 0.2);
@@ -64,73 +81,89 @@ class AccountListWidget(QWidget):
             QScrollBar::handle:vertical:hover {
                 background: rgba(59, 130, 246, 0.6);
             }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+            }
         """)
 
         # Контейнер для аккаунтов
-        self.accounts_container = QWidget()
-        self.accounts_layout = QVBoxLayout(self.accounts_container)
-        self.accounts_layout.setContentsMargins(10, 10, 10, 10)
-        self.accounts_layout.setSpacing(5)
+        accounts_container = QWidget()
+        accounts_layout = QVBoxLayout(accounts_container)
+        accounts_layout.setContentsMargins(10, 10, 10, 10)
+        accounts_layout.setSpacing(8)
 
-        # Добавляем аккаунты
-        self.account_items = []
-        for account in accounts:
-            item = self._create_account_item(account)
-            self.account_items.append(item)
-            self.accounts_layout.addWidget(item)
+        # Создаем элементы аккаунтов
+        for account in self.accounts:
+            account_item = self._create_account_item(account)
+            accounts_layout.addWidget(account_item)
+            self.account_items.append(account_item)
 
-        self.accounts_layout.addStretch()
-        scroll.setWidget(self.accounts_container)
+        accounts_layout.addStretch()
+        scroll.setWidget(accounts_container)
         layout.addWidget(scroll)
 
-        # Информация о количестве
-        self.info_label = QLabel(f"Всего: {len(accounts)} аккаунтов")
-        self.info_label.setStyleSheet("""
-            QLabel {
-                font-size: 12px;
-                color: rgba(255, 255, 255, 0.6);
-                padding: 5px;
-            }
-        """)
-        layout.addWidget(self.info_label)
+        # Обновляем информацию
+        self._update_info()
 
     def _create_account_item(self, account: Dict) -> QWidget:
         """Создает элемент аккаунта"""
-        item = QWidget()
+        item = QFrame()
         item.setObjectName("AccountItem")
-        item.setFixedHeight(60)
+        item.setStyleSheet("""
+            QFrame#AccountItem {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 8px;
+                padding: 12px;
+                margin: 2px 0;
+            }
+            QFrame#AccountItem:hover {
+                background: rgba(255, 255, 255, 0.06);
+                border-color: rgba(59, 130, 246, 0.3);
+            }
+        """)
 
         layout = QHBoxLayout(item)
-        layout.setContentsMargins(10, 5, 10, 5)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(12)
 
         # Чекбокс (если нужен)
         if self.checkable:
             checkbox = QCheckBox()
+            checkbox.setObjectName("AccountCheckbox")
             checkbox.setStyleSheet("""
                 QCheckBox::indicator {
-                    width: 20px;
-                    height: 20px;
-                    border: 2px solid rgba(255, 255, 255, 0.4);
-                    border-radius: 4px;
-                    background: rgba(255, 255, 255, 0.05);
+                    width: 16px;
+                    height: 16px;
+                    border: 2px solid rgba(255, 255, 255, 0.3);
+                    border-radius: 3px;
+                    background: transparent;
                 }
                 QCheckBox::indicator:checked {
                     background: #3B82F6;
                     border-color: #3B82F6;
+                    image: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIiIGhlaWdodD0iOSIgdmlld0JveD0iMCAwIDEyIDkiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik0xIDQuNUw0LjUgOEwxMSAxLjUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+Cjwvc3ZnPgo=);
                 }
-                QCheckBox::indicator:checked::after {
-                    content: "";
-                    width: 5px;
-                    height: 10px;
-                    border: solid white;
-                    border-width: 0 2px 2px 0;
-                    transform: rotate(45deg);
-                    margin: 3px 0 0 6px;
-                    display: block;
+                QCheckBox::indicator:hover {
+                    border-color: rgba(59, 130, 246, 0.6);
                 }
             """)
-            checkbox.toggled.connect(lambda checked: self._on_check_changed(account, checked))
+            checkbox.toggled.connect(lambda checked, acc=account: self._on_account_toggled(acc, checked))
             layout.addWidget(checkbox)
+
+        # Иконка статуса
+        status_icon = "🤖" if account.get('has_bot') else "👤"
+        icon_label = QLabel(status_icon)
+        icon_label.setFixedSize(24, 24)
+        icon_label.setAlignment(Qt.AlignCenter)
+        icon_label.setStyleSheet("""
+            QLabel {
+                font-size: 16px;
+                background: rgba(255, 255, 255, 0.08);
+                border-radius: 12px;
+            }
+        """)
+        layout.addWidget(icon_label)
 
         # Информация об аккаунте
         info_layout = QVBoxLayout()
@@ -155,7 +188,7 @@ class AccountListWidget(QWidget):
             details.append(f"👤 {account['full_name']}")
 
         if details:
-            details_label = QLabel(" | ".join(details))
+            details_label = QLabel(" • ".join(details))
             details_label.setStyleSheet("""
                 QLabel {
                     font-size: 12px;
@@ -167,55 +200,20 @@ class AccountListWidget(QWidget):
         layout.addLayout(info_layout)
         layout.addStretch()
 
-        # Статус (если есть бот)
-        if account.get('has_bot'):
-            bot_label = QLabel("🤖 Имеет бота")
-            bot_label.setStyleSheet("""
-                QLabel {
-                    font-size: 12px;
-                    color: #10B981;
-                    font-weight: 500;
-                    padding: 4px 8px;
-                    background: rgba(16, 185, 129, 0.1);
-                    border: 1px solid rgba(16, 185, 129, 0.3);
-                    border-radius: 4px;
-                }
-            """)
-            layout.addWidget(bot_label)
-
-        # Стиль элемента
-        item.setStyleSheet("""
-            QWidget#AccountItem {
-                background: rgba(255, 255, 255, 0.03);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                border-radius: 6px;
-            }
-            QWidget#AccountItem:hover {
-                background: rgba(255, 255, 255, 0.05);
-                border-color: rgba(59, 130, 246, 0.3);
-            }
-        """)
-
-        # Сохраняем данные
-        item.account_data = account
-
         return item
 
-    def _on_check_changed(self, account: Dict, checked: bool):
+    def _on_account_toggled(self, account: Dict, checked: bool):
         """Обработка изменения чекбокса"""
-        if checked:
-            if account not in self.checked_accounts:
-                self.checked_accounts.append(account)
-        else:
-            if account in self.checked_accounts:
-                self.checked_accounts.remove(account)
+        if checked and account not in self.checked_accounts:
+            self.checked_accounts.append(account)
+        elif not checked and account in self.checked_accounts:
+            self.checked_accounts.remove(account)
 
-        # Обновляем информацию
         self._update_info()
 
     def _update_info(self):
-        """Обновляет информацию о выборе"""
-        total = len(self.account_items)
+        """Обновляет информационную строку"""
+        total = len(self.accounts)
         selected = len(self.checked_accounts)
 
         if self.checkable and selected > 0:
@@ -244,9 +242,6 @@ class BotHoldersDialog(QDialog):
         self.selected_accounts = []
         self.init_ui()
         self.load_accounts()
-
-        # Центрируем после инициализации
-        QTimer.singleShot(0, self._center_on_parent)
 
     def init_ui(self):
         """Инициализация интерфейса"""
@@ -335,7 +330,8 @@ class BotHoldersDialog(QDialog):
         title_label = QLabel("Выбор аккаунтов для создания ботов")
         title_label.setObjectName("DialogTitle")
 
-        desc_label = QLabel("Выберите аккаунты, которые будут управлять ботами для инвайтов через админку")
+        desc_label = QLabel(
+            "Назначайте аккаунты держателями ботов для инвайтов через админку.\nВыбранные аккаунты будут перемещены в папку 'Держатели_ботов'")
         desc_label.setObjectName("DialogDescription")
         desc_label.setWordWrap(True)
 
@@ -358,8 +354,15 @@ class BotHoldersDialog(QDialog):
         self.select_all_btn.setFixedSize(120, 44)
         self.select_all_btn.clicked.connect(self._select_all)
 
+        # Кнопка освободить от ботов
+        self.release_btn = QPushButton("Освободить от ботов")
+        self.release_btn.setObjectName("SecondaryButton")
+        self.release_btn.setFixedSize(160, 44)
+        self.release_btn.clicked.connect(self._release_bots)
+
         # Спейсер
         buttons_layout.addWidget(self.select_all_btn)
+        buttons_layout.addWidget(self.release_btn)
         buttons_layout.addStretch()
 
         # Кнопка отмены
@@ -368,10 +371,10 @@ class BotHoldersDialog(QDialog):
         cancel_btn.setFixedSize(120, 44)
         cancel_btn.clicked.connect(self.reject)
 
-        # Кнопка подтверждения
-        self.confirm_btn = QPushButton("Подтвердить")
+        # Кнопка подтверждения (назначить ботов)
+        self.confirm_btn = QPushButton("Назначить ботов")
         self.confirm_btn.setObjectName("ConfirmButton")
-        self.confirm_btn.setFixedSize(120, 44)
+        self.confirm_btn.setFixedSize(140, 44)
         self.confirm_btn.clicked.connect(self._confirm_selection)
 
         buttons_layout.addWidget(cancel_btn)
@@ -403,11 +406,11 @@ class BotHoldersDialog(QDialog):
                 holders_widget = AccountListWidget(
                     "Аккаунты, которые уже имеют ботов",
                     bot_holders,
-                    checkable=False
+                    checkable=True  # Делаем выбираемыми для возможности освобождения
                 )
                 self.tabs.addTab(holders_widget, f"🤖 Держатели ботов ({len(bot_holders)})")
-
-            # Если нет доступных аккаунтов
+                self.holders_widget = holders_widget
+                # Если нет доступных аккаунтов
             if not available_accounts:
                 empty_label = QLabel("Нет доступных аккаунтов для создания ботов")
                 empty_label.setAlignment(Qt.AlignCenter)
@@ -498,13 +501,75 @@ class BotHoldersDialog(QDialog):
         return session_file.exists()
 
     def _select_all(self):
-        """Выбирает все доступные аккаунты"""
-        if hasattr(self, 'available_widget'):
-            # Переключаем все чекбоксы
-            for item in self.available_widget.account_items:
+        """Выбирает все доступные аккаунты на текущей вкладке"""
+        current_tab = self.tabs.currentWidget()
+
+        if isinstance(current_tab, AccountListWidget) and current_tab.checkable:
+            # Переключаем все чекбоксы на текущей вкладке
+            for item in current_tab.account_items:
                 checkbox = item.findChild(QCheckBox)
                 if checkbox:
                     checkbox.setChecked(True)
+
+    def _release_bots(self):
+        """Освобождает выбранные аккаунты от ботов"""
+        if not hasattr(self, 'holders_widget'):
+            from gui.notifications import show_info
+            show_info(
+                "Освобождение ботов",
+                "Нет держателей ботов для освобождения"
+            )
+            return
+
+        selected_holders = self.holders_widget.get_selected_accounts()
+
+        if not selected_holders:
+            from gui.notifications import show_warning
+            show_warning(
+                "Освобождение ботов",
+                "Выберите аккаунты для освобождения от ботов на вкладке 'Держатели ботов'"
+            )
+            return
+
+        # Освобождаем выбранные аккаунты
+        success_count = 0
+        failed_accounts = []
+
+        for account in selected_holders:
+            account_name = account['name']
+            success = self._release_bot_account(account_name)
+
+            if success:
+                success_count += 1
+                logger.info(f"🔄 Аккаунт {account_name} освобожден от бота")
+            else:
+                failed_accounts.append(account_name)
+                logger.error(f"❌ Не удалось освободить {account_name} от бота")
+
+        # Обновляем AccountManager после перемещений
+        if success_count > 0:
+            self._update_account_manager()
+
+        # Показываем результат
+        if failed_accounts:
+            from gui.notifications import show_error
+            show_error(
+                "Ошибки при освобождении",
+                f"Освобождено: {success_count}, ошибок: {len(failed_accounts)}\n"
+                f"Не удалось освободить: {', '.join(failed_accounts[:3])}" +
+                (f" и еще {len(failed_accounts) - 3}" if len(failed_accounts) > 3 else "")
+            )
+        else:
+            from gui.notifications import show_success
+            show_success(
+                "Аккаунты освобождены",
+                f"🔄 Успешно освобождено {success_count} аккаунт(ов) от ботов\n"
+                f"Аккаунты возвращены в папку 'Трафик'"
+            )
+
+        # Перезагружаем данные в диалоге
+        self.tabs.clear()
+        self.load_accounts()
 
     def _confirm_selection(self):
         """Подтверждает выбор аккаунтов"""
@@ -520,21 +585,141 @@ class BotHoldersDialog(QDialog):
                 )
                 return
 
-            # Отправляем сигнал с выбранными аккаунтами
-            self.accounts_selected.emit(self.selected_accounts)
-            self.accept()
+            # Перемещаем выбранные аккаунты в папку Держатели_ботов
+            success_count = 0
+            failed_accounts = []
+
+            for account in self.selected_accounts:
+                account_name = account['name']
+                success = self._assign_bot_account(account_name)
+
+                if success:
+                    success_count += 1
+                    logger.info(f"✅ Аккаунт {account_name} назначен держателем бота")
+                else:
+                    failed_accounts.append(account_name)
+                    logger.error(f"❌ Не удалось назначить {account_name} держателем бота")
+
+            # Обновляем AccountManager после перемещений
+            if success_count > 0:
+                self._update_account_manager()
+
+            # Показываем результат
+            if failed_accounts:
+                from gui.notifications import show_error
+                show_error(
+                    "Ошибки при назначении",
+                    f"Назначено: {success_count}, ошибок: {len(failed_accounts)}\n"
+                    f"Не удалось назначить: {', '.join(failed_accounts[:3])}" +
+                    (f" и еще {len(failed_accounts) - 3}" if len(failed_accounts) > 3 else "")
+                )
+            else:
+                from gui.notifications import show_success
+                show_success(
+                    "Аккаунты назначены",
+                    f"🤖 Успешно назначено {success_count} аккаунт(ов) держателями ботов\n"
+                    f"Аккаунты перемещены в папку 'Держатели_ботов'"
+                )
+
+            # Если хотя бы один аккаунт успешно назначен, отправляем сигнал
+            if success_count > 0:
+                # Обновляем данные после перемещения
+                successful_accounts = [acc for acc in self.selected_accounts
+                                       if acc['name'] not in failed_accounts]
+                self.accounts_selected.emit(successful_accounts)
+                self.accept()
+            else:
+                # Если ни один аккаунт не удалось назначить, не закрываем диалог
+                return
         else:
             self.reject()
 
+    def _release_bot_account(self, account_name: str) -> bool:
+        """Освобождает аккаунт от бота через BotAccountManager"""
+        try:
+            from src.modules.impl.inviter.bot_account_manager import release_bot_account
+
+            success, message = release_bot_account(account_name)
+
+            if success:
+                logger.info(f"🔄 {message}")
+                return True
+            else:
+                logger.error(f"❌ {message}")
+                return False
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка освобождения бота для {account_name}: {e}")
+            return False
+
+    def _assign_bot_account(self, account_name: str) -> bool:
+        """Назначает аккаунт держателем бота через BotAccountManager"""
+        try:
+            from src.modules.impl.inviter.bot_account_manager import assign_bot_account
+
+            success, message = assign_bot_account(account_name)
+
+            if success:
+                logger.info(f"🤖 {message}")
+                return True
+            else:
+                logger.error(f"❌ {message}")
+                return False
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка назначения бота для {account_name}: {e}")
+            return False
+
+    def _update_account_manager(self):
+        """Обновляет AccountManager после изменений"""
+        try:
+            from src.accounts.manager import _account_manager
+            import asyncio
+
+            if _account_manager:
+                # Запускаем обновление категории трафика в новом цикле событий
+                def refresh_traffic():
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        loop.run_until_complete(_account_manager.refresh_category("traffic"))
+                    finally:
+                        loop.close()
+
+                # Запускаем обновление в отдельном потоке, чтобы не блокировать UI
+                import threading
+                refresh_thread = threading.Thread(target=refresh_traffic)
+                refresh_thread.daemon = True
+                refresh_thread.start()
+
+                logger.info("📊 Запущено обновление AccountManager")
+        except Exception as e:
+            logger.error(f"❌ Ошибка обновления AccountManager: {e}")
+
     def _center_on_parent(self):
         """Центрирует диалог относительно родителя"""
-        if self.parent():
-            parent_rect = self.parent().frameGeometry()
-            center_point = parent_rect.center()
-            self.move(
-                center_point.x() - self.width() // 2,
-                center_point.y() - self.height() // 2
-            )
+        # Если есть родитель, берём его top-level окно (чтобы geometry был валидным)
+        parent = self.parent()
+        if parent:
+            parent = parent.window()
+
+        # Вычисляем прямоугольник, над которым будем центрировать
+        if isinstance(parent, QWidget):
+            target_rect = parent.frameGeometry()
+        else:
+            target_rect = QApplication.primaryScreen().geometry()
+
+        # Центр этого прямоугольника
+        center_point = target_rect.center()
+
+        # Сдвигаем левый-верхний угол диалога так, чтобы его центр совпал с центром target
+        self.move(center_point.x() - self.width() // 2,
+                  center_point.y() - self.height() // 2)
+
+    def showEvent(self, event):
+        """Центрируем диалог при показе"""
+        super().showEvent(event)
+        self._center_on_parent()
 
     def _apply_styles(self):
         """Применяет стили к диалогу"""

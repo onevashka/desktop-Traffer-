@@ -6,7 +6,7 @@
 
 from typing import Dict, List, Optional, Tuple
 from loguru import logger
-
+from paths import Path
 from .profile_manager import InviterProfileManager
 
 
@@ -199,9 +199,24 @@ class InviterModuleManager:
             # Создаем процесс инвайтинга в зависимости от типа
             invite_type = profile.get('config', {}).get('invite_type', 'classic')
 
-            if invite_type == 'Классический':
+            logger.info(f"🚀 Запуск профиля {profile_name} с типом: {invite_type}")
+
+            if invite_type == 'classic':
                 from .classic_inviter import ClassicInviterProcess
                 inviter_process = ClassicInviterProcess(
+                    profile_name=profile_name,
+                    profile_data=profile,
+                    account_manager=_account_manager
+                )
+            elif invite_type == 'admin':
+                # Дополнительная валидация для админ-инвайтера
+                admin_validation = self._validate_admin_inviter_profile(profile)
+                if not admin_validation['valid']:
+                    logger.error(f"❌ Профиль админ-инвайтера не готов: {admin_validation['message']}")
+                    return False
+
+                from .admin_inviter import AdminInviterProcess
+                inviter_process = AdminInviterProcess(
                     profile_name=profile_name,
                     profile_data=profile,
                     account_manager=_account_manager
@@ -226,6 +241,64 @@ class InviterModuleManager:
         except Exception as e:
             logger.error(f"❌ Ошибка запуска профиля {profile_name}: {e}")
             return False
+
+    def _validate_admin_inviter_profile(self, profile: Dict) -> Dict[str, any]:
+        """Дополнительная валидация для админ-инвайтера"""
+        errors = []
+
+        # Проверяем наличие бот-аккаунта
+        bot_account = profile.get('config', {}).get('bot_account')
+        if not bot_account:
+            errors.append("Не указан аккаунт для бота")
+        else:
+            # Проверяем существование аккаунта в папке держателей
+            from paths import BOT_HOLDERS_FOLDER
+            account_name = bot_account.get('name')
+            if not account_name:
+                errors.append("Не указано имя бот-аккаунта")
+            else:
+                session_path = BOT_HOLDERS_FOLDER / f"{account_name}.session"
+                json_path = BOT_HOLDERS_FOLDER / f"{account_name}.json"
+
+                if not session_path.exists():
+                    errors.append(f"Не найден session файл для бот-аккаунта: {account_name}")
+                if not json_path.exists():
+                    errors.append(f"Не найден JSON файл для бот-аккаунта: {account_name}")
+
+        # Проверяем наличие чатов
+        profile_folder = Path(profile['folder_path'])
+        chats_file = profile_folder / "База чатов.txt"
+        if not chats_file.exists():
+            errors.append("Не найден файл с чатами")
+        else:
+            try:
+                with open(chats_file, 'r', encoding='utf-8') as f:
+                    chats = [line.strip() for line in f if line.strip()]
+                if not chats:
+                    errors.append("Файл чатов пустой")
+            except Exception as e:
+                errors.append(f"Ошибка чтения файла чатов: {e}")
+
+        # Проверяем наличие пользователей
+        users_file = profile_folder / "База юзеров.txt"
+        if not users_file.exists():
+            errors.append("Не найден файл с пользователями")
+        else:
+            try:
+                with open(users_file, 'r', encoding='utf-8') as f:
+                    users = [line.strip() for line in f if line.strip()]
+                if not users:
+                    errors.append("Файл пользователей пустой")
+            except Exception as e:
+                errors.append(f"Ошибка чтения файла пользователей: {e}")
+
+        if errors:
+            return {
+                'valid': False,
+                'message': '; '.join(errors)
+            }
+
+        return {'valid': True, 'message': 'Профиль админ-инвайтера готов к запуску'}
 
     def stop_profile(self, profile_name: str) -> bool:
         """Останавливает процесс инвайтинга для профиля"""
