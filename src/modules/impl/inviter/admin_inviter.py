@@ -17,6 +17,8 @@ from src.entities.moduls.inviter import InviteUser, UserStatus, AccountStats
 
 # Импорты Telethon для инвайтов
 from telethon.tl.functions.channels import InviteToChannelRequest
+from telethon.tl.functions.users import GetFullUserRequest
+from telethon.tl.functions.messages import GetCommonChatsRequest
 from telethon.errors import (
     UsernameInvalidError, UsernameNotOccupiedError,
     PeerFloodError, FloodWaitError,
@@ -138,7 +140,7 @@ class AdminInviterProcess(BaseInviterProcess):
 
             while not self.chat_queue.empty():
                 chat = self.chat_queue.get_nowait()
-                chat_links.append(chat.link)
+                chat_links.append(chat)
                 temp_queue.append(chat)
 
             # Возвращаем чаты обратно в очередь
@@ -149,15 +151,25 @@ class AdminInviterProcess(BaseInviterProcess):
                 logger.error("❌ Нет чатов для обработки")
                 return False
 
-            # Показываем инструкции пользователю
-            from .console_interface import get_console_interface
-            console = get_console_interface()
+            # Выводим инструкции напрямую в лог
+            logger.info(f"=" * 70)
+            logger.info(f"🤖 ИНСТРУКЦИЯ ПО НАСТРОЙКЕ БОТА")
+            logger.info(f"=" * 70)
+            logger.info(f"1. Добавьте бота @{self.bot_manager.bot_username} в следующие чаты:")
 
-            return console.show_bot_setup_instructions(
-                bot_username=self.bot_manager.bot_username,
-                profile_name=self.profile_name,
-                chat_links=chat_links
-            )
+            for i, chat in enumerate(chat_links, 1):
+                logger.info(f"   {i}. {chat}")
+
+            logger.info(f"2. Дайте боту права администратора во всех чатах")
+            logger.info(f"3. После завершения настройки, работа продолжится автоматически")
+            logger.info(f"=" * 70)
+
+            # Даем пользователю время на настройку
+            logger.info(f"⏳ Ожидаем 60 секунд для настройки...")
+            await asyncio.sleep(60)
+
+            logger.info(f"✅ Продолжаем работу")
+            return True
 
         except Exception as e:
             logger.error(f"❌ Ошибка взаимодействия с пользователем: {e}")
@@ -176,22 +188,44 @@ class AdminInviterProcess(BaseInviterProcess):
         self.initial_chats_count = total_chats
         logger.info(f"[{self.profile_name}] Всего чатов для обработки: {total_chats}")
 
-        # Рассчитываем количество аккаунтов (как в классическом)
+        # Рассчитываем общее количество требуемых успешных инвайтов (как в классическом)
         total_invites_needed = total_chats * self.config.success_per_chat if self.config.success_per_chat > 0 else 999999
-        accounts_needed = min(
-            total_invites_needed // 10 if total_invites_needed > 0 else 50,
-            self.config.account_limit if self.config.account_limit > 0 else 999999
-        )
+        logger.info(f"[{self.profile_name}] Требуется успешных инвайтов всего: {total_invites_needed}")
+
+        # Рассчитываем сколько аккаунтов нужно исходя из лимита на аккаунт
+        if self.config.success_per_account > 0:
+            accounts_needed = (
+                                          total_invites_needed + self.config.success_per_account - 1) // self.config.success_per_account
+            logger.info(
+                f"[{self.profile_name}] Расчетное количество аккаунтов: {accounts_needed} (по {self.config.success_per_account} инвайтов с аккаунта)")
+        else:
+            # Если лимит не установлен, используем старую логику
+            accounts_needed = total_chats * self.config.threads_per_chat
+            logger.info(f"[{self.profile_name}] Лимит на аккаунт не установлен, используем {accounts_needed} аккаунтов")
+
+        # Проверяем доступность аккаунтов
+        available_accounts = self.account_manager.get_free_accounts_count()
+        logger.info(f"[{self.profile_name}] Доступно свободных аккаунтов: {available_accounts}")
+
+        # Определяем сколько аккаунтов запросить на старте
+        initial_accounts_to_request = min(accounts_needed, available_accounts,
+                                          self.config.threads_per_chat * total_chats)
+
+        if initial_accounts_to_request < accounts_needed:
+            logger.warning(
+                f"[{self.profile_name}] Недостаточно аккаунтов! Требуется: {accounts_needed}, доступно: {available_accounts}")
+            logger.info(
+                f"[{self.profile_name}] Будет использовано {initial_accounts_to_request} аккаунтов, работа может выполниться не полностью")
 
         # Получаем аккаунты
         module_name = f"admin_inviter_{self.profile_name}"
-        allocated_accounts = self._get_fresh_accounts(module_name, accounts_needed)
+        allocated_accounts = self._get_fresh_accounts(module_name, initial_accounts_to_request)
 
         if not allocated_accounts:
             logger.error(f"[{self.profile_name}] Не удалось получить свободные аккаунты")
             return
 
-        logger.info(f"[{self.profile_name}] Получено аккаунтов: {len(allocated_accounts)}")
+        logger.info(f"[{self.profile_name}] Получено аккаунтов на старте: {len(allocated_accounts)}")
 
         # Создаем потоки для чатов
         chat_index = 0
@@ -200,6 +234,24 @@ class AdminInviterProcess(BaseInviterProcess):
         while self.chat_queue.qsize() > 0 and not self.stop_flag.is_set():
             try:
                 chat = self.chat_queue.get_nowait()
+
+                # Проверяем есть ли аккаунты для этого чата
+                if account_index >= len(allocated_accounts):
+                    # Пробуем получить еще аккаунты
+                    additional_accounts = self._get_fresh_accounts(
+                        module_name,
+                        self.config.threads_per_chat
+                    )
+
+                    if additional_accounts:
+                        allocated_accounts.extend(additional_accounts)
+                        logger.info(
+                            f"[{self.profile_name}] Получено дополнительно {len(additional_accounts)} аккаунтов")
+                    else:
+                        # Возвращаем чат обратно в очередь
+                        self.chat_queue.put(chat)
+                        logger.warning(f"[{self.profile_name}] Нет аккаунтов для чата {chat}, отложен")
+                        break
 
                 # Выделяем аккаунты для этого чата
                 chat_accounts = []
@@ -211,8 +263,9 @@ class AdminInviterProcess(BaseInviterProcess):
                         account_index += 1
 
                 if not chat_accounts:
+                    # Возвращаем чат обратно
                     self.chat_queue.put(chat)
-                    logger.warning(f"[{self.profile_name}] Нет аккаунтов для чата {chat}")
+                    logger.warning(f"[{self.profile_name}]  Не удалось выделить аккаунты для чата {chat}")
                     break
 
                 # Создаем поток для чата
@@ -237,6 +290,12 @@ class AdminInviterProcess(BaseInviterProcess):
 
         # Ждем завершения всех потоков
         self._wait_for_threads()
+
+        # Обрабатываем отложенные чаты если остались
+        if self.chat_queue.qsize() > 0:
+            logger.warning(f"[{self.profile_name}] Остались необработанные чаты: {self.chat_queue.qsize()}")
+
+        # Выводим итоговую статистику
         self._print_final_stats()
 
     def _get_fresh_accounts(self, module_name: str, count: int) -> List:
@@ -274,7 +333,7 @@ class AdminInviterProcess(BaseInviterProcess):
             logger.info(f"[{self.profile_name}] Аккаунт {account_name} снова доступен (прошло 24 часа)")
 
     def _wait_for_threads(self):
-        """Ждет завершения всех потоков (копия из классического)"""
+        """Ждет завершения всех потоков"""
         logger.info(f"[{self.profile_name}] Ожидание завершения потоков...")
 
         while not self.stop_flag.is_set():
@@ -284,8 +343,14 @@ class AdminInviterProcess(BaseInviterProcess):
                 logger.info(f"[{self.profile_name}] Все потоки завершены")
                 break
 
+            # Проверяем условие остановки
             if self.user_queue.empty() and self.total_processed > 0:
                 logger.info(f"[{self.profile_name}] Все пользователи обработаны")
+
+            # Выводим промежуточную статистику
+            free_accounts = self.account_manager.get_free_accounts_count()
+            active_accounts = len(alive)
+            finished_accounts = len(self.finished_accounts)
 
             self.stop_flag.wait(10)
 
@@ -296,7 +361,7 @@ class AdminInviterProcess(BaseInviterProcess):
 
     def update_account_stats(self, account_name: str, success: bool = False,
                              spam_block: bool = False, error: bool = False):
-        """Обновляет статистику аккаунта (копия из классического)"""
+        """Обновляет статистику аккаунта и проверяет лимиты"""
         if account_name not in self.account_stats:
             self.account_stats[account_name] = AccountStats(name=account_name)
 
@@ -306,40 +371,67 @@ class AdminInviterProcess(BaseInviterProcess):
             stats.invites += 1
             self.total_success += 1
 
+            # Проверяем достиг ли аккаунт лимита
             if self.config.success_per_account > 0 and stats.invites >= self.config.success_per_account:
                 stats.status = 'finished'
                 self.finished_accounts.add(account_name)
                 self.account_finish_times[account_name] = datetime.now()
-                logger.warning(f"[{self.profile_name}] Аккаунт {account_name} достиг лимита инвайтов: {stats.invites}")
+                logger.warning(
+                    f"[{self.profile_name}] Аккаунт {account_name} достиг лимита инвайтов: {stats.invites}")
 
-        if spam_block:
-            stats.spam_blocks += 1
-            stats.status = 'frozen'
-            self.frozen_accounts.add(account_name)
-            logger.error(f"[{self.profile_name}] Аккаунт {account_name} получил спамблок")
+                # Помечаем аккаунт как отработанный на 24 часа
+                self._mark_account_as_finished(account_name)
 
         if error:
             stats.errors += 1
+            self.total_errors += 1
+        if spam_block:
+            stats.spam_blocks += 1
+            stats.consecutive_spam += 1
+
+            # Проверяем лимит спамблоков
+            if stats.spam_blocks >= self.config.acc_spam_limit:
+                stats.status = 'spam_blocked'
+                self.frozen_accounts.add(account_name)
+                logger.error(f"[{self.profile_name}] Аккаунт {account_name} заблокирован за спам")
+        else:
+            stats.consecutive_spam = 0
 
         self.total_processed += 1
 
+    def _mark_account_as_finished(self, account_name: str):
+        """Помечает аккаунт как отработанный на 24 часа"""
+        try:
+            finish_time = datetime.now()
+
+            # Сохраняем время окончания работы
+            self.account_finish_times[account_name] = finish_time
+
+            # Формируем сообщение для лога
+            next_available = finish_time + timedelta(hours=24)
+            logger.info(f"📌 [{self.profile_name}] Аккаунт {account_name} помечен как отработанный")
+            logger.info(f"   ⏰ Будет доступен: {next_available.strftime('%Y-%m-%d %H:%M:%S')}")
+
+        except Exception as e:
+            logger.error(f"❌ [{self.profile_name}] Ошибка пометки аккаунта {account_name} как отработанного: {e}")
+
     def _print_final_stats(self):
-        """Выводит итоговую статистику (копия из классического)"""
+        """Выводит финальную статистику"""
         logger.info("=" * 60)
-        logger.info(f"📊 ИТОГОВАЯ СТАТИСТИКА АДМИН-ИНВАЙТЕРА: {self.profile_name}")
-        logger.info("=" * 60)
+        logger.info(f"[{self.profile_name}]   📊 ИТОГОВАЯ СТАТИСТИКА:")
+        logger.info(f"[{self.profile_name}]   Всего обработано: {self.total_processed}")
+        logger.info(f"[{self.profile_name}]   Успешных инвайтов: {self.total_success}")
+        logger.info(f"[{self.profile_name}]   Ошибок: {self.total_errors}")
 
-        logger.info(f"🎯 ОБЩИЕ РЕЗУЛЬТАТЫ:")
-        logger.info(f"   ✅ Успешных инвайтов: {self.total_success}")
-        logger.info(f"   ❌ Ошибок: {self.total_errors}")
-        logger.info(f"   📊 Всего обработано: {self.total_processed}")
+        if self.total_processed > 0:
+            success_rate = (self.total_success / self.total_processed) * 100
+            logger.info(f"[{self.profile_name}]   Процент успеха: {success_rate:.1f}%")
 
-        if self.account_stats:
-            logger.info(f"\n👥 СТАТИСТИКА ПО АККАУНТАМ:")
-            for account_name, stats in self.account_stats.items():
-                status_icon = "🏁" if stats.status == 'finished' else "⚡" if stats.status == 'working' else "❌"
-                logger.info(
-                    f"   {status_icon} {account_name}: инвайтов={stats.invites}, ошибок={stats.errors}, спамблоков={stats.spam_blocks}, статус={stats.status}")
+        logger.info(f"\n📊 СТАТИСТИКА ПО АККАУНТАМ:")
+        for account_name, stats in self.account_stats.items():
+            status_icon = "✅" if stats.status == 'finished' else "⚡" if stats.status == 'working' else "❌"
+            logger.info(
+                f"   {status_icon} {account_name}: инвайтов={stats.invites}, ошибок={stats.errors}, спамблоков={stats.spam_blocks}, статус={stats.status}")
 
         if self.finished_accounts:
             logger.info(f"\n🏁 ОТРАБОТАВШИЕ АККАУНТЫ: {len(self.finished_accounts)}")
@@ -377,6 +469,14 @@ class AdminChatWorkerThread(threading.Thread):
         self.chat_errors = 0
         self.chat_processed = 0
 
+        # Флаги остановки чата
+        self.chat_stop_reason = None
+        self.stop_all_workers = False
+
+        # Информация о чате для проверки
+        self.chat_entity = None
+        self.chat_telegram_id = None
+
     def run(self):
         """Основной метод потока"""
         try:
@@ -408,7 +508,7 @@ class AdminChatWorkerThread(threading.Thread):
 
         # Основной цикл работы - один аккаунт за раз
         for account_data in self.accounts:
-            if self.parent.stop_flag.is_set():
+            if self.parent.stop_flag.is_set() or self.stop_all_workers:
                 break
 
             if account_data.name in self.parent.finished_accounts:
@@ -459,94 +559,311 @@ class AdminChatWorkerThread(threading.Thread):
                         f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Ошибка отзыва прав: {account_data.name}: {e}")
 
         logger.info(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 🏁 Работа с чатом завершена")
+        logger.info(
+            f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Итоговая статистика: обработано={self.chat_processed}, успешно={self.chat_success}, ошибок={self.chat_errors}")
 
     async def _work_with_admin_account(self, account_data):
         """Работа с аккаунтом как с администратором"""
-        account_success = 0
-        account_errors = 0
-        consecutive_errors = 0
+        account_name = account_data.name
+        account = account_data.account
 
         logger.info(
-            f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 👨‍💼 Начинаем работу админа: {account_data.name}")
+            f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 👨‍💼 Начинаем работу админа: {account_name}")
 
-        while not self.parent.stop_flag.is_set():
-            # Проверяем лимиты
-            if self.parent.config.success_per_account > 0 and account_success >= self.parent.config.success_per_account:
+        invites_count = 0
+        errors_count = 0
+
+        # Получаем информацию о себе для проверки
+        try:
+            me = await account.client.get_me()
+            logger.info(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Подключен как {me.first_name} {me.last_name or ''} (@{me.username or 'no_username'})")
+        except Exception as e:
+            logger.error(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Ошибка получения информации об аккаунте: {e}")
+            return
+
+        # Присоединяемся к чату если нужно
+        chat_entity = None
+        try:
+            # Получаем entity чата
+            chat_entity = await account.client.get_entity(self.chat_link)
+            if hasattr(chat_entity, 'id'):
+                self.chat_telegram_id = chat_entity.id
+
+            logger.info(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Успешно получили данные чата: {self.chat_link}")
+        except Exception as e:
+            logger.error(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Ошибка получения данных чата: {e}")
+            return
+
+        # Основной цикл инвайтинга
+        while not self.parent.stop_flag.is_set() and not self.stop_all_workers:
+            # ВАЖНО: Проверяем достиг ли аккаунт лимита
+            account_stats = self.parent.account_stats.get(account_name)
+            if account_stats and account_stats.status == 'finished':
                 logger.info(
-                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 🎯 Аккаунт {account_data.name} достиг лимита: {account_success}")
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Аккаунт достиг лимита, завершаем работу")
                 break
 
-            if consecutive_errors >= self.parent.config.spam_errors:
-                logger.warning(
-                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ⚠️ Много ошибок подряд для {account_data.name}: {consecutive_errors}")
+            # Проверяем не заблокирован ли аккаунт за спам
+            if account_stats and account_stats.status == 'spam_blocked':
+                logger.error(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Аккаунт заблокирован за спам, завершаем работу")
                 break
 
-            # Получаем пользователя для инвайта
+            # Проверяем лимит успешных для чата
+            if self.parent.config.success_per_chat > 0 and self.chat_success >= self.parent.config.success_per_chat:
+                logger.success(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Достигнут лимит успешных инвайтов: {self.chat_success}")
+                self.stop_all_workers = True
+                break
+
+            # Проверяем лимит для аккаунта
+            if self.parent.config.success_per_account > 0:
+                if invites_count >= self.parent.config.success_per_account:
+                    logger.info(
+                        f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Достигнут лимит инвайтов для аккаунта: {invites_count}")
+                    break
+
+            # Получаем пользователя
             try:
                 user = self.parent.user_queue.get_nowait()
             except queue.Empty:
-                logger.info(
-                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 📭 Закончились пользователи для {account_data.name}")
+                logger.info(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Очередь пуста")
                 break
 
-            # Инвайтим пользователя (стандартная логика как в классическом)
-            try:
-                success = await self._invite_user_as_admin(account_data.account, user)
+            # Инвайтим пользователя
+            success = await self._invite_user(user, account, account_name)
 
-                if success:
-                    account_success += 1
-                    self.chat_success += 1
-                    consecutive_errors = 0
-                    self.parent.update_account_stats(account_data.name, success=True)
-                    logger.debug(
-                        f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ✅ Инвайт: {account_data.name} → @{user.username}")
-                else:
-                    account_errors += 1
-                    self.chat_errors += 1
-                    consecutive_errors += 1
-                    self.parent.update_account_stats(account_data.name, error=True)
-
-                # Задержка между инвайтами
-                if self.parent.config.invite_delay > 0:
-                    await asyncio.sleep(self.parent.config.invite_delay)
-
-            except Exception as e:
-                account_errors += 1
+            if success:
+                invites_count += 1
+                self.chat_success += 1
+            else:
+                errors_count += 1
                 self.chat_errors += 1
-                consecutive_errors += 1
-                self.parent.update_account_stats(account_data.name, error=True)
-                logger.error(
-                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Ошибка инвайта {account_data.name}: {e}")
+
+            self.chat_processed += 1
+
+            # Обновляем статистику аккаунта (проверка лимитов происходит внутри)
+            self.parent.update_account_stats(
+                account_name,
+                success=success,
+                spam_block=(user.status == UserStatus.SPAM_BLOCK if hasattr(user, 'status') else False),
+                error=(not success)
+            )
+
+            # Задержка между инвайтами
+            if self.parent.config.delay_between > 0:
+                await asyncio.sleep(self.parent.config.delay_between)
 
         logger.info(
-            f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 📊 Аккаунт {account_data.name} завершил работу: успехов={account_success}, ошибок={account_errors}")
+            f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Завершен. Инвайтов: {invites_count}, ошибок: {errors_count}")
 
-    async def _invite_user_as_admin(self, account, user: InviteUser) -> bool:
-        """Инвайтит пользователя как администратор (стандартная логика)"""
+    async def _invite_user(self, user: InviteUser, account, account_name: str) -> bool:
+        """Инвайт пользователя через Telethon с проверками"""
+        client = account.client
+
+        if not client or not client.is_connected():
+            logger.error(f"❌ [{self.profile_name}]-[AdminChat-{self.chat_link}] Клиент не подключен")
+            return False
+
+        username = user.username
+        if username.startswith('@'):
+            username = username[1:]
+
+        logger.info(
+            f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Пытаемся добавить @{username} в {self.chat_link}")
+
         try:
-            # Получаем entity чата и пользователя
-            chat_entity = await account.client.get_input_entity(self.chat_link)
-            user_entity = await account.client.get_input_entity(user.username)
+            # 1. Проверяем существование пользователя и получаем количество общих чатов
+            try:
+                full_user = await client(GetFullUserRequest(username))
+                old_common_chats = full_user.full_user.common_chats_count
+            except (ValueError, TypeError, UsernameInvalidError, UsernameNotOccupiedError):
+                logger.warning(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Пользователь @{username} не существует")
+                user.status = UserStatus.NOT_FOUND
+                user.last_attempt = datetime.now()
+                user.error_message = "Пользователь не найден"
+                self.parent.processed_users[username] = user
+                return False
 
-            # Инвайтим через MTProto (как в классическом)
-            await account.client(InviteToChannelRequest(
-                channel=chat_entity,
-                users=[user_entity]
-            ))
+            # 1.5 Проверяем общие чаты если есть ID текущего чата
+            if self.chat_telegram_id and old_common_chats > 0:
+                try:
+                    # Получаем user entity
+                    user_entity = await client.get_entity(username)
 
+                    # Запрашиваем общие чаты
+                    common_chats_result = await client(GetCommonChatsRequest(
+                        user_id=user_entity,
+                        max_id=0,
+                        limit=100
+                    ))
+
+                    # Проверяем есть ли среди них наш чат
+                    for chat in common_chats_result.chats:
+                        if hasattr(chat, 'id') and chat.id == self.chat_telegram_id:
+                            logger.warning(
+                                f"👥 [{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} уже в чате!")
+                            user.status = UserStatus.ALREADY_IN
+                            user.last_attempt = datetime.now()
+                            user.error_message = "Уже в чате"
+                            self.parent.processed_users[username] = user
+                            return False
+
+                    logger.debug(
+                        f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} не найден в текущем чате")
+
+                except Exception as e:
+                    # Если не удалось проверить - продолжаем инвайт
+                    logger.debug(
+                        f"⚠[{self.profile_name}]-[AdminChat-{self.chat_link}] Не удалось проверить общие чаты: {e}")
+
+            # 2. Пытаемся пригласить
+            try:
+                # Получаем entity пользователя
+                user_entity = await client.get_entity(username)
+
+                # Приглашаем пользователя
+                result = await client(InviteToChannelRequest(
+                    channel=self.chat_link,
+                    users=[user_entity]
+                ))
+
+                # Проверяем есть ли missing_invitees (приватность)
+                if hasattr(result, 'missing_invitees') and result.missing_invitees:
+                    logger.warning(
+                        f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} - настройки приватности")
+                    user.status = UserStatus.PRIVACY
+                    user.last_attempt = datetime.now()
+                    user.error_message = "Настройки приватности"
+                    self.parent.processed_users[username] = user
+                    return False
+
+            except UserPrivacyRestrictedError:
+                logger.warning(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} - настройки приватности")
+                user.status = UserStatus.PRIVACY
+                user.last_attempt = datetime.now()
+                user.error_message = "Настройки приватности"
+                self.parent.processed_users[username] = user
+                return False
+
+            # 3. Ждем и проверяем действительно ли добавился
+            await asyncio.sleep(10)  # Даем время на обработку (меньше чем в классическом, у нас же админ)
+
+            full_user2 = await client(GetFullUserRequest(username))
+            new_common_chats = full_user2.full_user.common_chats_count
+
+            # Если количество общих чатов не увеличилось - списание
+            if new_common_chats <= old_common_chats:
+                logger.warning(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} добавлен и сразу списан")
+                user.status = UserStatus.ERROR
+                user.last_attempt = datetime.now()
+                user.error_message = "Списание"
+                self.parent.processed_users[username] = user
+                return False
+
+            # Успешно добавлен
+            logger.success(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} успешно добавлен!")
+            user.status = UserStatus.INVITED
+            user.last_attempt = datetime.now()
+            self.parent.processed_users[username] = user
             return True
 
+        except (PeerFloodError, FloodWaitError) as e:
+            if isinstance(e, FloodWaitError):
+                wait_seconds = e.seconds
+                logger.warning(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] FloodWait: жду {wait_seconds} сек.")
+                await asyncio.sleep(wait_seconds)
+            else:
+                logger.error(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Спамблок при добавлении @{username}")
+
+            user.status = UserStatus.SPAM_BLOCK
+            user.last_attempt = datetime.now()
+            user.error_message = str(e)
+            self.parent.processed_users[username] = user
+            return False
+
         except UserPrivacyRestrictedError:
-            logger.debug(f"[{self.profile_name}] 🔒 Пользователь @{user.username} запретил добавления")
+            logger.warning(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} - настройки приватности")
+            user.status = UserStatus.PRIVACY
+            user.last_attempt = datetime.now()
+            user.error_message = "Настройки приватности"
+            self.parent.processed_users[username] = user
             return False
-        except FloodWaitError as e:
-            logger.warning(f"[{self.profile_name}] ⏳ Флуд-лимит для {account.name}: {e.seconds} сек")
-            await asyncio.sleep(e.seconds)
+
+        except (UserDeactivatedBanError, UserDeactivatedError):
+            logger.warning(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} заблокирован в Telegram")
+            user.status = UserStatus.NOT_FOUND
+            user.last_attempt = datetime.now()
+            user.error_message = "Пользователь заблокирован"
+            self.parent.processed_users[username] = user
             return False
-        except PeerFloodError:
-            logger.error(f"[{self.profile_name}] 🚫 Спамблок для {account.name}")
-            self.parent.update_account_stats(account.name, spam_block=True)
+
+        except (ChatAdminRequiredError, ChatWriteForbiddenError):
+            logger.error(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Недостаточно прав в чате (даже с админкой!)")
+            user.status = UserStatus.ERROR
+            user.last_attempt = datetime.now()
+            user.error_message = "Недостаточно прав в чате"
+            self.parent.processed_users[username] = user
+
+            # Останавливаем все воркеры для этого чата, т.к. проблема с правами
+            self.chat_stop_reason = "Недостаточно прав бота в чате"
+            self.stop_all_workers = True
             return False
+
+        except ChannelsTooMuchError:
+            logger.warning(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} уже в максимальном количестве чатов")
+            user.status = UserStatus.ERROR
+            user.last_attempt = datetime.now()
+            user.error_message = "Максимум чатов"
+            self.parent.processed_users[username] = user
+            return False
+
         except Exception as e:
-            logger.error(f"[{self.profile_name}] ❌ Ошибка инвайта @{user.username}: {e}")
+            # Специфичные ошибки по тексту
+            error_text = str(e)
+
+            if "CHAT_MEMBER_ADD_FAILED" in error_text:
+                logger.error(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Не удалось добавить @{username}")
+                user.status = UserStatus.ERROR
+                user.error_message = "Ошибка добавления"
+
+            elif "You're banned from sending messages" in error_text:
+                logger.error(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Аккаунт заблокирован для инвайтов")
+                user.status = UserStatus.ERROR
+                user.error_message = "Аккаунт заблокирован"
+
+            elif "user was kicked" in error_text.lower():
+                logger.warning(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} был ранее кикнут из чата")
+                user.status = UserStatus.ALREADY_IN
+                user.error_message = "Был кикнут"
+
+            elif "already in too many channels" in error_text.lower():
+                logger.warning(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] @{username} в слишком многих чатах")
+                user.status = UserStatus.ERROR
+                user.error_message = "Слишком много чатов"
+
+            else:
+                logger.error(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Неизвестная ошибка для @{username}: {e}")
+                user.status = UserStatus.ERROR
+                user.error_message = f"Ошибка: {error_text[:50]}"
+
+            user.last_attempt = datetime.now()
+            self.parent.processed_users[username] = user
             return False
