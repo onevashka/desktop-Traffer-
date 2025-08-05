@@ -668,7 +668,7 @@ class InviterProfileRow(QWidget):
             logger.info(f"🤖 Открываем диалог настройки токенов ботов для профиля: {self.profile_name}")
 
             # Показываем НОВЫЙ диалог токенов
-            from gui.dialogs.bot_tokens_dialog import show_bot_tokens_dialog
+            from gui.dialogs import show_bot_tokens_dialog
             saved_tokens = show_bot_tokens_dialog(self, self.profile_name)
 
             if saved_tokens:

@@ -106,7 +106,7 @@ def ensure_folder_structure():
 
 def get_profile_folder(profile_name: str) -> Path:
     """
-    НОВАЯ ФУНКЦИЯ: Получает путь к папке конкретного профиля
+    Возвращает путь к папке профиля инвайтера
 
     Args:
         profile_name: Имя профиля
@@ -119,21 +119,15 @@ def get_profile_folder(profile_name: str) -> Path:
 
 def get_profile_admins_folder(profile_name: str) -> Path:
     """
-    НОВАЯ ФУНКЦИЯ: Получает путь к папке админов профиля
+    Возвращает путь к папке админов профиля
 
     Args:
         profile_name: Имя профиля
 
     Returns:
-        Path: Путь к папке админов профиля ([Профиль]/Админы/)
+        Path: Путь к папке админов
     """
-    profile_folder = get_profile_folder(profile_name)
-    admins_folder = profile_folder / "Админы"
-
-    # Создаем папку если не существует
-    admins_folder.mkdir(parents=True, exist_ok=True)
-
-    return admins_folder
+    return get_profile_folder(profile_name) / "Админы"
 
 
 def get_profile_bot_token_file(profile_name: str) -> Path:
@@ -271,91 +265,72 @@ def get_all_profile_names() -> List[str]:
         return []
 
 
-def validate_profile_structure(profile_name: str) -> Dict[str, any]:
+def validate_profile_structure(profile_name: str) -> Dict[str, List[str]]:
     """
-    НОВАЯ ФУНКЦИЯ: Валидирует структуру профиля
+    Валидирует структуру профиля инвайтера
 
     Args:
         profile_name: Имя профиля
 
     Returns:
-        Dict: Результат валидации с ошибками и предупреждениями
+        Dict: Результат валидации с ошибками, предупреждениями и информацией
     """
-    try:
-        errors = []
-        warnings = []
-        info = []
+    result = {
+        'errors': [],
+        'warnings': [],
+        'info': []
+    }
 
+    try:
         profile_folder = get_profile_folder(profile_name)
 
-        # Проверяем основную папку
         if not profile_folder.exists():
-            errors.append(f"Папка профиля не существует: {profile_folder}")
-            return {"errors": errors, "warnings": warnings, "info": info}
+            result['errors'].append(f"Папка профиля не существует: {profile_folder}")
+            return result
 
         # Проверяем обязательные файлы
-        required_files = [
-            ("config.json", "Файл конфигурации"),
-            ("База юзеров.txt", "База пользователей"),
-            ("База чатов.txt", "База чатов")
-        ]
+        required_files = {
+            'config.json': 'Файл конфигурации',
+            'База юзеров.txt': 'База пользователей',
+            'База чатов.txt': 'База чатов'
+        }
 
-        for filename, description in required_files:
+        for filename, description in required_files.items():
             file_path = profile_folder / filename
             if not file_path.exists():
-                warnings.append(f"{description} отсутствует: {filename}")
-            elif file_path.stat().st_size == 0:
-                warnings.append(f"{description} пустой: {filename}")
+                result['errors'].append(f"Отсутствует {description}: {filename}")
             else:
-                info.append(f"{description} в порядке")
+                result['info'].append(f"✅ {description} найден")
 
-        # Проверяем папку админов
+        # Проверяем папку админов (для admin типа)
         admins_folder = get_profile_admins_folder(profile_name)
-        admin_sessions = list(admins_folder.glob("*.session"))
-
-        if admin_sessions:
-            info.append(f"Главных админов: {len(admin_sessions)}")
-
-            # Проверяем парность session/json файлов
-            for session_file in admin_sessions:
-                json_file = session_file.with_suffix(".json")
-                if not json_file.exists():
-                    warnings.append(f"Отсутствует JSON для админа: {session_file.stem}")
+        if admins_folder.exists():
+            admin_count = len(list(admins_folder.glob("*.session")))
+            if admin_count > 0:
+                result['info'].append(f"👑 Найдено главных админов: {admin_count}")
+            else:
+                result['warnings'].append("Папка админов пуста")
         else:
-            warnings.append("Не назначены главные админы")
+            result['warnings'].append("Папка админов не создана")
 
-        # Проверяем токен бота
-        token_file = get_profile_bot_token_file(profile_name)
-        if token_file.exists() and token_file.stat().st_size > 0:
-            info.append("Токен бота настроен")
+        # Проверяем токены ботов
+        bot_token = load_bot_token(profile_name)
+        if bot_token:
+            result['info'].append("🤖 Токен бота настроен")
         else:
-            warnings.append("Токен бота не настроен")
-
-        # Проверяем папку отчетов
-        reports_folder = get_profile_reports_folder(profile_name)
-        if reports_folder.exists():
-            info.append("Папка отчетов создана")
-
-        return {
-            "errors": errors,
-            "warnings": warnings,
-            "info": info
-        }
+            result['warnings'].append("Токен бота не настроен")
 
     except Exception as e:
-        logger.error(f"❌ Ошибка валидации профиля {profile_name}: {e}")
-        return {
-            "errors": [f"Ошибка валидации: {e}"],
-            "warnings": [],
-            "info": []
-        }
+        result['errors'].append(f"Ошибка валидации: {str(e)}")
+
+    return result
 
 
 # НОВЫЕ УТИЛИТЫ для работы с главными админами
 
 def get_main_admins_list(profile_name: str) -> List[str]:
     """
-    Получает список главных админов профиля
+    Получает список главных админов для профиля
 
     Args:
         profile_name: Имя профиля
@@ -366,17 +341,19 @@ def get_main_admins_list(profile_name: str) -> List[str]:
     try:
         admins_folder = get_profile_admins_folder(profile_name)
 
+        if not admins_folder.exists():
+            return []
+
+        # Сканируем .session файлы в папке админов
         admins = []
         for session_file in admins_folder.glob("*.session"):
-            # Проверяем что есть соответствующий JSON
-            json_file = session_file.with_suffix(".json")
-            if json_file.exists():
-                admins.append(session_file.stem)
+            admin_name = session_file.stem
+            admins.append(admin_name)
 
         return admins
 
     except Exception as e:
-        logger.error(f"❌ Ошибка получения списка админов для {profile_name}: {e}")
+        logger.error(f"❌ Ошибка получения списка админов: {e}")
         return []
 
 
@@ -403,27 +380,44 @@ def is_main_admin(profile_name: str, account_name: str) -> bool:
 
 def load_bot_token(profile_name: str) -> str:
     """
-    Загружает токен бота из файла профиля
+    Загружает токен бота для профиля
 
     Args:
         profile_name: Имя профиля
 
     Returns:
-        str: Токен бота или пустая строка если не найден
+        str: Токен бота или пустая строка
     """
     try:
-        token_file = get_profile_bot_token_file(profile_name)
+        profile_folder = get_profile_folder(profile_name)
 
+        # Пробуем загрузить из config.json
+        config_file = profile_folder / "config.json"
+        if config_file.exists():
+            import json
+            with open(config_file, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+                bot_account = config.get('bot_account', {})
+                if isinstance(bot_account, dict):
+                    return bot_account.get('token', '')
+
+        # Пробуем загрузить из bot_tokens.txt (множественный)
+        tokens_file = profile_folder / "bot_tokens.txt"
+        if tokens_file.exists():
+            content = tokens_file.read_text(encoding='utf-8').strip()
+            tokens = [line.strip() for line in content.split('\n') if line.strip()]
+            if tokens:
+                return tokens[0]  # Возвращаем первый токен
+
+        # Пробуем загрузить из bot_token.txt (legacy)
+        token_file = profile_folder / "bot_token.txt"
         if token_file.exists():
-            token = token_file.read_text(encoding='utf-8').strip()
-            logger.debug(f"📖 Токен бота загружен для профиля: {profile_name}")
-            return token
+            return token_file.read_text(encoding='utf-8').strip()
 
-        logger.debug(f"📄 Токен бота не найден для профиля: {profile_name}")
         return ""
 
     except Exception as e:
-        logger.error(f"❌ Ошибка загрузки токена для {profile_name}: {e}")
+        logger.error(f"❌ Ошибка загрузки токена: {e}")
         return ""
 
 
@@ -454,81 +448,101 @@ def save_bot_token(profile_name: str, token: str) -> bool:
 
 
 def move_account_to_main_admins(profile_name: str, account_name: str,
-                                session_file: Path, json_file: Path) -> bool:
+                               session_src: Path, json_src: Path) -> bool:
     """
-    НОВАЯ ФУНКЦИЯ: Перемещает аккаунт в папку главных админов профиля
+    Перемещает аккаунт в папку главных админов
 
     Args:
         profile_name: Имя профиля
         account_name: Имя аккаунта
-        session_file: Путь к session файлу
-        json_file: Путь к JSON файлу
+        session_src: Путь к исходному .session файлу
+        json_src: Путь к исходному .json файлу
 
     Returns:
-        bool: True если перемещение успешно
+        bool: True если успешно
     """
     try:
-        # Получаем папку админов
         admins_folder = get_profile_admins_folder(profile_name)
+        admins_folder.mkdir(parents=True, exist_ok=True)
 
-        # Целевые пути
+        # Целевые файлы
         session_dst = admins_folder / f"{account_name}.session"
         json_dst = admins_folder / f"{account_name}.json"
 
         # Проверяем что исходные файлы существуют
-        if not session_file.exists() or not json_file.exists():
-            logger.error(f"❌ Исходные файлы аккаунта {account_name} не найдены")
+        if not session_src.exists():
+            logger.error(f"❌ Исходный session файл не найден: {session_src}")
             return False
 
-        # Перемещаем файлы
-        import shutil
-        shutil.move(str(session_file), str(session_dst))
-        shutil.move(str(json_file), str(json_dst))
+        if not json_src.exists():
+            logger.error(f"❌ Исходный JSON файл не найден: {json_src}")
+            return False
 
-        logger.info(f"👑 Аккаунт {account_name} перемещен в главные админы профиля {profile_name}")
+        # Копируем файлы
+        import shutil
+        shutil.copy2(session_src, session_dst)
+        shutil.copy2(json_src, json_dst)
+
+        # Удаляем исходные файлы
+        session_src.unlink()
+        json_src.unlink()
+
+        logger.info(f"✅ Аккаунт {account_name} перемещен в админы профиля {profile_name}")
         return True
 
     except Exception as e:
-        logger.error(f"❌ Ошибка перемещения {account_name} в админы профиля {profile_name}: {e}")
+        logger.error(f"❌ Ошибка перемещения аккаунта в админы: {e}")
         return False
 
 
 def move_main_admin_to_traffic(profile_name: str, account_name: str) -> bool:
     """
-    НОВАЯ ФУНКЦИЯ: Возвращает главного админа обратно в трафик
+    Перемещает главного админа обратно в трафик
 
     Args:
         profile_name: Имя профиля
         account_name: Имя аккаунта
 
     Returns:
-        bool: True если перемещение успешно
+        bool: True если успешно
     """
     try:
-        # Получаем пути
         admins_folder = get_profile_admins_folder(profile_name)
+
+        # Исходные файлы
         session_src = admins_folder / f"{account_name}.session"
         json_src = admins_folder / f"{account_name}.json"
 
-        # Проверяем что файлы существуют
-        if not session_src.exists() or not json_src.exists():
-            logger.error(f"❌ Файлы главного админа {account_name} не найдены")
-            return False
-
-        # Целевые пути в трафике
+        # Целевые файлы в трафике
         session_dst = WORK_ACCOUNTS_TRAFFER_FOLDER / f"{account_name}.session"
         json_dst = WORK_ACCOUNTS_TRAFFER_FOLDER / f"{account_name}.json"
 
-        # Перемещаем файлы
-        import shutil
-        shutil.move(str(session_src), str(session_dst))
-        shutil.move(str(json_src), str(json_dst))
+        # Проверяем что исходные файлы существуют
+        if not session_src.exists():
+            logger.error(f"❌ Исходный session файл не найден: {session_src}")
+            return False
 
-        logger.info(f"🔄 Главный админ {account_name} возвращен в трафик из профиля {profile_name}")
+        if not json_src.exists():
+            logger.error(f"❌ Исходный JSON файл не найден: {json_src}")
+            return False
+
+        # Убеждаемся что папка трафика существует
+        WORK_ACCOUNTS_TRAFFER_FOLDER.mkdir(parents=True, exist_ok=True)
+
+        # Копируем файлы
+        import shutil
+        shutil.copy2(session_src, session_dst)
+        shutil.copy2(json_src, json_dst)
+
+        # Удаляем из папки админов
+        session_src.unlink()
+        json_src.unlink()
+
+        logger.info(f"✅ Главный админ {account_name} возвращен в трафик")
         return True
 
     except Exception as e:
-        logger.error(f"❌ Ошибка возврата админа {account_name} в трафик: {e}")
+        logger.error(f"❌ Ошибка возврата админа в трафик: {e}")
         return False
 
 
