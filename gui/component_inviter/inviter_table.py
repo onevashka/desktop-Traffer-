@@ -1,13 +1,14 @@
-# gui/component_inviter/inviter_table.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
-"""
-Компонент таблицы профилей инвайтера с исправленным выбором ботов
-"""
+# gui/component_inviter/inviter_table.py - ОБНОВЛЕННАЯ ВЕРСИЯ С КНОПКАМИ УПРАВЛЕНИЯ
 
 from gui.dialogs.inviter_dialogs import (
     show_users_base_dialog,
     show_chats_base_dialog,
     show_extended_settings_dialog
 )
+# НОВЫЕ ИМПОРТЫ для кнопок управления
+from gui.dialogs.main_admins_dialog import show_main_admins_dialog
+from gui.dialogs.bot_token_dialog import show_bot_token_dialog, load_bot_token_from_profile
+
 from src.modules.impl.inviter.profile_manager import InviterProfileManager
 
 from PySide6.QtWidgets import (
@@ -23,7 +24,7 @@ from typing import Optional, Dict
 
 
 class InviterProfileRow(QWidget):
-    """Двухэтажная строка профиля инвайтера с исправленным управлением ботами"""
+    """Двухэтажная строка профиля инвайтера с кнопками управления токенами и админами"""
 
     # Сигналы
     profile_started = Signal(str)  # profile_name
@@ -77,7 +78,9 @@ class InviterProfileRow(QWidget):
         self.start_stop_btn = None
         self.name_edit = None
         self.invite_type_combo = None
-        self.bot_select_btn = None  # НОВАЯ КНОПКА
+        # НОВЫЕ КНОПКИ для управления админами и токенами
+        self.manage_admins_btn = None
+        self.bot_token_btn = None
 
         # Основной layout
         main_layout = QVBoxLayout(self)
@@ -112,14 +115,6 @@ class InviterProfileRow(QWidget):
                 self.chats_btn.clicked.connect(self._on_chats_settings)
                 logger.debug(f"✅ Подключен сигнал chats_btn для {self.profile_name}")
 
-            if self.settings_btn:
-                self.settings_btn.clicked.connect(self._on_extended_settings)
-                logger.debug(f"✅ Подключен сигнал settings_btn для {self.profile_name}")
-
-            if self.delete_btn:
-                self.delete_btn.clicked.connect(self._delete_profile)
-                logger.debug(f"✅ Подключен сигнал delete_btn для {self.profile_name}")
-
             if self.start_stop_btn:
                 self.start_stop_btn.clicked.connect(self._toggle_profile)
                 logger.debug(f"✅ Подключен сигнал start_stop_btn для {self.profile_name}")
@@ -128,15 +123,12 @@ class InviterProfileRow(QWidget):
                 self.name_edit.textChanged.connect(self._on_name_changed)
                 logger.debug(f"✅ Подключен сигнал name_edit для {self.profile_name}")
 
-            # ИСПРАВЛЕНО: Подключаем сигнал смены типа инвайта БЕЗ автоматического диалога
             if self.invite_type_combo:
                 self.invite_type_combo.currentTextChanged.connect(self._on_invite_type_changed_simple)
                 logger.debug(f"✅ Подключен сигнал invite_type_combo для {self.profile_name}")
 
-            # НОВОЕ: Подключаем кнопку выбора бота
-            if self.bot_select_btn:
-                self.bot_select_btn.clicked.connect(self._on_select_bot_account)
-                logger.debug(f"✅ Подключен сигнал bot_select_btn для {self.profile_name}")
+            # Подключаем сигналы кнопок управления
+            self._reconnect_control_signals()
 
         except Exception as e:
             logger.error(f"❌ Ошибка подключения сигналов для {self.profile_name}: {e}")
@@ -156,7 +148,7 @@ class InviterProfileRow(QWidget):
         # 2. Название профиля
         layout.addWidget(self._create_name_widget())
 
-        # 3. Тип инвайта + кнопка выбора бота
+        # 3. Тип инвайта (БЕЗ кнопки выбора бота)
         layout.addWidget(self._create_invite_type_widget())
 
         # 4. База пользователей
@@ -172,9 +164,9 @@ class InviterProfileRow(QWidget):
         main_layout.addWidget(first_floor)
 
     def _create_invite_type_widget(self):
-        """ИСПРАВЛЕНО: Тип инвайта + кнопка выбора бота"""
+        """УПРОЩЕННЫЙ: Только тип инвайта БЕЗ кнопки выбора бота"""
         widget = QWidget()
-        widget.setFixedWidth(280)  # Увеличили ширину для кнопки
+        widget.setFixedWidth(160)  # Уменьшили ширину так как убрали кнопку
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
@@ -182,10 +174,6 @@ class InviterProfileRow(QWidget):
         # Заголовок
         type_label = QLabel("Тип инвайта:")
         type_label.setStyleSheet("font-size: 12px; color: rgba(255,255,255,0.6);")
-
-        # Горизонтальный layout для комбобокса и кнопки
-        controls_layout = QHBoxLayout()
-        controls_layout.setSpacing(6)
 
         # Комбобокс типа инвайта
         self.invite_type_combo = QComboBox()
@@ -220,119 +208,85 @@ class InviterProfileRow(QWidget):
         else:
             self.invite_type_combo.setCurrentText("Классический")
 
-        # НОВАЯ КНОПКА: Выбрать бота (показывается только для режима "Через админку")
-        self.bot_select_btn = QPushButton("🤖 Выбрать бота")
-        self.bot_select_btn.setFixedSize(120, 28)
-        self.bot_select_btn.setStyleSheet("""
-            QPushButton {
-                background: rgba(59, 130, 246, 0.2);
-                border: 1px solid rgba(59, 130, 246, 0.5);
-                border-radius: 4px;
-                color: #FFFFFF;
-                font-size: 12px;
-                font-weight: 600;
-                padding: 0 8px;
-            }
-            QPushButton:hover {
-                background: rgba(59, 130, 246, 0.3);
-            }
-            QPushButton:pressed {
-                background: rgba(59, 130, 246, 0.4);
-            }
-        """)
-
-        controls_layout.addWidget(self.invite_type_combo)
-        controls_layout.addWidget(self.bot_select_btn)
-
         layout.addWidget(type_label)
-        layout.addLayout(controls_layout)
-
-        # Изначально скрываем кнопку если режим классический
-        self._update_bot_button_visibility()
+        layout.addWidget(self.invite_type_combo)
 
         return widget
 
     def _on_invite_type_changed_simple(self, new_type: str):
-        """ИСПРАВЛЕНО: Простая смена типа без автоматического диалога"""
+        """ОБНОВЛЕННЫЙ: Простая смена типа с обновлением кнопок"""
         try:
             logger.info(f"🔄 Изменен тип инвайта на: {new_type}")
 
             # Сохраняем тип в конфигурацию
             if new_type == "Через админку":
-                self._save_invite_type_settings('admin', self.bot_account)
+                self._save_invite_type_settings('admin')
             else:
-                self._save_invite_type_settings('classic', None)
-                # При переключении на классический сбрасываем бота
-                self.bot_account = None
+                self._save_invite_type_settings('classic')
 
-            # Обновляем видимость кнопки
-            self._update_bot_button_visibility()
-
-            # Обновляем UI
-            self._update_bot_info_display()
+            # ВАЖНО: Обновляем кнопки управления при смене типа
+            self._update_control_buttons_visibility()
 
         except Exception as e:
             logger.error(f"❌ Ошибка изменения типа инвайта: {e}")
 
-    def _on_select_bot_account(self):
-        """НОВЫЙ МЕТОД: Обработчик кнопки выбора бота"""
+    def _update_control_buttons_visibility(self):
+        """НОВЫЙ МЕТОД: Обновляет видимость кнопок управления в зависимости от типа инвайта"""
         try:
-            logger.info(f"🤖 Открываем диалог выбора бота для {self.profile_name}")
+            # Пересоздаем виджет кнопок управления
+            if hasattr(self, 'control_buttons_widget'):
+                # Находим старый виджет в layout
+                first_floor_widget = self.findChild(QWidget, "FirstFloor")
+                if first_floor_widget:
+                    layout = first_floor_widget.layout()
+                    if layout:
+                        # Удаляем старый виджет
+                        old_widget = self.control_buttons_widget
+                        layout.removeWidget(old_widget)
+                        old_widget.deleteLater()
 
-            # Показываем диалог выбора аккаунтов
-            selected_accounts = show_bot_holders_dialog(self)
+                        # Создаем новый с обновленной видимостью кнопок
+                        self.control_buttons_widget = self._create_control_buttons()
+                        layout.addWidget(self.control_buttons_widget)
 
-            if selected_accounts:
-                # Берем первый выбранный аккаунт
-                bot_account = selected_accounts[0]
-                self.bot_account = bot_account
+                        # Переподключаем сигналы для новых кнопок
+                        self._reconnect_control_signals()
 
-                # Сохраняем в конфигурацию
-                self._save_invite_type_settings('admin', bot_account)
-
-                # Показываем уведомление
-                from gui.notifications import show_success
-                show_success(
-                    "Бот назначен",
-                    f"🤖 Аккаунт {bot_account['name']} будет управлять ботом"
-                )
-
-                # Обновляем UI
-                self._update_bot_info_display()
-
-                logger.info(f"✅ Выбран бот-аккаунт: {bot_account['name']}")
-            else:
-                logger.info("❌ Выбор бота отменен")
+            logger.debug(f"✅ Кнопки управления обновлены для режима: {self.invite_type_combo.currentText()}")
 
         except Exception as e:
-            logger.error(f"❌ Ошибка выбора бота: {e}")
+            logger.error(f"❌ Ошибка обновления кнопок управления: {e}")
 
-    def _update_bot_button_visibility(self):
-        """Обновляет видимость кнопки выбора бота"""
-        if self.bot_select_btn and self.invite_type_combo:
-            current_type = self.invite_type_combo.currentText()
+    def _reconnect_control_signals(self):
+        """НОВЫЙ МЕТОД: Переподключает сигналы кнопок управления после пересоздания"""
+        try:
+            # Переподключаем сигналы для кнопок админов и токенов (если они существуют)
+            if hasattr(self, 'manage_admins_btn') and self.manage_admins_btn:
+                self.manage_admins_btn.clicked.connect(self._on_manage_admins)
+                logger.debug(f"✅ Переподключен сигнал manage_admins_btn для {self.profile_name}")
 
-            if current_type == "Через админку":
-                self.bot_select_btn.setVisible(True)
-                self.bot_select_btn.setEnabled(True)
-            else:
-                self.bot_select_btn.setVisible(False)
+            if hasattr(self, 'bot_token_btn') and self.bot_token_btn:
+                self.bot_token_btn.clicked.connect(self._on_bot_token_settings)
+                logger.debug(f"✅ Переподключен сигнал bot_token_btn для {self.profile_name}")
 
-    def _save_invite_type_settings(self, invite_type: str, bot_account: Optional[Dict]):
+            # Переподключаем основные кнопки
+            if self.settings_btn:
+                self.settings_btn.clicked.connect(self._on_extended_settings)
+                logger.debug(f"✅ Переподключен сигнал settings_btn для {self.profile_name}")
+
+            if self.delete_btn:
+                self.delete_btn.clicked.connect(self._delete_profile)
+                logger.debug(f"✅ Переподключен сигнал delete_btn для {self.profile_name}")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка переподключения сигналов кнопок: {e}")
+
+    def _save_invite_type_settings(self, invite_type: str):
         """Сохраняет настройки типа инвайта"""
         try:
             config_update = {
                 'invite_type': invite_type
             }
-
-            if bot_account:
-                config_update['bot_account'] = {
-                    'name': bot_account['name'],
-                    'phone': bot_account.get('phone', ''),
-                    'full_name': bot_account.get('full_name', '')
-                }
-            else:
-                config_update['bot_account'] = None
 
             # Сохраняем через модуль
             from src.modules.impl.inviter import update_profile_config
@@ -350,30 +304,6 @@ class InviterProfileRow(QWidget):
 
         except Exception as e:
             logger.error(f"❌ Ошибка сохранения настроек типа инвайта: {e}")
-
-    def _update_bot_info_display(self):
-        """Обновляет отображение информации о боте"""
-        # Пересоздаем виджет кнопок управления с новой информацией
-        if hasattr(self, 'control_buttons_widget'):
-            # Находим старый виджет в layout
-            first_floor_widget = self.findChild(QWidget, "FirstFloor")
-            if first_floor_widget:
-                layout = first_floor_widget.layout()
-                if layout:
-                    # Удаляем старый виджет
-                    old_widget = self.control_buttons_widget
-                    layout.removeWidget(old_widget)
-                    old_widget.deleteLater()
-
-                    # Создаем новый с обновленной информацией
-                    self.control_buttons_widget = self._create_control_buttons()
-                    layout.addWidget(self.control_buttons_widget)
-
-        # Логируем информацию
-        if self.bot_account:
-            logger.info(f"🤖 Профиль использует бот: {self.bot_account['name']}")
-        else:
-            logger.info("📝 Профиль использует классический режим инвайта")
 
     def _create_name_widget(self):
         """Название профиля — редактируемое поле"""
@@ -570,71 +500,206 @@ class InviterProfileRow(QWidget):
         return widget
 
     def _create_control_buttons(self):
-        """Кнопки управления профилем"""
+        """Кнопки управления профилем с НОВЫМИ кнопками для админов и токенов"""
         widget = QWidget()
-        widget.setFixedWidth(200)  # Увеличили ширину для информации о боте
         layout = QHBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(4)
 
-        # Информация о боте (если есть)
-        if self.bot_account:
-            bot_info = QLabel(f"🤖 {self.bot_account.get('name', 'Bot')}")
-            bot_info.setToolTip(f"Управляется ботом: {self.bot_account.get('name', '')}")
-            bot_info.setStyleSheet("""
-                   QLabel {
-                       background: rgba(59, 130, 246, 0.1);
-                       border: 1px solid rgba(59, 130, 246, 0.3);
-                       border-radius: 4px;
-                       padding: 4px 8px;
-                       color: #3B82F6;
-                       font-size: 11px;
-                       font-weight: 600;
-                   }
-               """)
-            layout.addWidget(bot_info)
-            layout.addStretch()
+        # Проверяем текущий режим инвайта
+        current_type = self.profile_data.get('config', {}).get('invite_type', 'classic')
+        is_admin_mode = current_type == 'admin' or (
+                self.invite_type_combo and self.invite_type_combo.currentText() == "Через админку"
+        )
 
-        # Кнопка настроек
+        # НОВЫЕ КНОПКИ: Показываем только в режиме "Через админку"
+        if is_admin_mode:
+            # НОВАЯ КНОПКА: Управление главными админами
+            self.manage_admins_btn = QPushButton("👑 Админы")
+            self.manage_admins_btn.setFixedSize(70, 36)
+            self.manage_admins_btn.setToolTip("Управление главными администраторами")
+            self.manage_admins_btn.setStyleSheet("""
+                QPushButton {
+                    background: rgba(139, 92, 246, 0.2);
+                    border: 1px solid rgba(139, 92, 246, 0.5);
+                    border-radius: 4px;
+                    color: #FFFFFF;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                QPushButton:hover {
+                    background: rgba(139, 92, 246, 0.3);
+                }
+            """)
+
+            # НОВАЯ КНОПКА: Настройка токена бота
+            self.bot_token_btn = QPushButton("🤖 Токен")
+            self.bot_token_btn.setFixedSize(70, 36)
+            self.bot_token_btn.setToolTip("Настройка токена бота")
+            self.bot_token_btn.setStyleSheet("""
+                QPushButton {
+                    background: rgba(245, 158, 11, 0.2);
+                    border: 1px solid rgba(245, 158, 11, 0.5);
+                    border-radius: 4px;
+                    color: #FFFFFF;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                QPushButton:hover {
+                    background: rgba(245, 158, 11, 0.3);
+                }
+            """)
+
+            layout.addWidget(self.manage_admins_btn)
+            layout.addWidget(self.bot_token_btn)
+            widget.setFixedWidth(300)  # Увеличенная ширина для админ-кнопок
+        else:
+            # В классическом режиме кнопки админов и токенов не создаются
+            self.manage_admins_btn = None
+            self.bot_token_btn = None
+            widget.setFixedWidth(160)  # Обычная ширина без админ-кнопок
+
+        layout.addStretch()  # Распорка
+
+        # Кнопка настроек (всегда присутствует)
         self.settings_btn = QPushButton("⚙️")
         self.settings_btn.setFixedSize(36, 36)
         self.settings_btn.setToolTip("Расширенные настройки")
         self.settings_btn.setStyleSheet("""
-               QPushButton {
-                   background: rgba(156, 163, 175, 0.2);
-                   border: 1px solid rgba(156, 163, 175, 0.5);
-                   border-radius: 4px;
-                   color: #FFFFFF;
-                   font-size: 12px;
-               }
-               QPushButton:hover {
-                   background: rgba(156, 163, 175, 0.3);
-               }
-           """)
+            QPushButton {
+                background: rgba(156, 163, 175, 0.2);
+                border: 1px solid rgba(156, 163, 175, 0.5);
+                border-radius: 4px;
+                color: #FFFFFF;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background: rgba(156, 163, 175, 0.3);
+            }
+        """)
 
-        # Кнопка удаления
+        # Кнопка удаления (всегда присутствует)
         self.delete_btn = QPushButton("🗑️")
         self.delete_btn.setFixedSize(36, 36)
         self.delete_btn.setToolTip("Удалить профиль")
         self.delete_btn.setStyleSheet("""
-               QPushButton {
-                   background: rgba(239, 68, 68, 0.2);
-                   border: 1px solid rgba(239, 68, 68, 0.5);
-                   border-radius: 4px;
-                   color: #FFFFFF;
-                   font-size: 12px;
-               }
-               QPushButton:hover {
-                   background: rgba(239, 68, 68, 0.3);
-               }
-           """)
+            QPushButton {
+                background: rgba(239, 68, 68, 0.2);
+                border: 1px solid rgba(239, 68, 68, 0.5);
+                border-radius: 4px;
+                color: #FFFFFF;
+                font-size: 12px;
+            }
+            QPushButton:hover {
+                background: rgba(239, 68, 68, 0.3);
+            }
+        """)
 
         layout.addWidget(self.settings_btn)
         layout.addWidget(self.delete_btn)
 
         return widget
 
-    # Остальные методы остаются без изменений
+    # НОВЫЕ МЕТОДЫ для обработки кнопок админов и токенов
+    def _on_manage_admins(self):
+        """ИСПРАВЛЕНО: Обработчик кнопки управления главными админами"""
+        try:
+            logger.info(f"👑 Открываем диалог управления админами для профиля: {self.profile_name}")
+
+            # ИСПРАВЛЕНО: Принудительно перезагружаем профили для проверки
+            from src.modules.impl.inviter.profile_manager import InviterProfileManager
+            profile_manager = InviterProfileManager()
+            profile_manager.load_all_profiles()  # Перезагружаем профили!
+            profile = profile_manager.get_profile(self.profile_name)
+
+            if not profile:
+                logger.error(f"❌ Профиль {self.profile_name} не найден после перезагрузки")
+
+                # Попробуем найти по похожему имени
+                all_profiles = profile_manager.get_all_profiles()
+                logger.info(f"🔍 Доступные профили: {[p['name'] for p in all_profiles]}")
+
+                try:
+                    from gui.notifications import show_error
+                    show_error(
+                        "Профиль не найден",
+                        f"❌ Профиль '{self.profile_name}' не найден.\n"
+                        f"Доступные профили: {', '.join([p['name'] for p in all_profiles[:3]])}"
+                    )
+                except:
+                    pass
+                return
+
+            logger.info(f"✅ Профиль найден: {profile['name']} | Папка: {profile['folder_path']}")
+
+            # Показываем диалог выбора главных админов
+            selected_admins = show_main_admins_dialog(self, self.profile_name)
+
+            if selected_admins:
+                logger.info(f"✅ Выбрано главных админов: {len(selected_admins)}")
+
+                # Показываем уведомление об успехе
+                try:
+                    from gui.notifications import show_success
+                    show_success(
+                        "Главные админы",
+                        f"✅ Назначено {len(selected_admins)} главных администраторов\n"
+                        f"Аккаунты перемещены в папку '{self.profile_name}/Админы/'"
+                    )
+                except:
+                    pass
+            else:
+                logger.info("❌ Выбор главных админов отменен")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка управления админами: {e}")
+            try:
+                from gui.notifications import show_error
+                show_error(
+                    "Ошибка",
+                    f"❌ Не удалось настроить главных админов: {e}"
+                )
+            except:
+                pass
+
+    def _on_bot_token_settings(self):
+        """ОБНОВЛЕНО: Обработчик кнопки настройки токенов ботов"""
+        try:
+            logger.info(f"🤖 Открываем диалог настройки токенов ботов для профиля: {self.profile_name}")
+
+            # Показываем НОВЫЙ диалог токенов
+            from gui.dialogs.bot_tokens_dialog import show_bot_tokens_dialog
+            saved_tokens = show_bot_tokens_dialog(self, self.profile_name)
+
+            if saved_tokens:
+                logger.info(f"✅ Токены ботов настроены для профиля: {self.profile_name}")
+                logger.info(f"📊 Количество токенов: {len(saved_tokens)}")
+
+                # Показываем уведомление об успехе
+                try:
+                    from gui.notifications import show_success
+                    show_success(
+                        "Токены ботов",
+                        f"🤖 Сохранено {len(saved_tokens)} токенов ботов\n"
+                        f"Файл: {self.profile_name}/bot_tokens.txt"
+                    )
+                except:
+                    pass
+            else:
+                logger.info("❌ Настройка токенов ботов отменена")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка настройки токенов ботов: {e}")
+            try:
+                from gui.notifications import show_error
+                show_error(
+                    "Ошибка",
+                    f"❌ Не удалось настроить токены ботов: {e}"
+                )
+            except:
+                pass
+
+    # Остальные методы остаются БЕЗ ИЗМЕНЕНИЙ
     def _create_second_floor(self, main_layout):
         """Второй этаж с прогресс-баром и статистикой"""
         second_floor = QWidget()
@@ -1099,6 +1164,7 @@ class InviterProfileRow(QWidget):
             self.status_label.setText(action_text)
 
 
+# Класс InviterTableWidget остается БЕЗ ИЗМЕНЕНИЙ
 class InviterTableWidget(QWidget):
     """Основная таблица с профилями инвайтера"""
 
@@ -1117,13 +1183,17 @@ class InviterTableWidget(QWidget):
         # Создаем скролл область
         self._create_scroll_area(layout)
 
-        # Загружаем тестовые данные
-        self._load_test_profiles()
+        # ИСПРАВЛЕНО: Загружаем РЕАЛЬНЫЕ данные из модуля, а не тестовые
+        self._load_profiles_from_module()
 
         # Эффект прозрачности для анимации
         effect = QGraphicsOpacityEffect()
         effect.setOpacity(0.0)
         self.setGraphicsEffect(effect)
+
+    def set_parent_manager(self, manager):
+        """НОВЫЙ МЕТОД: Устанавливает ссылку на родительский менеджер"""
+        self.parent_manager = manager
 
     def _create_scroll_area(self, layout):
         """Создает скроллируемую область"""
@@ -1167,66 +1237,199 @@ class InviterTableWidget(QWidget):
             }
         """)
 
-    # Остальные методы класса остаются без изменений...
-    def _load_test_profiles(self):
-        """Загружает тестовые профили"""
-        test_profiles = [
-            {
-                'name': 'Профиль #1',
-                'is_running': False,
-                'invite_type': 'Классический',
-                'threads': 2,
-                'chat_limit': 50,
-                'acc_limit': 100,
-                'users_list': [],
-                'chats_list': [],
-                'extended_settings': {}
-            },
-            {
-                'name': 'Профиль #2',
-                'is_running': True,
-                'invite_type': 'Через админку',
-                'threads': 3,
-                'chat_limit': 75,
-                'acc_limit': 150,
-                'users_list': [],
-                'chats_list': [],
-                'extended_settings': {}
-            },
-            {
-                'name': 'Профиль #3',
-                'is_running': False,
-                'invite_type': 'Классический',
-                'threads': 1,
-                'chat_limit': 30,
-                'acc_limit': 80,
-                'users_list': [],
-                'chats_list': [],
-                'extended_settings': {}
+    def _load_profiles_from_module(self):
+        """ИСПРАВЛЕНО: Загружает реальные профили из модуля с принудительной перезагрузкой"""
+        try:
+            from src.modules.impl.inviter import get_all_profiles_for_gui
+            from src.modules.impl.inviter.profile_manager import InviterProfileManager
+
+            # ИСПРАВЛЕНИЕ: Принудительно перезагружаем профили из файловой системы
+            profile_manager = InviterProfileManager()
+            profile_manager.load_all_profiles()  # Принудительная загрузка!
+
+            # Получаем реальные профили из модуля
+            profiles_data = get_all_profiles_for_gui()
+
+            logger.info(f"📨 Загружено реальных профилей из модуля: {len(profiles_data)}")
+
+            # Логируем какие профили загружены
+            for profile in profiles_data:
+                logger.info(f"   📁 Профиль: {profile.get('name')} | Папка: {profile.get('folder_path')}")
+
+            if not profiles_data:
+                # Если профилей нет, показываем заглушку
+                self._show_empty_state()
+                return
+
+            # Загружаем профили
+            for i, profile_data in enumerate(profiles_data):
+                row = InviterProfileRow(profile_data)
+
+                # Подключаем сигналы после создания строки
+                row.profile_started.connect(self._on_profile_started)
+                row.profile_stopped.connect(self._on_profile_stopped)
+                row.profile_deleted.connect(self._on_profile_deleted)
+
+                # Добавляем в словарь для отслеживания
+                self.profile_rows[profile_data['name']] = row
+                self.profiles_layout.addWidget(row)
+
+                # Добавляем разделитель сразу после строки
+                if i < len(profiles_data) - 1:
+                    sep = QFrame()
+                    sep.setFrameShape(QFrame.HLine)
+                    sep.setFrameShadow(QFrame.Sunken)
+                    sep.setStyleSheet("color: rgba(255,255,255,0.1);")
+                    sep.setFixedHeight(1)
+                    self.profiles_layout.addWidget(sep)
+
+            self.profiles_layout.addStretch()
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка загрузки профилей из модуля: {e}")
+            # В случае ошибки показываем заглушку
+            self._show_error_state(str(e))
+
+    def _show_empty_state(self):
+        """ИСПРАВЛЕНО: Показывает заглушку когда нет профилей с кнопкой создания"""
+        empty_widget = QWidget()
+        empty_layout = QVBoxLayout(empty_widget)
+        empty_layout.setAlignment(Qt.AlignCenter)
+        empty_layout.setSpacing(20)
+
+        # Главная иконка и текст
+        empty_label = QLabel("📭 Нет созданных профилей")
+        empty_label.setAlignment(Qt.AlignCenter)
+        empty_label.setStyleSheet("""
+            QLabel {
+                color: rgba(255, 255, 255, 0.6);
+                font-size: 24px;
+                font-weight: 600;
+                margin-bottom: 10px;
             }
-        ]
+        """)
 
-        for i, data in enumerate(test_profiles):
-            row = InviterProfileRow(data)
+        # Описание
+        desc_label = QLabel("Создайте первый профиль для начала работы с инвайтером")
+        desc_label.setAlignment(Qt.AlignCenter)
+        desc_label.setStyleSheet("""
+            QLabel {
+                color: rgba(255, 255, 255, 0.4);
+                font-size: 16px;
+                margin-bottom: 20px;
+            }
+        """)
 
-            # Подключаем сигналы после создания строки
-            row.profile_started.connect(self._on_profile_started)
-            row.profile_stopped.connect(self._on_profile_stopped)
-            row.profile_deleted.connect(self._on_profile_deleted)
+        # Кнопка создания профиля
+        create_btn = QPushButton("+ Создать первый профиль")
+        create_btn.setFixedSize(200, 50)
+        create_btn.setStyleSheet("""
+            QPushButton {
+                background: #22C55E;
+                border: none;
+                border-radius: 8px;
+                color: #FFFFFF;
+                font-size: 16px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background: #16A34A;
+            }
+            QPushButton:pressed {
+                background: #15803D;
+            }
+        """)
+        create_btn.clicked.connect(self._create_first_profile)
 
-            # Добавляем в словарь для отслеживания
-            self.profile_rows[data['name']] = row
-            self.profiles_layout.addWidget(row)
+        # Контейнер для центрирования
+        container = QWidget()
+        container.setStyleSheet("""
+            QWidget {
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 12px;
+                border: 2px dashed rgba(255, 255, 255, 0.2);
+                padding: 40px;
+            }
+        """)
+        container_layout = QVBoxLayout(container)
+        container_layout.addWidget(empty_label)
+        container_layout.addWidget(desc_label)
+        container_layout.addWidget(create_btn, 0, Qt.AlignCenter)
 
-            # Добавляем разделитель сразу после строки
-            if i < len(test_profiles) - 1:
-                sep = QFrame()
-                sep.setFrameShape(QFrame.HLine)
-                sep.setFrameShadow(QFrame.Sunken)
-                sep.setStyleSheet("color: rgba(255,255,255,0.1);")
-                sep.setFixedHeight(1)
-                self.profiles_layout.addWidget(sep)
+        empty_layout.addWidget(container)
+        self.profiles_layout.addWidget(empty_widget)
+        self.profiles_layout.addStretch()
 
+    def _create_first_profile(self):
+        """НОВЫЙ МЕТОД: Создает первый профиль"""
+        try:
+            from gui.dialogs.inviter_dialogs import show_create_profile_dialog
+            from src.modules.impl.inviter import create_profile
+
+            # Показываем диалог создания
+            profile_data = show_create_profile_dialog(self)
+
+            if profile_data and profile_data.get('name'):
+                profile_name = profile_data['name']
+                logger.info(f"📨 Создаем первый профиль: {profile_name}")
+
+                # Создаем через модуль
+                result = create_profile(profile_name, profile_data)
+
+                if result.get('success'):
+                    logger.info(f"✅ Первый профиль создан: {profile_name}")
+
+                    # Перезагружаем интерфейс
+                    self.reload_profiles()
+
+                    # ИСПРАВЛЕНО: Если есть родительский менеджер, обновляем его тоже
+                    if hasattr(self, 'parent_manager') and self.parent_manager:
+                        self.parent_manager._reload_all_data()
+
+                    # Показываем уведомление
+                    try:
+                        from gui.notifications import show_success
+                        show_success(
+                            "Профиль создан",
+                            f"✅ Профиль '{profile_name}' успешно создан!\n"
+                            f"Теперь вы можете настроить админов и токены."
+                        )
+                    except:
+                        pass
+                else:
+                    logger.error(f"❌ Ошибка создания профиля: {result.get('message')}")
+                    try:
+                        from gui.notifications import show_error
+                        show_error(
+                            "Ошибка создания",
+                            f"❌ {result.get('message', 'Неизвестная ошибка')}"
+                        )
+                    except:
+                        pass
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка создания первого профиля: {e}")
+            try:
+                from gui.notifications import show_error
+                show_error("Критическая ошибка", f"Не удалось создать профиль: {e}")
+            except:
+                pass
+
+    def _show_error_state(self, error_message: str):
+        """Показывает заглушку при ошибке загрузки"""
+        error_label = QLabel(f"❌ Ошибка загрузки профилей\n\n{error_message}")
+        error_label.setAlignment(Qt.AlignCenter)
+        error_label.setStyleSheet("""
+            QLabel {
+                color: #EF4444;
+                font-size: 14px;
+                padding: 30px;
+                background: rgba(239, 68, 68, 0.1);
+                border-radius: 12px;
+                border: 1px solid rgba(239, 68, 68, 0.3);
+            }
+        """)
+        self.profiles_layout.addWidget(error_label)
         self.profiles_layout.addStretch()
 
     def _on_profile_started(self, profile_name):
@@ -1353,6 +1556,32 @@ class InviterTableWidget(QWidget):
 
         except Exception as e:
             logger.error(f"❌ Ошибка обновления данных профилей: {e}")
+
+            logger.info("🔄 Профили перезагружены из модуля")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка перезагрузки профилей: {e}")
+
+    # НОВЫЙ МЕТОД для обновления после создания профиля
+    def reload_profiles(self):
+        """Перезагружает профили из модуля (для использования в InviterManagerTab)"""
+        try:
+            # Очищаем текущие профили
+            self.clear_profiles()
+
+            # Очищаем layout полностью
+            for i in reversed(range(self.profiles_layout.count())):
+                item = self.profiles_layout.itemAt(i)
+                if item.widget():
+                    item.widget().deleteLater()
+
+            # Загружаем заново
+            self._load_profiles_from_module()
+
+            logger.info("🔄 Профили перезагружены из модуля")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка перезагрузки профилей: {e}")
 
     def animate_appearance(self):
         """Анимирует появление таблицы"""

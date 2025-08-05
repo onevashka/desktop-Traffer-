@@ -516,29 +516,9 @@ class MainAdminsDialog(QDialog):
             logger.error(f"❌ Ошибка загрузки главных админов: {e}")
             return []
 
-    def _get_profile_admins_folder(self) -> Optional[Path]:
-        """Получает путь к папке Админы профиля"""
-        try:
-            from src.modules.impl.inviter.profile_manager import InviterProfileManager
-
-            profile_manager = InviterProfileManager()
-            profiles = profile_manager.get_all_profiles()
-
-            for profile in profiles:
-                if profile.get('name') == self.profile_name:
-                    profile_folder = Path(profile['folder_path'])
-                    admins_folder = profile_folder / "Админы"
-
-                    # Создаем папку если не существует
-                    admins_folder.mkdir(exist_ok=True)
-                    return admins_folder
-
-            logger.error(f"❌ Профиль {self.profile_name} не найден")
-            return None
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка получения папки админов: {e}")
-            return None
+    def _get_profile_admins_folder(self):
+        from paths import get_profile_admins_folder
+        return get_profile_admins_folder(self.profile_name)
 
     def _is_main_admin(self, account_name: str) -> bool:
         """Проверяет является ли аккаунт главным админом"""
@@ -672,16 +652,10 @@ class MainAdminsDialog(QDialog):
                 self.accept()
 
     def _assign_main_admin(self, account: Dict) -> bool:
-        """Назначает аккаунт главным админом (перемещает в папку профиля)"""
+        """ИСПРАВЛЕНО: Назначает аккаунт главным админом через paths.py"""
         try:
             account_name = account['name']
             logger.info(f"👑 Назначаем главным админом: {account_name}")
-
-            # Получаем папку админов профиля
-            admins_folder = self._get_profile_admins_folder()
-            if not admins_folder:
-                logger.error(f"❌ Не удалось получить папку админов")
-                return False
 
             # Получаем пути к файлам аккаунта
             from src.accounts.manager import _account_manager
@@ -691,58 +665,48 @@ class MainAdminsDialog(QDialog):
                 logger.error(f"❌ Аккаунт {account_name} не найден в трафике")
                 return False
 
-            session_src = Path(account_data.session_file)
-            json_src = Path(account_data.json_file)
+            session_src = account_data.account.session_path
+            json_src = account_data.account.json_path
 
             if not session_src.exists() or not json_src.exists():
                 logger.error(f"❌ Файлы аккаунта {account_name} не найдены")
                 return False
 
-            # Целевые пути
-            session_dst = admins_folder / f"{account_name}.session"
-            json_dst = admins_folder / f"{account_name}.json"
+            # ИСПОЛЬЗУЕМ ФУНКЦИЮ ИЗ paths.py!
+            from paths import move_account_to_main_admins
+            success = move_account_to_main_admins(
+                self.profile_name,
+                account_name,
+                session_src,
+                json_src
+            )
 
-            # Перемещаем файлы
-            import shutil
-            shutil.move(str(session_src), str(session_dst))
-            shutil.move(str(json_src), str(json_dst))
+            if success:
+                logger.info(f"✅ Аккаунт {account_name} перемещен в папку админов")
+            else:
+                logger.error(f"❌ Не удалось переместить {account_name} в папку админов")
 
-            logger.info(f"✅ Аккаунт {account_name} перемещен в папку админов")
-            return True
+            return success
 
         except Exception as e:
             logger.error(f"❌ Ошибка назначения главным админом {account['name']}: {e}")
             return False
 
     def _remove_admin_account(self, account_name: str) -> bool:
-        """Снимает аккаунт с должности главного админа (возвращает в трафик)"""
+        """ИСПРАВЛЕНО: Снимает аккаунт с должности главного админа через paths.py"""
         try:
             logger.info(f"🔄 Снимаем с должности главного админа: {account_name}")
 
-            # Получаем папку админов
-            admins_folder = self._get_profile_admins_folder()
-            if not admins_folder:
-                return False
+            # ИСПОЛЬЗУЕМ ФУНКЦИЮ ИЗ paths.py!
+            from paths import move_main_admin_to_traffic
+            success = move_main_admin_to_traffic(self.profile_name, account_name)
 
-            session_src = admins_folder / f"{account_name}.session"
-            json_src = admins_folder / f"{account_name}.json"
+            if success:
+                logger.info(f"✅ Аккаунт {account_name} возвращен в трафик")
+            else:
+                logger.error(f"❌ Не удалось вернуть {account_name} в трафик")
 
-            if not session_src.exists() or not json_src.exists():
-                logger.error(f"❌ Файлы админа {account_name} не найдены")
-                return False
-
-            # Папка назначения - активные в трафике
-            from paths import WORK_ACCOUNTS_TRAFFER_FOLDER
-            session_dst = WORK_ACCOUNTS_TRAFFER_FOLDER / f"{account_name}.session"
-            json_dst = WORK_ACCOUNTS_TRAFFER_FOLDER / f"{account_name}.json"
-
-            # Перемещаем файлы обратно
-            import shutil
-            shutil.move(str(session_src), str(session_dst))
-            shutil.move(str(json_src), str(json_dst))
-
-            logger.info(f"✅ Аккаунт {account_name} возвращен в трафик")
-            return True
+            return success
 
         except Exception as e:
             logger.error(f"❌ Ошибка снятия с должности {account_name}: {e}")
