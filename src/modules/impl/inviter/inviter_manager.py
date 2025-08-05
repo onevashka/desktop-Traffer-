@@ -93,20 +93,23 @@ class InviterModuleManager:
         try:
             profiles = self.profile_manager.get_all_profiles()
 
-            # Дополняем данными о процессах
             for profile in profiles:
                 profile_name = profile['name']
                 profile['is_running'] = profile_name in self.active_processes
 
+                # Определяем тип инвайтинга
+                invite_type = profile.get('config', {}).get('invite_type', 'classic')
+                profile['invite_type'] = invite_type
+                profile['invite_type_display'] = "🤖 Админ-инвайтинг" if invite_type == 'admin' else "👥 Классический"
+
                 # Добавляем статистику процесса если есть
                 if profile_name in self.active_processes:
                     process = self.active_processes[profile_name]
-
-                    # Базовая статистика процесса
                     profile['process_stats'] = {
                         'is_running': process.is_alive() if hasattr(process, 'is_alive') else True,
                         'profile_name': profile_name,
-                        'started_at': process.started_at if hasattr(process, 'started_at') else None
+                        'started_at': process.started_at if hasattr(process, 'started_at') else None,
+                        'invite_type': invite_type
                     }
 
             return profiles
@@ -184,6 +187,9 @@ class InviterModuleManager:
                 logger.warning(f"⚠️ Профиль уже запущен: {profile_name}")
                 return True
 
+            # Определяем тип инвайтинга
+            invite_type = profile.get('config', {}).get('invite_type', 'classic')
+
             # Валидация перед запуском
             validation = self._validate_profile_for_start(profile)
             if not validation['valid']:
@@ -196,11 +202,9 @@ class InviterModuleManager:
                 logger.error("❌ AccountManager не инициализирован")
                 return False
 
-            # Создаем процесс инвайтинга в зависимости от типа
-            invite_type = profile.get('config', {}).get('invite_type', 'classic')
-
             logger.info(f"🚀 Запуск профиля {profile_name} с типом: {invite_type}")
 
+            # Создаем процесс инвайтинга в зависимости от типа
             if invite_type == 'classic':
                 from .classic_inviter import ClassicInviterProcess
                 inviter_process = ClassicInviterProcess(
@@ -210,9 +214,9 @@ class InviterModuleManager:
                 )
             elif invite_type == 'admin':
                 # Дополнительная валидация для админ-инвайтера
-                admin_validation = self._validate_admin_inviter_profile(profile)
+                admin_validation = self._validate_admin_profile(profile)
                 if not admin_validation['valid']:
-                    logger.error(f"❌ Профиль админ-инвайтера не готов: {admin_validation['message']}")
+                    logger.error(f"❌ Админ-профиль не готов: {admin_validation['message']}")
                     return False
 
                 from .admin_inviter import AdminInviterProcess
@@ -241,6 +245,7 @@ class InviterModuleManager:
         except Exception as e:
             logger.error(f"❌ Ошибка запуска профиля {profile_name}: {e}")
             return False
+
 
     def _validate_admin_inviter_profile(self, profile: Dict) -> Dict[str, any]:
         """Дополнительная валидация для админ-инвайтера"""
@@ -464,6 +469,59 @@ class InviterModuleManager:
                 safe_config[delay_key] = 0
 
         return safe_config
+
+    def _validate_admin_profile(self, profile: Dict) -> Dict[str, any]:
+        """Валидация админ-профиля - ищем главного админа в папке Админы"""
+        errors = []
+
+        try:
+            config = profile.get('config', {})
+            profile_folder = Path(profile['folder_path'])
+
+            # Проверяем токен бота
+            bot_token = config.get('bot_token', '')
+            if not bot_token:
+                # Пытаемся загрузить из файла
+                from .data_loader import InviterDataLoader
+                loader = InviterDataLoader(profile_folder)
+                bot_token = loader._load_bot_token()
+
+            if not bot_token:
+                errors.append("Не указан токен бота")
+            elif ':' not in bot_token:
+                errors.append("Неверный формат токена бота")
+
+            # ПРОСТАЯ ЛОГИКА: Ищем главного админа в папке Админы
+            admins_folder = profile_folder / "Админы"
+            main_admin_found = None
+
+            if admins_folder.exists():
+                # Ищем .session файлы в папке Админы
+                session_files = list(admins_folder.glob("*.session"))
+                if session_files:
+                    main_admin_found = session_files[0].stem
+                    logger.info(f"🎯 Найден главный админ в папке Админы: {main_admin_found}")
+                else:
+                    errors.append("Нет аккаунтов в папке Админы")
+            else:
+                errors.append("Папка Админы не найдена. Выберите главного админа через GUI")
+
+            # Проверяем базы данных
+            chats_file = profile_folder / "База чатов.txt"
+            if not chats_file.exists() or not chats_file.read_text(encoding='utf-8').strip():
+                errors.append("База чатов пуста")
+
+            users_file = profile_folder / "База юзеров.txt"
+            if not users_file.exists() or not users_file.read_text(encoding='utf-8').strip():
+                errors.append("База пользователей пуста")
+
+        except Exception as e:
+            errors.append(f"Ошибка валидации: {str(e)}")
+
+        if errors:
+            return {'valid': False, 'message': '; '.join(errors)}
+
+        return {'valid': True, 'message': f'Админ-профиль готов. Главный админ: {main_admin_found}'}
 
     def _validate_profile_for_start(self, profile_data: Dict) -> Dict[str, any]:
         """Валидирует профиль перед запуском"""

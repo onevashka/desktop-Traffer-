@@ -1,6 +1,6 @@
-# src/entities/modules/inviter.py
+# src/entities/moduls/inviter.py - ОБНОВЛЕННАЯ ВЕРСИЯ
 """
-Модели данных для модуля инвайтера
+Модели данных для модуля инвайтера с поддержкой админ-инвайтинга
 """
 
 from dataclasses import dataclass
@@ -74,9 +74,11 @@ class ChatStats:
 
 @dataclass
 class InviterConfig:
-    """Конфигурация инвайтера"""
+    """
+    Конфигурация инвайтера с поддержкой админ-инвайтинга
+    """
     # Основные параметры
-    invite_type: str = "classic"
+    invite_type: str = "classic"  # "classic" или "admin"
     threads_per_chat: int = 2
 
     # Лимиты
@@ -94,7 +96,86 @@ class InviterConfig:
     # Безопасность чатов
     chat_error_limit: int = 3
 
+    # ========== НОВЫЕ ПОЛЯ ДЛЯ АДМИН-ИНВАЙТИНГА ==========
+    # Настройки бота
+    bot_token: str = ""  # Токен бота для управления правами
+
+    # Главный админ
+    main_admin_account: str = ""  # Имя аккаунта главного админа
+
+    # Дополнительные настройки админ-инвайтинга
+    delay_between_workers: int = 10  # Задержка между сменой воркеров
+    sequential_workers: bool = True  # Последовательная работа воркеров
+    admin_rights_timeout: int = 30  # Таймаут выдачи прав (сек)
+
     @classmethod
     def from_dict(cls, data: dict) -> 'InviterConfig':
-        """Создает конфиг из словаря"""
-        return cls(**{k: v for k, v in data.items() if hasattr(cls, k)})
+        """Создает конфиг из словаря с фильтрацией полей"""
+        # Фильтруем только известные поля
+        known_fields = {field.name for field in cls.__dataclass_fields__.values()}
+        filtered_data = {k: v for k, v in data.items() if k in known_fields}
+        return cls(**filtered_data)
+
+    def to_dict(self) -> dict:
+        """Конвертирует в словарь"""
+        return {
+            'invite_type': self.invite_type,
+            'threads_per_chat': self.threads_per_chat,
+            'success_per_chat': self.success_per_chat,
+            'success_per_account': self.success_per_account,
+            'delay_after_start': self.delay_after_start,
+            'delay_between': self.delay_between,
+            'acc_spam_limit': self.acc_spam_limit,
+            'acc_error_limit': self.acc_error_limit,
+            'chat_error_limit': self.chat_error_limit,
+            'bot_token': self.bot_token,
+            'main_admin_account': self.main_admin_account,
+            'delay_between_workers': self.delay_between_workers,
+            'sequential_workers': self.sequential_workers,
+            'admin_rights_timeout': self.admin_rights_timeout
+        }
+
+    def is_admin_inviter(self) -> bool:
+        """Проверяет, является ли это админ-инвайтером"""
+        return self.invite_type == "admin"
+
+    def validate_admin_config(self) -> tuple[bool, list[str]]:
+        """
+        Валидирует настройки админ-инвайтера
+
+        Returns:
+            tuple[bool, list[str]]: (валидность, список_ошибок)
+        """
+        if not self.is_admin_inviter():
+            return True, []
+
+        errors = []
+
+        # Проверяем токен бота
+        if not self.bot_token.strip():
+            errors.append("Не указан токен бота")
+        elif ':' not in self.bot_token:
+            errors.append("Неверный формат токена бота")
+
+        # Проверяем главного админа
+        if not self.main_admin_account.strip():
+            errors.append("Не указан главный админ аккаунт")
+
+        # Проверяем лимиты
+        if self.success_per_chat < 0:
+            errors.append("Лимит инвайтов на чат не может быть отрицательным")
+
+        if self.success_per_account < 0:
+            errors.append("Лимит инвайтов на аккаунт не может быть отрицательным")
+
+        if self.threads_per_chat < 1:
+            errors.append("Количество воркеров должно быть минимум 1")
+
+        # Проверяем задержки
+        if self.delay_between < 0:
+            errors.append("Задержка между инвайтами не может быть отрицательной")
+
+        if self.admin_rights_timeout < 10:
+            errors.append("Таймаут прав должен быть минимум 10 секунд")
+
+        return len(errors) == 0, errors

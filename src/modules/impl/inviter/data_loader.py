@@ -1,11 +1,11 @@
-# src/modules/impl/inviter/data_loader.py
+# src/modules/impl/inviter/data_loader.py - ПРОСТОЕ ОБНОВЛЕНИЕ
 """
-Загрузчик данных для инвайтера
-Отвечает за загрузку и парсинг данных из файлов
+Загрузчик данных для инвайтера с поддержкой админ-инвайтинга
 """
 
 import re
 import queue
+import datetime
 from pathlib import Path
 from typing import List, Tuple, Dict
 from loguru import logger
@@ -27,9 +27,51 @@ class InviterDataLoader:
         ]
 
     def load_config(self, config_dict: dict) -> InviterConfig:
-        """Загружает конфигурацию"""
+        """Загружает конфигурацию с поддержкой админ-инвайтинга"""
         logger.debug("⚙️ Загрузка конфигурации")
-        return InviterConfig.from_dict(config_dict)
+
+        # Создаем конфиг из словаря
+        config = InviterConfig.from_dict(config_dict)
+
+        # Если это админ-инвайтер, загружаем дополнительные данные
+        if config.is_admin_inviter():
+            # Загружаем токен бота из файла если не указан в конфиге
+            if not config.bot_token:
+                config.bot_token = self._load_bot_token()
+
+            logger.debug(
+                f"🤖 Админ-инвайтер: токен={'есть' if config.bot_token else 'нет'}, админ={config.main_admin_account}")
+
+        return config
+
+    def _load_bot_token(self) -> str:
+        """Загружает токен бота из файла"""
+        try:
+            # Проверяем bot_token.txt
+            token_file = self.profile_folder / "bot_token.txt"
+            if token_file.exists():
+                token = token_file.read_text(encoding='utf-8').strip()
+                if token:
+                    logger.debug("🤖 Токен бота загружен из файла")
+                    return token
+
+            logger.debug("⚠️ Файл токена бота не найден")
+            return ""
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка загрузки токена бота: {e}")
+            return ""
+
+    def save_bot_token(self, token: str) -> bool:
+        """Сохраняет токен бота в файл"""
+        try:
+            token_file = self.profile_folder / "bot_token.txt"
+            token_file.write_text(token.strip(), encoding='utf-8')
+            logger.info("💾 Токен бота сохранен")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Ошибка сохранения токена: {e}")
+            return False
 
     def load_chats(self) -> Tuple[List[str], int]:
         """
@@ -50,7 +92,7 @@ class InviterDataLoader:
                 logger.error("❌ Файл чатов пустой")
                 return [], 0
 
-            chats = [line.strip() for line in content.split('\n') if line.strip()]
+            chats = [line.strip() for line in content.split('\n') if line.strip() and not line.startswith('#')]
             logger.info(f"💬 Загружено чатов: {len(chats)}")
 
             return chats, len(chats)
@@ -85,7 +127,7 @@ class InviterDataLoader:
 
             for line in content.split('\n'):
                 line = line.strip()
-                if not line:
+                if not line or line.startswith('#'):
                     continue
 
                 # Проверяем на грязные паттерны
@@ -110,98 +152,104 @@ class InviterDataLoader:
 
     def _parse_user_line(self, line: str) -> Tuple[InviteUser, bool]:
         """
-        Парсит строку с пользователем
+        Парсит строку пользователя
 
         Returns:
-            Tuple[InviteUser, is_dirty]
+            Tuple[пользователь, грязный_ли]
         """
-        # Проверяем грязные паттерны
-        for pattern, separator in self.dirty_patterns:
-            match = re.match(pattern, line)
-            if match:
-                username = match.group(1)
-                status_text = match.group(2)
+        try:
+            # Проверяем на грязные паттерны (уже обработанные)
+            for pattern, separator in self.dirty_patterns:
+                match = re.match(pattern, line, re.IGNORECASE)
+                if match:
+                    username = match.group(1)
+                    status_text = match.group(2).strip()
 
-                user = InviteUser(
-                    username=username,
-                    status=self._parse_status(status_text),
-                    error_message=status_text if separator in line else None
-                )
-                return user, True
+                    # Определяем статус
+                    status = UserStatus.ERROR  # По умолчанию
+                    if "приглашен" in status_text.lower() or "✅" in status_text:
+                        status = UserStatus.INVITED
+                    elif "приватность" in status_text.lower() or "🔒" in status_text:
+                        status = UserStatus.PRIVACY
+                    elif "уже в чате" in status_text.lower() or "👥" in status_text:
+                        status = UserStatus.ALREADY_IN
+                    elif "спамблок" in status_text.lower() or "🚫" in status_text:
+                        status = UserStatus.SPAM_BLOCK
+                    elif "не найден" in status_text.lower() or "❓" in status_text:
+                        status = UserStatus.NOT_FOUND
 
-        # Чистый пользователь
-        username = line.strip()
-        if username.startswith('@'):
-            username = username[1:]
+                    user = InviteUser(username=username, status=status, error_message=status_text)
+                    return user, True  # Грязный
 
-        # Валидация username
-        if username and self._is_valid_username(username):
-            return InviteUser(username=username), False
+            # Чистая строка - извлекаем username
+            if line.startswith('@'):
+                username = line[1:].strip()
+            else:
+                username = line.strip()
 
-        return None, False
+            # Валидация username
+            if re.match(r'^[a-zA-Z0-9_]{5,32}$', username):
+                user = InviteUser(username=username, status=UserStatus.CLEAN)
+                return user, False  # Чистый
+            else:
+                logger.warning(f"⚠️ Некорректный username: {line}")
+                return None, False
 
-    def _is_valid_username(self, username: str) -> bool:
-        """Проверяет валидность username"""
-        # Username должен быть 5-32 символа, начинаться с буквы
-        return bool(re.match(r'^[a-zA-Z][a-zA-Z0-9_]{4,31}$', username))
+        except Exception as e:
+            logger.error(f"❌ Ошибка парсинга строки: {line}, ошибка: {e}")
+            return None, False
 
-    def _parse_status(self, status_text: str) -> UserStatus:
-        """Парсит статус из текста"""
-        status_lower = status_text.lower()
-
-        status_map = {
-            'приглашен': UserStatus.INVITED,
-            '✅': UserStatus.INVITED,
-            'приватность': UserStatus.PRIVACY,
-            '🔒': UserStatus.PRIVACY,
-            'уже в чате': UserStatus.ALREADY_IN,
-            '👥': UserStatus.ALREADY_IN,
-            'спамблок': UserStatus.SPAM_BLOCK,
-            '🚫': UserStatus.SPAM_BLOCK,
-            'не найден': UserStatus.NOT_FOUND,
-            '❓': UserStatus.NOT_FOUND,
-            'флуд': UserStatus.FLOOD_WAIT,
-            '⏳': UserStatus.FLOOD_WAIT,
-        }
-
-        for key, status in status_map.items():
-            if key in status_lower:
-                return status
-
-        return UserStatus.ERROR
-
-    def save_users_progress(self, processed_users: Dict[str, InviteUser],
-                            user_queue: queue.Queue):
+    def save_users_progress(self, processed_users: Dict[str, InviteUser], remaining_queue: queue.Queue):
         """Сохраняет прогресс обработки пользователей"""
         try:
             users_file = self.profile_folder / "База юзеров.txt"
+            backup_file = self.profile_folder / f"База юзеров_backup_{int(datetime.now().timestamp())}.txt"
+
+            # Делаем бэкап
+            if users_file.exists():
+                import shutil
+                shutil.copy2(users_file, backup_file)
 
             # Собираем всех пользователей
             all_lines = []
 
-            # Сначала обработанные
+            # Добавляем обработанных
             for user in processed_users.values():
                 all_lines.append(user.to_file_format())
 
-            # Затем необработанные из очереди
-            temp_users = []
-            while not user_queue.empty():
+            # Добавляем оставшихся чистых
+            while not remaining_queue.empty():
                 try:
-                    user = user_queue.get_nowait()
-                    temp_users.append(user)
+                    user = remaining_queue.get_nowait()
                     all_lines.append(user.to_file_format())
                 except queue.Empty:
                     break
 
-            # Возвращаем в очередь
-            for user in temp_users:
-                user_queue.put(user)
-
             # Сохраняем
-            content = '\n'.join(all_lines)
-            users_file.write_text(content, encoding='utf-8')
-
-            logger.info(f"💾 Сохранено: {len(processed_users)} обработано, {len(temp_users)} в очереди")
+            users_file.write_text('\n'.join(all_lines), encoding='utf-8')
+            logger.info(f"💾 Прогресс сохранен: {len(all_lines)} пользователей")
 
         except Exception as e:
             logger.error(f"❌ Ошибка сохранения прогресса: {e}")
+
+    def validate_admin_profile(self, config: InviterConfig) -> Tuple[bool, List[str]]:
+        """Простая валидация админ-профиля"""
+        if not config.is_admin_inviter():
+            return True, []
+
+        errors = []
+
+        # Проверяем конфигурацию
+        config_valid, config_errors = config.validate_admin_config()
+        errors.extend(config_errors)
+
+        # Проверяем файлы
+        chats, chats_count = self.load_chats()
+        if chats_count == 0:
+            errors.append("База чатов пуста")
+
+        users_queue, processed_users, clean_count, dirty_count = self.load_users()
+        if clean_count == 0:
+            errors.append("Нет пользователей для инвайта")
+
+        return len(errors) == 0, errors
