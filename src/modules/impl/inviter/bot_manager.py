@@ -190,12 +190,12 @@ class BotManager:
                 logger.info(f"🔑 Попытка {attempt}: выдача прав админа пользователю {user_id} в {chat_link}")
 
                 # Получаем chat_id
-                chat = await self.bot.get_chat(chat_link)
-                chat_id = chat.id
+                #chat = await self.bot.get_chat(chat_link)
+                #chat_id = chat.id
 
                 # Выдаем полные права админа
                 await self.bot.promote_chat_member(
-                    chat_id=int(f'-100{chat_id}'),
+                    chat_id=int(f'-100{chat_link}'),
                     user_id=user_id,
                     can_change_info=True,
                     can_delete_messages=True,
@@ -259,13 +259,9 @@ class BotManager:
             try:
                 logger.info(f"🔒 Попытка {attempt}: отзыв прав админа у пользователя {user_id} в {chat_link}")
 
-                # Получаем chat_id
-                chat = await self.bot.get_chat(chat_link)
-                chat_id = chat.id
-
                 # Забираем все права (устанавливаем в False)
                 await self.bot.promote_chat_member(
-                    chat_id=int(f'-100{chat_id}'),
+                    chat_id=int(f'-100{chat_link}'),
                     user_id=user_id,
                     can_change_info=False,
                     can_delete_messages=False,

@@ -402,6 +402,7 @@ class AccountManager:
 
     def _get_data_service(self) -> DataService:
         """Получает сервис данных"""
+        print('fdsfds')
         if self._data_service is None:
             self._data_service = DataService(self.traffic_accounts, self.sales_accounts)
         return self._data_service
@@ -477,9 +478,11 @@ class AccountManager:
         else:
             return False
 
-    def get_account(self, name: str, category: str) -> Optional:
+    def get_account(self, name: str, category: str = "traffic") -> Optional:
         """Возвращает объект Account по имени и категории"""
+
         account_data = self.get_account_by_name(name, category)
+        print(account_data)
         return account_data.account if account_data else None
 
     def get_accounts_by_category(self, category: str) -> List[str]:
