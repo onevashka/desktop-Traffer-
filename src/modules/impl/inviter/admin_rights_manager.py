@@ -47,6 +47,7 @@ class AdminRightsManager:
         Returns:
             bool: True если права выданы успешно
         """
+        print('dsfdsfdsfdsfdsfsfs')
         async with self._get_lock(chat_link):
             try:
                 logger.info(f"👑 Выдача прав главного админа: {account_name} (ID: {user_id}) в {chat_link}")

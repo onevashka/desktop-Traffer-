@@ -195,7 +195,7 @@ class BotManager:
 
                 # Выдаем полные права админа
                 await self.bot.promote_chat_member(
-                    chat_id=chat_id,
+                    chat_id=int(f'-100{chat_id}'),
                     user_id=user_id,
                     can_change_info=True,
                     can_delete_messages=True,
@@ -265,7 +265,7 @@ class BotManager:
 
                 # Забираем все права (устанавливаем в False)
                 await self.bot.promote_chat_member(
-                    chat_id=chat_id,
+                    chat_id=int(f'-100{chat_id}'),
                     user_id=user_id,
                     can_change_info=False,
                     can_delete_messages=False,

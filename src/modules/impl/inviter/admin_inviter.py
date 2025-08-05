@@ -3,7 +3,7 @@
 Инвайтер через админку - использует бота для управления правами админов
 ОБНОВЛЕННАЯ ВЕРСИЯ с интеграцией BotManager и AdminRightsManager
 """
-
+import traceback
 import threading
 import asyncio
 import queue
@@ -109,8 +109,9 @@ class AdminInviterProcess(BaseInviterProcess):
     async def _async_run_inviting(self):
         """Асинхронная часть логики инвайтинга"""
         try:
-            # ДОБАВЬТЕ: Сохраняем ссылку на текущий event loop
+            # ДОБАВЛЕНО: Сохраняем ссылку на текущий event loop
             self.main_loop = asyncio.get_event_loop()
+            logger.debug(f"[{self.profile_name}] 🔄 Основной loop установлен: {id(self.main_loop)}")
 
             # 1. Инициализируем бот-менеджер
             if not await self._initialize_bot():
@@ -127,6 +128,7 @@ class AdminInviterProcess(BaseInviterProcess):
 
         except Exception as e:
             logger.error(f"[{self.profile_name}] ❌ Ошибка в асинхронном процессе: {e}")
+            logger.error(f"[{self.profile_name}] 🔍 Трассировка: {traceback.format_exc()}")
         finally:
             # Закрываем соединения
             if self.bot_manager:
@@ -263,7 +265,8 @@ class AdminInviterProcess(BaseInviterProcess):
         # Создаем объект Account для главного админа
         main_admin_account = self._load_main_admin_account()
         if not main_admin_account:
-            logger.error(f"[{self.profile_name}] ❌ Не удалось загрузить аккаунт главного админа: {self.main_admin_account_name}")
+            logger.error(
+                f"[{self.profile_name}] ❌ Не удалось загрузить аккаунт главного админа: {self.main_admin_account_name}")
             return
 
         logger.info(f"[{self.profile_name}] Главный админ загружен: {self.main_admin_account_name}")
@@ -468,7 +471,7 @@ class AdminInviterProcess(BaseInviterProcess):
 class AdminChatWorkerThread(threading.Thread):
     """Рабочий поток для одного чата с управлением админ-правами через нового админа"""
 
-    def __init__(self, chat_id: int, chat_link: str, main_admin_account,  # ← Убрали str
+    def __init__(self, chat_id: int, chat_link: str, main_admin_account,
                  worker_accounts: List[str], parent: AdminInviterProcess,
                  profile_name: str, bot_manager: BotManager,
                  admin_rights_manager: AdminRightsManager):
@@ -491,8 +494,11 @@ class AdminChatWorkerThread(threading.Thread):
         self.worker_account_names = worker_accounts
         self.parent = parent
         self.profile_name = profile_name
-        self.bot_manager = bot_manager
-        self.admin_rights_manager = admin_rights_manager
+
+        # ИЗМЕНЕНИЕ: Сохраняем токен бота и создаем локальные менеджеры
+        self.bot_token = parent.bot_token
+        self.bot_manager = None
+        self.admin_rights_manager = None
         self.main_loop = None
 
         # Статистика чата
@@ -519,6 +525,7 @@ class AdminChatWorkerThread(threading.Thread):
 
         except Exception as e:
             logger.error(f"❌ [{self.profile_name}]-[AdminChat-{self.chat_id}] Ошибка: {e}")
+            logger.error(f"🔍 Трассировка: {traceback.format_exc()}")
         finally:
             if loop:
                 loop.close()
@@ -528,24 +535,68 @@ class AdminChatWorkerThread(threading.Thread):
         logger.info(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 🤖 Начинаем работу через админку")
 
         try:
-            # 1. Подготавливаем главного админа
+            # НОВОЕ: 1. Создаем локальный bot manager
+            if not await self._initialize_local_bot():
+                logger.error(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Не удалось инициализировать локальный бот")
+                return
+
+            # 2. Подготавливаем главного админа
             if not await self._setup_main_admin():
                 logger.error(
                     f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Не удалось настроить главного админа")
                 return
 
-            # 2. Работаем с воркерами последовательно
+            # 3. Работаем с воркерами последовательно
             await self._work_with_workers()
 
         except Exception as e:
             logger.error(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Ошибка в работе: {e}")
+            logger.error(f"🔍 Трассировка: {traceback.format_exc()}")
         finally:
-            # 3. Финальная очистка - забираем права у главного админа
+            # 4. Финальная очистка - забираем права у главного админа
             await self._cleanup_main_admin()
+
+            # НОВОЕ: 5. Отключаем локальный бот
+            if self.bot_manager:
+                await self.bot_manager.disconnect()
 
         logger.info(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 🏁 Работа завершена")
         logger.info(
             f"   Статистика: обработано={self.chat_processed}, успешно={self.chat_success}, ошибок={self.chat_errors}")
+
+    # НОВЫЙ МЕТОД
+    async def _initialize_local_bot(self) -> bool:
+        """Инициализирует локальный bot manager для этого потока"""
+        try:
+            logger.info(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 🤖 Инициализация локального бота...")
+
+            # Создаем свой bot manager
+            self.bot_manager = BotManager(
+                bot_token=self.bot_token,
+                proxy_url=None  # TODO: добавить прокси если нужно
+            )
+
+            # Подключаемся
+            if not await self.bot_manager.connect():
+                logger.error(
+                    f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Не удалось подключиться к локальному боту")
+                return False
+
+            # Создаем admin rights manager
+            self.admin_rights_manager = AdminRightsManager(
+                bot_manager=self.bot_manager
+            )
+
+            logger.info(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ✅ Локальный бот инициализирован: @{self.bot_manager.bot_username}")
+            return True
+
+        except Exception as e:
+            logger.error(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Ошибка инициализации локального бота: {e}")
+            logger.error(f"🔍 Трассировка: {traceback.format_exc()}")
+            return False
 
     async def _setup_main_admin(self) -> bool:
         """Настраивает главного админа: заход в чат + получение прав от бота"""
@@ -604,9 +655,11 @@ class AdminChatWorkerThread(threading.Thread):
             except Exception as e:
                 logger.warning(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] Не удалось получить ID чата: {e}")
 
-            # ИСПРАВЛЕНО: Выдаем права через главный loop
-            success = await self._execute_bot_operation_in_main_loop(
-                "grant_main_admin_rights",
+            # ИЗМЕНЕНО: Выдаем права напрямую в локальном потоке (убрали run_coroutine_threadsafe)
+            logger.info(
+                f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 🔧 Выдача прав через локальный admin_rights_manager...")
+
+            success = await self.admin_rights_manager.grant_main_admin_rights(
                 self.chat_link, user_id, self.main_admin_account_name
             )
 
@@ -621,50 +674,10 @@ class AdminChatWorkerThread(threading.Thread):
 
         except Exception as e:
             logger.error(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Ошибка настройки главного админа: {e}")
+            logger.error(f"🔍 Трассировка: {traceback.format_exc()}")
             return False
 
-    async def _execute_bot_operation_in_main_loop(self, operation_name: str, *args, **kwargs):
-        """Выполняет bot операцию в главном loop процесса"""
-        try:
-            # Получаем главный loop из родительского процесса
-            main_loop = self.parent.main_loop
-
-            if main_loop is None:
-                logger.error(f"❌ Главный loop не найден для операции {operation_name}")
-                return False
-
-            # Выполняем операцию в главном loop через run_coroutine_threadsafe
-            if operation_name == "grant_main_admin_rights":
-                future = asyncio.run_coroutine_threadsafe(
-                    self.admin_rights_manager.grant_main_admin_rights(*args, **kwargs),
-                    main_loop
-                )
-            elif operation_name == "grant_worker_rights":
-                future = asyncio.run_coroutine_threadsafe(
-                    self.admin_rights_manager.grant_worker_rights(*args, **kwargs),
-                    main_loop
-                )
-            elif operation_name == "revoke_worker_rights":
-                future = asyncio.run_coroutine_threadsafe(
-                    self.admin_rights_manager.revoke_worker_rights(*args, **kwargs),
-                    main_loop
-                )
-            elif operation_name == "revoke_main_admin_rights":
-                future = asyncio.run_coroutine_threadsafe(
-                    self.admin_rights_manager.revoke_main_admin_rights(*args, **kwargs),
-                    main_loop
-                )
-            else:
-                logger.error(f"❌ Неизвестная bot операция: {operation_name}")
-                return False
-
-            # Ждем результат с таймаутом
-            result = future.result(timeout=30)
-            return result
-
-        except Exception as e:
-            logger.error(f"❌ Ошибка выполнения bot операции {operation_name}: {e}")
-            return False
+    # УДАЛЕН МЕТОД _execute_bot_operation_in_main_loop - больше не нужен!
 
     def _load_admin_from_folder(self):
         """Загружает аккаунт главного админа из папки профиля/Админы"""
@@ -696,6 +709,7 @@ class AdminChatWorkerThread(threading.Thread):
 
         except Exception as e:
             logger.error(f"❌ Ошибка загрузки главного админа из папки: {e}")
+            logger.error(f"🔍 Трассировка: {traceback.format_exc()}")
             return None
 
     async def _work_with_workers(self):
@@ -729,9 +743,8 @@ class AdminChatWorkerThread(threading.Thread):
                 user_entity = await worker_account.client.get_entity('me')
                 user_id = user_entity.id
 
-                # Выдаем права воркеру
-                rights_granted = await self._execute_bot_operation_in_main_loop(
-                    "grant_worker_rights",
+                # ИЗМЕНЕНО: Выдаем права воркеру напрямую (без run_coroutine_threadsafe)
+                rights_granted = await self.admin_rights_manager.grant_worker_rights(
                     self.chat_link, user_id, worker_name
                 )
 
@@ -742,7 +755,7 @@ class AdminChatWorkerThread(threading.Thread):
                     # Работаем с воркером
                     await self._work_with_worker_account(worker_account, worker_name)
 
-                    # Забираем права у воркера
+                    # ИЗМЕНЕНО: Забираем права у воркера напрямую
                     await self.admin_rights_manager.revoke_worker_rights(
                         self.chat_link, user_id, worker_name
                     )
@@ -813,9 +826,10 @@ class AdminChatWorkerThread(threading.Thread):
     async def _cleanup_main_admin(self):
         """Финальная очистка - забираем права у главного админа"""
         try:
-            if self.main_admin_has_rights:
+            if self.main_admin_has_rights and self.admin_rights_manager:
                 logger.info(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] 🧹 Забираем права у главного админа")
 
+                # ИЗМЕНЕНО: Забираем права напрямую
                 await self.admin_rights_manager.revoke_main_admin_rights(self.chat_link)
 
                 logger.info(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ✅ Права главного админа отозваны")
@@ -834,6 +848,7 @@ class AdminChatWorkerThread(threading.Thread):
 
         except Exception as e:
             logger.error(f"[{self.profile_name}]-[AdminChat-{self.chat_link}] ❌ Ошибка очистки главного админа: {e}")
+            logger.error(f"🔍 Трассировка: {traceback.format_exc()}")
 
     async def _join_chat(self, account, chat_link: str):
         """Заходит в чат (ВАША ВЕРСИЯ)"""
