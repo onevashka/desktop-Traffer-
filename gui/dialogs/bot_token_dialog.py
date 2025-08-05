@@ -1,10 +1,11 @@
-# gui/dialogs/bot_token_dialog.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
+# gui/dialogs/bot_token_dialog.py - ИСПРАВЛЕННАЯ ВЕРСИЯ С ЦЕНТРИРОВАНИЕМ
 
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QTextEdit, QLineEdit, QFrame, QSpacerItem, QSizePolicy
+    QTextEdit, QLineEdit, QFrame, QSpacerItem, QSizePolicy, QApplication, QWidget
 )
 from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QScreen
 from loguru import logger
 from pathlib import Path
 from typing import List, Optional
@@ -26,28 +27,42 @@ class BotTokenDialog(QDialog):
         self.setFixedSize(600, 400)
 
         self._init_ui()
+        # ИСПРАВЛЕНО: Центрируем как в базе пользователей
         QTimer.singleShot(0, self._center_on_parent)
 
     def _center_on_parent(self):
-        """Центрирует диалог относительно родителя"""
-        if self.parent():
-            parent_geo = self.parent().geometry()
-            x = parent_geo.x() + (parent_geo.width() - self.width()) // 2
-            y = parent_geo.y() + (parent_geo.height() - self.height()) // 2
-            self.move(x, y)
+        """Центрируем диалог над top-level окном родителя, или по центру экрана."""
+        # Если есть родитель, берём его top-level окно (чтобы geometry был валидным)
+        parent = self.parent()
+        if parent:
+            parent = parent.window()
+        # Вычисляем прямоугольник, над которым будем центрировать
+        if isinstance(parent, QWidget):
+            target_rect = parent.frameGeometry()
+        else:
+            target_rect = QApplication.primaryScreen().geometry()
+        # Центр этого прямоугольника
+        center_point = target_rect.center()
+        # Сдвигаем левый-верхний угол диалога так, чтобы его центр совпал с центром target
+        self.move(center_point.x() - self.width() // 2,
+                  center_point.y() - self.height() // 2)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._center_on_parent()
 
     def _init_ui(self):
         """Создает интерфейс диалога"""
         # Основной layout
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(30, 30, 30, 30)
+        main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(20)
 
         # Контейнер для контента
         self.content_container = QFrame()
         self.content_container.setObjectName("DialogContainer")
         content_layout = QVBoxLayout(self.content_container)
-        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setContentsMargins(30, 30, 30, 30)
         content_layout.setSpacing(20)
 
         # Заголовок с иконкой
@@ -328,7 +343,7 @@ class BotTokenDialog(QDialog):
 
 
 class BotTokensDialog(QDialog):
-    """НОВЫЙ: Диалог управления токенами ботов - как диалог базы пользователей"""
+    """НОВЫЙ: Диалог управления токенами ботов - в стиле диалога базы пользователей"""
 
     def __init__(self, parent=None, profile_name: str = ""):
         super().__init__(parent)
@@ -339,21 +354,35 @@ class BotTokensDialog(QDialog):
         self.setModal(True)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setFixedSize(1000, 800)
+        self.setFixedSize(1400, 1200)  # Размер как у базы пользователей
 
         # Загружаем существующие токены
         self._load_current_tokens()
         self._init_ui()
 
+        # ИСПРАВЛЕНО: Центрируем как в базе пользователей
         QTimer.singleShot(0, self._center_on_parent)
 
     def _center_on_parent(self):
-        """Центрирует диалог относительно родителя"""
-        if self.parent():
-            parent_geo = self.parent().geometry()
-            x = parent_geo.x() + (parent_geo.width() - self.width()) // 2
-            y = parent_geo.y() + (parent_geo.height() - self.height()) // 2
-            self.move(x, y)
+        """Центрируем диалог над top-level окном родителя, или по центру экрана."""
+        # Если есть родитель, берём его top-level окно (чтобы geometry был валидным)
+        parent = self.parent()
+        if parent:
+            parent = parent.window()
+        # Вычисляем прямоугольник, над которым будем центрировать
+        if isinstance(parent, QWidget):
+            target_rect = parent.frameGeometry()
+        else:
+            target_rect = QApplication.primaryScreen().geometry()
+        # Центр этого прямоугольника
+        center_point = target_rect.center()
+        # Сдвигаем левый-верхний угол диалога так, чтобы его центр совпал с центром target
+        self.move(center_point.x() - self.width() // 2,
+                  center_point.y() - self.height() // 2)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        self._center_on_parent()
 
     def _load_current_tokens(self):
         """Загружает текущие токены из файла"""
@@ -375,36 +404,19 @@ class BotTokensDialog(QDialog):
             self.current_tokens = []
 
     def _init_ui(self):
-        """Создает интерфейс диалога"""
-        # Основной layout
+        """Создает интерфейс диалога - полностью в стиле базы пользователей"""
+        # Основной контейнер
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(30, 30, 30, 30)
-        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(20, 20, 20, 20)
 
         # Контейнер для контента
         self.content_container = QFrame()
         self.content_container.setObjectName("DialogContainer")
         content_layout = QVBoxLayout(self.content_container)
-        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setContentsMargins(30, 30, 30, 30)
         content_layout.setSpacing(20)
 
         # Заголовок с иконкой
-        self._create_header(content_layout)
-
-        # Инструкция
-        self._create_instructions(content_layout)
-
-        # Текстовое поле для токенов
-        self._create_tokens_input(content_layout)
-
-        # Кнопки
-        self._create_buttons(content_layout)
-
-        main_layout.addWidget(self.content_container)
-        self._apply_styles()
-
-    def _create_header(self, layout):
-        """Создает заголовок диалога"""
         header_layout = QHBoxLayout()
         header_layout.setSpacing(15)
 
@@ -414,29 +426,23 @@ class BotTokensDialog(QDialog):
         icon_label.setFixedSize(48, 48)
         icon_label.setAlignment(Qt.AlignCenter)
 
-        # Заголовок и описание
-        text_layout = QVBoxLayout()
-
-        title_label = QLabel(f"Токены ботов для профиля: {self.profile_name}")
+        # Заголовок
+        title_label = QLabel(f"Токены ботов - {self.profile_name}")
         title_label.setObjectName("DialogTitle")
-
-        desc_label = QLabel(
-            f"Управление токенами Telegram ботов. Текущий файл: {self.profile_name}/bot_tokens.txt\n"
-            f"Найдено токенов: {len(self.current_tokens)}"
-        )
-        desc_label.setObjectName("DialogDescription")
-        desc_label.setWordWrap(True)
-
-        text_layout.addWidget(title_label)
-        text_layout.addWidget(desc_label)
+        title_label.setWordWrap(True)
 
         header_layout.addWidget(icon_label)
-        header_layout.addLayout(text_layout, 1)
+        header_layout.addWidget(title_label, 1)
 
-        layout.addLayout(header_layout)
+        # Описание
+        desc = QLabel(
+            f"Управление токенами Telegram ботов для профиля.\n"
+            f"Файл: {self.profile_name}/bot_tokens.txt | Найдено токенов: {len(self.current_tokens)}"
+        )
+        desc.setObjectName("DialogDescription")
+        desc.setWordWrap(True)
 
-    def _create_instructions(self, layout):
-        """Создает инструкцию"""
+        # Инструкция
         instructions_text = """
 🔧 Как получить токены ботов:
 
@@ -454,34 +460,44 @@ class BotTokensDialog(QDialog):
         instructions_widget.setMaximumHeight(140)
         instructions_widget.setObjectName("InstructionsText")
 
-        layout.addWidget(instructions_widget)
-
-    def _create_tokens_input(self, layout):
-        """Создает поле ввода токенов"""
-        # Заголовок поля
-        tokens_label = QLabel("Токены ботов (по одному на строку):")
-        tokens_label.setObjectName("StepLabel")
-        layout.addWidget(tokens_label)
-
-        # Поле ввода
+        # Текстовое поле для токенов
         self.tokens_text = QTextEdit()
         self.tokens_text.setObjectName("TokensTextEdit")
         self.tokens_text.setPlaceholderText(
-            "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz\n5678901234:DEFghiJKLmnoPQRstuvWXYZ\n...")
+            "1234567890:ABCdefGHIjklMNOpqrsTUVwxyz\n"
+            "5678901234:DEFghiJKLmnoPQRstuvWXYZ\n"
+            "9012345678:GHIjklMNOpqrsTUVwxyzABC\n"
+            "..."
+        )
         self.tokens_text.setPlainText('\n'.join(self.current_tokens))
         self.tokens_text.textChanged.connect(self._on_tokens_changed)
 
-        layout.addWidget(self.tokens_text)
+        # Информация
+        self.info_label = QLabel(f"💡 Токенов в поле: {len(self.current_tokens)}")
+        self.info_label.setObjectName("InfoLabel")
 
-        # Статус
+        # Статус валидации
         self.status_label = QLabel(f"Токенов в поле: {len(self.current_tokens)}")
         self.status_label.setObjectName("DialogDescription")
-        layout.addWidget(self.status_label)
 
-    def _create_buttons(self, layout):
+        # Кнопки
+        buttons_layout = self._create_buttons()
+
+        # Добавляем все элементы
+        content_layout.addLayout(header_layout)
+        content_layout.addWidget(desc)
+        content_layout.addWidget(instructions_widget)
+        content_layout.addWidget(QLabel("Токены ботов (по одному на строку):"))
+        content_layout.addWidget(self.tokens_text)
+        content_layout.addWidget(self.info_label)
+        content_layout.addWidget(self.status_label)
+        content_layout.addLayout(buttons_layout)
+
+        main_layout.addWidget(self.content_container)
+        self._apply_styles()
+
+    def _create_buttons(self):
         """Создает кнопки диалога"""
-        layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
-
         buttons_layout = QHBoxLayout()
         buttons_layout.setSpacing(12)
 
@@ -505,7 +521,7 @@ class BotTokensDialog(QDialog):
         buttons_layout.addWidget(cancel_btn)
         buttons_layout.addWidget(self.save_btn)
 
-        layout.addLayout(buttons_layout)
+        return buttons_layout
 
     def _on_tokens_changed(self):
         """Обработчик изменения текста токенов"""
@@ -579,7 +595,7 @@ class BotTokensDialog(QDialog):
             show_error("Ошибка сохранения", f"Не удалось сохранить токены: {e}")
 
     def _apply_styles(self):
-        """Применяет стили"""
+        """Применяет стили в стиле диалога базы пользователей"""
         self.setStyleSheet("""
             QDialog {
                 background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -610,13 +626,13 @@ class BotTokensDialog(QDialog):
                 font-size: 14px;
                 color: rgba(255, 255, 255, 0.7);
                 line-height: 1.4;
+                margin-bottom: 16px;
             }
 
-            QLabel#StepLabel {
-                font-size: 14px;
-                font-weight: 600;
-                color: rgba(255, 255, 255, 0.9);
-                margin: 8px 0 4px 0;
+            QLabel#InfoLabel {
+                font-size: 13px;
+                color: rgba(255, 255, 255, 0.6);
+                margin: 8px 0;
             }
 
             QTextEdit#InstructionsText {
@@ -629,18 +645,19 @@ class BotTokensDialog(QDialog):
             }
 
             QTextEdit#TokensTextEdit {
-                background: #111827;
-                border: 1px solid #374151;
+                background: rgba(17, 24, 39, 0.6);
+                border: 1px solid rgba(59, 130, 246, 0.2);
                 border-radius: 8px;
                 color: #FFFFFF;
                 font-size: 13px;
                 font-family: 'Consolas', 'Monaco', monospace;
                 padding: 12px;
-                min-height: 200px;
+                min-height: 300px;
             }
 
             QTextEdit#TokensTextEdit:focus {
                 border-color: #2563EB;
+                background: rgba(17, 24, 39, 0.8);
             }
 
             QPushButton#ClearButton {

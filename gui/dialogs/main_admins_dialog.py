@@ -1,4 +1,4 @@
-# gui/dialogs/main_admins_dialog.py
+# gui/dialogs/main_admins_dialog.py - ИСПРАВЛЕННАЯ ВЕРСИЯ
 """
 Диалог выбора главных админов для профиля инвайтера
 Заменяет bot_holders_dialog.py с новой логикой
@@ -574,7 +574,7 @@ class MainAdminsDialog(QDialog):
                 failed_accounts.append(account_name)
                 logger.error(f"❌ Не удалось снять {account_name} с должности")
 
-        # Обновляем AccountManager
+        # ИСПРАВЛЕНО: Обновляем AccountManager если он есть
         if success_count > 0:
             self._update_account_manager()
 
@@ -626,7 +626,7 @@ class MainAdminsDialog(QDialog):
                     failed_accounts.append(account_name)
                     logger.error(f"❌ Не удалось назначить {account_name} главным админом")
 
-            # Обновляем AccountManager
+            # ИСПРАВЛЕНО: Обновляем AccountManager если он есть
             if success_count > 0:
                 self._update_account_manager()
 
@@ -713,13 +713,27 @@ class MainAdminsDialog(QDialog):
             return False
 
     def _update_account_manager(self):
-        """Обновляет AccountManager после изменений"""
+        """ИСПРАВЛЕНО: Обновляет AccountManager после изменений"""
         try:
             from src.accounts.manager import _account_manager
 
             if _account_manager:
-                # Перезагружаем данные
-                _account_manager.reload_accounts()
+                # ИСПРАВЛЕНО: Используем scan_all_folders вместо reload_accounts
+                import asyncio
+
+                # Создаем новую задачу если нет активного цикла событий
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # Если цикл уже запущен, создаем задачу
+                        asyncio.create_task(_account_manager.scan_all_folders())
+                    else:
+                        # Если цикл не запущен, запускаем синхронно
+                        asyncio.run(_account_manager.scan_all_folders())
+                except RuntimeError:
+                    # Если нет цикла событий, создаем новый
+                    asyncio.run(_account_manager.scan_all_folders())
+
                 logger.info("🔄 AccountManager обновлен")
 
         except Exception as e:
