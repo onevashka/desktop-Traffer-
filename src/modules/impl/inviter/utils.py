@@ -210,6 +210,7 @@ def mark_account_as_finished(parent_process, account_name: str):
     try:
         finish_time = datetime.now()
         parent_process.account_finish_times[account_name] = finish_time
+        parent_process.finished_accounts.add(account_name)
         next_available = finish_time + timedelta(hours=24)
         logger.info(f"📌 [{parent_process.profile_name}] Аккаунт {account_name} помечен как отработанный")
         logger.info(f"   ⏰ Будет доступен: {next_available.strftime('%Y-%m-%d %H:%M:%S')}")
@@ -265,3 +266,82 @@ def release_worker_accounts(worker_accounts: List, module_name: str, account_man
 
     logger.info(f"🔓 Освобождено воркеров: {released_count} из {len(worker_accounts)}")
     return released_count
+
+
+# НОВАЯ ФУНКЦИЯ: Безопасное отключение аккаунта
+async def safe_disconnect_account(account, account_name: str, loop=None):
+    """Безопасно отключает аккаунт"""
+    try:
+        await account.disconnect()
+        logger.debug(f"🔌 Аккаунт {account_name} отключен")
+        return True
+    except Exception as e:
+        logger.warning(f"⚠️ Ошибка отключения аккаунта {account_name}: {e}")
+        return False
+
+
+# НОВАЯ ФУНКЦИЯ: Получение замещающего аккаунта
+def get_replacement_account(parent_process, module_name: str):
+    """Получает замещающий аккаунт для замены проблемного"""
+    try:
+        replacement_accounts = get_fresh_accounts(parent_process, module_name, 1)
+        if replacement_accounts:
+            return replacement_accounts[0]
+        return None
+    except Exception as e:
+        logger.error(f"❌ Ошибка получения замещающего аккаунта: {e}")
+        return None
+
+
+# НОВАЯ ФУНКЦИЯ: Обработка проблемного аккаунта с заменой
+async def handle_and_replace_account(parent_process, account_name: str, account_data, error: Exception,
+                                     module_name: str):
+    """
+    Обрабатывает проблемный аккаунт и возвращает замещающий
+
+    Returns:
+        tuple: (replacement_account, success)
+    """
+    try:
+        logger.error(f"🚨 [{parent_process.profile_name}] Обработка проблемного аккаунта: {account_name}")
+        logger.error(f"   Ошибка: {error}")
+
+        # 1. Определяем тип проблемы
+        problem_type = determine_account_problem(error)
+
+        # 2. Отключаем аккаунт если возможно
+        if account_data and hasattr(account_data, 'account'):
+            await safe_disconnect_account(account_data.account, account_name, parent_process.main_loop)
+
+        # 3. Освобождаем в менеджере
+        parent_process.account_manager.release_account(account_name, module_name)
+        logger.info(f"🔓 [{parent_process.profile_name}] Аккаунт {account_name} освобожден в менеджере")
+
+        # 4. Перемещаем файлы через AccountMover
+        success = parent_process.account_mover.move_account(account_name, problem_type)
+
+        if success:
+            logger.success(
+                f"✅ [{parent_process.profile_name}] Аккаунт {account_name} перемещен в папку '{problem_type}'")
+        else:
+            logger.error(f"❌ [{parent_process.profile_name}] Не удалось переместить аккаунт {account_name}")
+
+        # 5. Добавляем в соответствующие списки
+        if problem_type == 'frozen':
+            parent_process.frozen_accounts.add(account_name)
+        else:
+            parent_process.blocked_accounts.add(account_name)
+
+        # 6. КЛЮЧЕВОЕ: Получаем замещающий аккаунт
+        replacement_account = get_replacement_account(parent_process, module_name)
+
+        if replacement_account:
+            logger.success(f"🔄 [{parent_process.profile_name}] Получен замещающий аккаунт: {replacement_account.name}")
+            return replacement_account, True
+        else:
+            logger.warning(f"⚠️ [{parent_process.profile_name}] Нет доступных замещающих аккаунтов")
+            return None, True  # Успешно обработали, но замены нет
+
+    except Exception as e:
+        logger.error(f"❌ [{parent_process.profile_name}] Критическая ошибка обработки аккаунта {account_name}: {e}")
+        return None, False

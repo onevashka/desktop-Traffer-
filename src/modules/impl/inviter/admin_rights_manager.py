@@ -1,7 +1,8 @@
 # src/modules/impl/inviter/admin_rights_manager.py
 """
-Менеджер управления правами администраторов
-Отслеживает кто получил права, управляет выдачей/отзывом прав
+ИСПРАВЛЕННЫЙ Менеджер управления правами администраторов
+Бот только выдает/забирает права главному админу
+Главный админ сам управляет правами воркеров
 """
 
 import asyncio
@@ -11,18 +12,18 @@ from loguru import logger
 
 from .bot_manager import BotManager
 
+# Импорты Telethon для прямого управления правами
+from telethon.tl.functions.channels import EditAdminRequest
+from telethon.tl.types import ChatAdminRights
+
 
 class AdminRightsManager:
-    """Менеджер управления правами администраторов в чатах"""
+    """ИСПРАВЛЕННЫЙ менеджер - только для главного админа, воркеры управляются напрямую"""
 
     def __init__(self, bot_manager: BotManager):
         self.bot_manager = bot_manager
 
-        # Отслеживаем права по чатам
-        # Format: {chat_link: {user_id: {'granted_at': datetime, 'account_name': str}}}
-        self.granted_rights: Dict[str, Dict[int, Dict]] = {}
-
-        # Главные админы по чатам
+        # Отслеживаем только главных админов
         # Format: {chat_link: {'user_id': int, 'account_name': str, 'granted_at': datetime}}
         self.main_admins: Dict[str, Dict] = {}
 
@@ -37,19 +38,19 @@ class AdminRightsManager:
 
     async def grant_main_admin_rights(self, chat_link: str, user_id: int, account_name: str) -> bool:
         """
-        Выдает права главного админа
+        ТОЛЬКО выдает права главному админу через бота
 
         Args:
             chat_link: Ссылка на чат
-            user_id: ID пользователя
-            account_name: Имя аккаунта
+            user_id: ID главного админа
+            account_name: Имя аккаунта главного админа
 
         Returns:
             bool: True если права выданы успешно
         """
         async with self._get_lock(chat_link):
             try:
-                logger.info(f"👑 Выдача прав главного админа: {account_name} (ID: {user_id}) в {chat_link}")
+                logger.info(f"👑 Выдача прав главного админа через БОТА: {account_name} (ID: {user_id}) в {chat_link}")
 
                 # Проверяем, что бот сам является админом
                 if not await self.bot_manager.check_bot_admin_status(chat_link):
@@ -67,109 +68,19 @@ class AdminRightsManager:
                         'granted_at': datetime.now()
                     }
 
-                    # Также добавляем в общий список прав
-                    if chat_link not in self.granted_rights:
-                        self.granted_rights[chat_link] = {}
-
-                    self.granted_rights[chat_link][user_id] = {
-                        'granted_at': datetime.now(),
-                        'account_name': account_name,
-                        'is_main_admin': True
-                    }
-
-                    logger.info(f"✅ Главный админ {account_name} получил права в {chat_link}")
+                    logger.success(f"✅ Главный админ {account_name} получил права в {chat_link} через БОТА")
                     return True
                 else:
-                    logger.error(f"❌ Не удалось выдать права главному админу {account_name}")
+                    logger.error(f"❌ Не удалось выдать права главному админу {account_name} через бота")
                     return False
 
             except Exception as e:
                 logger.error(f"❌ Ошибка выдачи прав главному админу {account_name}: {e}")
                 return False
 
-    async def grant_worker_rights(self, chat_link: str, user_id: int, account_name: str) -> bool:
-        """
-        Выдает права воркеру (через главного админа)
-
-        Args:
-            chat_link: Ссылка на чат
-            user_id: ID пользователя-воркера
-            account_name: Имя аккаунта-воркера
-
-        Returns:
-            bool: True если права выданы успешно
-        """
-        async with self._get_lock(chat_link):
-            try:
-                logger.info(f"👷 Выдача прав воркеру: {account_name} (ID: {user_id}) в {chat_link}")
-
-                # Проверяем, что есть главный админ в этом чате
-                main_admin = self.main_admins.get(chat_link)
-                if not main_admin:
-                    logger.error(f"❌ Нет главного админа в чате {chat_link}")
-                    return False
-
-                # Выдаем права через бота (у главного админа уже есть права на это)
-                success = await self.bot_manager.grant_admin_rights(chat_link, user_id)
-
-                if success:
-                    # Сохраняем информацию о воркере
-                    if chat_link not in self.granted_rights:
-                        self.granted_rights[chat_link] = {}
-
-                    self.granted_rights[chat_link][user_id] = {
-                        'granted_at': datetime.now(),
-                        'account_name': account_name,
-                        'is_main_admin': False
-                    }
-
-                    logger.info(f"✅ Воркер {account_name} получил права в {chat_link}")
-                    return True
-                else:
-                    logger.error(f"❌ Не удалось выдать права воркеру {account_name}")
-                    return False
-
-            except Exception as e:
-                logger.error(f"❌ Ошибка выдачи прав воркеру {account_name}: {e}")
-                return False
-
-    async def revoke_worker_rights(self, chat_link: str, user_id: int, account_name: str) -> bool:
-        """
-        Забирает права у воркера
-
-        Args:
-            chat_link: Ссылка на чат
-            user_id: ID пользователя-воркера
-            account_name: Имя аккаунта-воркера
-
-        Returns:
-            bool: True если права забраны успешно
-        """
-        async with self._get_lock(chat_link):
-            try:
-                logger.info(f"🔒 Отзыв прав у воркера: {account_name} (ID: {user_id}) в {chat_link}")
-
-                # Забираем права через бота
-                success = await self.bot_manager.revoke_admin_rights(chat_link, user_id)
-
-                if success:
-                    # Удаляем из отслеживания
-                    if chat_link in self.granted_rights and user_id in self.granted_rights[chat_link]:
-                        del self.granted_rights[chat_link][user_id]
-
-                    logger.info(f"✅ Права отозваны у воркера {account_name} в {chat_link}")
-                    return True
-                else:
-                    logger.warning(f"⚠️ Не удалось отозвать права у воркера {account_name}")
-                    return False
-
-            except Exception as e:
-                logger.error(f"❌ Ошибка отзыва прав у воркера {account_name}: {e}")
-                return False
-
     async def revoke_main_admin_rights(self, chat_link: str) -> bool:
         """
-        Забирает права у главного админа
+        ТОЛЬКО забирает права у главного админа через бота
 
         Args:
             chat_link: Ссылка на чат
@@ -187,74 +98,23 @@ class AdminRightsManager:
                 user_id = main_admin['user_id']
                 account_name = main_admin['account_name']
 
-                logger.info(f"👑🔒 Отзыв прав у главного админа: {account_name} (ID: {user_id}) в {chat_link}")
+                logger.info(f"👑🔒 Отзыв прав у главного админа через БОТА: {account_name} (ID: {user_id}) в {chat_link}")
 
                 # Забираем права через бота
                 success = await self.bot_manager.revoke_admin_rights(chat_link, user_id)
 
                 if success:
                     # Удаляем из отслеживания
-                    if chat_link in self.main_admins:
-                        del self.main_admins[chat_link]
-
-                    if chat_link in self.granted_rights and user_id in self.granted_rights[chat_link]:
-                        del self.granted_rights[chat_link][user_id]
-
-                    logger.info(f"✅ Права отозваны у главного админа {account_name} в {chat_link}")
+                    del self.main_admins[chat_link]
+                    logger.success(f"✅ Права отозваны у главного админа {account_name} в {chat_link} через БОТА")
                     return True
                 else:
-                    logger.warning(f"⚠️ Не удалось отозвать права у главного админа {account_name}")
+                    logger.warning(f"⚠️ Не удалось отозвать права у главного админа {account_name} через бота")
                     return False
 
             except Exception as e:
                 logger.error(f"❌ Ошибка отзыва прав у главного админа в {chat_link}: {e}")
                 return False
-
-    async def cleanup_chat_rights(self, chat_link: str) -> bool:
-        """
-        Очищает все права в чате (воркеры + главный админ)
-
-        Args:
-            chat_link: Ссылка на чат
-
-        Returns:
-            bool: True если очистка прошла успешно
-        """
-        async with self._get_lock(chat_link):
-            try:
-                logger.info(f"🧹 Очистка всех прав в чате {chat_link}")
-
-                success_count = 0
-                total_count = 0
-
-                # Забираем права у всех воркеров
-                chat_rights = self.granted_rights.get(chat_link, {})
-                for user_id, user_info in chat_rights.copy().items():
-                    if not user_info.get('is_main_admin', False):
-                        total_count += 1
-                        if await self.revoke_worker_rights(chat_link, user_id, user_info['account_name']):
-                            success_count += 1
-
-                # Забираем права у главного админа
-                if chat_link in self.main_admins:
-                    total_count += 1
-                    if await self.revoke_main_admin_rights(chat_link):
-                        success_count += 1
-
-                # Очищаем все записи для этого чата
-                if chat_link in self.granted_rights:
-                    del self.granted_rights[chat_link]
-
-                logger.info(f"✅ Очистка прав завершена для {chat_link}: {success_count}/{total_count} успешно")
-                return success_count == total_count
-
-            except Exception as e:
-                logger.error(f"❌ Ошибка очистки прав в чате {chat_link}: {e}")
-                return False
-
-    def get_chat_admins(self, chat_link: str) -> Dict[int, Dict]:
-        """Возвращает всех админов в указанном чате"""
-        return self.granted_rights.get(chat_link, {})
 
     def get_main_admin(self, chat_link: str) -> Optional[Dict]:
         """Возвращает информацию о главном админе в чате"""
@@ -264,22 +124,100 @@ class AdminRightsManager:
         """Проверяет, активен ли главный админ в чате"""
         return chat_link in self.main_admins
 
-    def get_worker_count(self, chat_link: str) -> int:
-        """Возвращает количество воркеров с правами в чате"""
-        chat_rights = self.granted_rights.get(chat_link, {})
-        return len([u for u in chat_rights.values() if not u.get('is_main_admin', False)])
-
     def get_stats(self) -> Dict:
         """Возвращает статистику по правам"""
-        total_chats = len(self.granted_rights)
-        total_admins = sum(len(rights) for rights in self.granted_rights.values())
-        total_main_admins = len(self.main_admins)
-        total_workers = total_admins - total_main_admins
-
         return {
-            'total_chats_with_rights': total_chats,
-            'total_admins': total_admins,
-            'main_admins': total_main_admins,
-            'workers': total_workers,
-            'active_main_admins': len(self.main_admins)
+            'main_admins_count': len(self.main_admins),
+            'active_chats': len(self.main_admins)
         }
+
+
+# НОВЫЕ ФУНКЦИИ: Прямое управление правами воркеров через главного админа
+async def grant_worker_rights_directly(main_admin_client, chat_entity, worker_user_id: int, worker_name: str) -> bool:
+    """
+    Выдает права воркеру напрямую через главного админа (не через бота!)
+
+    Args:
+        main_admin_client: Клиент главного админа (Telethon)
+        chat_entity: Entity чата
+        worker_user_id: ID воркера
+        worker_name: Имя воркера для логов
+
+    Returns:
+        bool: True если права выданы
+    """
+    try:
+        logger.info(f"👷 Главный админ выдает права воркеру {worker_name} (ID: {worker_user_id})")
+
+        # Права для воркера (ограниченные - только инвайт пользователей)
+        worker_rights = ChatAdminRights(
+            invite_users=True,  # Основное право - инвайт пользователей
+            add_admins=False,  # НЕ может назначать админов
+            ban_users=False,  # НЕ может банить
+            delete_messages=False,  # НЕ может удалять сообщения
+            edit_messages=False,  # НЕ может редактировать
+            post_messages=False,  # НЕ может постить
+            pin_messages=False,  # НЕ может закреплять
+            manage_call=False,  # НЕ может управлять звонками
+            other=False  # Прочие права отключены
+        )
+
+        # Выдаем права через главного админа
+        await main_admin_client(EditAdminRequest(
+            channel=chat_entity,
+            user_id=worker_user_id,
+            admin_rights=worker_rights,
+            rank="Worker"  # Звание воркера
+        ))
+
+        logger.success(f"✅ Главный админ выдал права воркеру {worker_name}")
+        return True
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка выдачи прав воркеру {worker_name} главным админом: {e}")
+        return False
+
+
+async def revoke_worker_rights_directly(main_admin_client, chat_entity, worker_user_id: int, worker_name: str) -> bool:
+    """
+    Забирает права у воркера напрямую через главного админа
+
+    Args:
+        main_admin_client: Клиент главного админа (Telethon)
+        chat_entity: Entity чата
+        worker_user_id: ID воркера
+        worker_name: Имя воркера для логов
+
+    Returns:
+        bool: True если права забраны
+    """
+    try:
+        logger.info(f"🔒 Главный админ забирает права у воркера {worker_name} (ID: {worker_user_id})")
+
+        # Убираем все права (ChatAdminRights с False по всем полям)
+        no_rights = ChatAdminRights(
+            invite_users=False,
+            add_admins=False,
+            ban_users=False,
+            delete_messages=False,
+            edit_messages=False,
+            post_messages=False,
+            pin_messages=False,
+            manage_call=False,
+            other=False
+        )
+
+        # Забираем права через главного админа
+        await main_admin_client(EditAdminRequest(
+            channel=chat_entity,
+            user_id=worker_user_id,
+            admin_rights=no_rights,
+            rank=""  # Убираем звание
+        ))
+
+        logger.success(f"✅ Главный админ забрал права у воркера {worker_name}")
+        return True
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка отзыва прав у воркера {worker_name} главным админом: {e}")
+        return False
