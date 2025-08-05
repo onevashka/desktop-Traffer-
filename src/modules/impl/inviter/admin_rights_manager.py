@@ -133,7 +133,7 @@ class AdminRightsManager:
 
 
 # НОВЫЕ ФУНКЦИИ: Прямое управление правами воркеров через главного админа
-async def grant_worker_rights_directly(main_admin_client, chat_entity, worker_user_id: int, worker_name: str) -> bool:
+async def grant_worker_rights_directly(main_admin_client, chat_entity, worker_user_id: int, worker_user_access_hash, worker_name: str) -> bool:
     """
     Выдает права воркеру напрямую через главного админа (не через бота!)
 
@@ -148,6 +148,19 @@ async def grant_worker_rights_directly(main_admin_client, chat_entity, worker_us
     """
     try:
         logger.info(f"👷 Главный админ выдает права воркеру {worker_name} (ID: {worker_user_id})")
+
+        from telethon.tl.types import InputChannel, InputUser, ChatAdminRights
+        from telethon.tl.functions.channels import EditAdminRequest
+
+        input_channel = InputChannel(
+            channel_id=chat_entity.id,
+            access_hash=chat_entity.access_hash
+        )
+
+        input_user = InputUser(
+            user_id=worker_user_id,
+            access_hash=worker_user_access_hash
+        )
 
         # Права для воркера (ограниченные - только инвайт пользователей)
         worker_rights = ChatAdminRights(
@@ -164,8 +177,8 @@ async def grant_worker_rights_directly(main_admin_client, chat_entity, worker_us
 
         # Выдаем права через главного админа
         await main_admin_client(EditAdminRequest(
-            channel=chat_entity,
-            user_id=worker_user_id,
+            channel=input_channel,
+            user_id=input_user,
             admin_rights=worker_rights,
             rank="Worker"  # Звание воркера
         ))
@@ -194,6 +207,8 @@ async def revoke_worker_rights_directly(main_admin_client, chat_entity, worker_u
     try:
         logger.info(f"🔒 Главный админ забирает права у воркера {worker_name} (ID: {worker_user_id})")
 
+        input_user = await main_admin_client.get_input_entity(worker_user_id)
+
         # Убираем все права (ChatAdminRights с False по всем полям)
         no_rights = ChatAdminRights(
             invite_users=False,
@@ -210,7 +225,7 @@ async def revoke_worker_rights_directly(main_admin_client, chat_entity, worker_u
         # Забираем права через главного админа
         await main_admin_client(EditAdminRequest(
             channel=chat_entity,
-            user_id=worker_user_id,
+            user_id=input_user,
             admin_rights=no_rights,
             rank=""  # Убираем звание
         ))

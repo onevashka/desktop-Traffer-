@@ -179,13 +179,16 @@ class Account:
             error_text = str(e)
 
             # Анализируем различные типы ошибок
-            if "No user has" in error_text or "FROZEN_METHOD_INVALID" in error_text:
-                logger.error(f"[{self.name}] Аккаунт заморожен")
+            if "FROZEN_METHOD_INVALID" in error_text:
                 return "FROZEN_ACCOUNT"
 
             elif "Nobody is using this username" in error_text or "username is unacceptable" in error_text:
                 logger.error(f"[{self.name}] Чат не существует или неверная ссылка: {link}")
                 return "CHAT_NOT_FOUND"
+
+            elif "No user has" in error_text:
+                logger.warning(f"[{self.name}] Данный чат не найден {link}")
+                return "USER_NOT_FOUND"
 
             elif "successfully requested to join" in error_text:
                 logger.warning(f"[{self.name}] Отправлен запрос на вступление в {link}")
