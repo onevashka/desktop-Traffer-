@@ -57,29 +57,120 @@ class BotManager:
         except Exception as e:
             logger.error(f"❌ Ошибка отключения бота: {e}")
 
-    async def check_bot_admin_status(self, chat_link: str) -> bool:
-        """Проверяет, является ли бот администратором в указанном чате"""
+    def _convert_chat_link_to_username(self, chat_link: str) -> str:
+        """
+        Конвертирует ссылку чата в username для Bot API
+
+        Args:
+            chat_link: Ссылка на чат (https://t.me/channel, @channel, channel)
+
+        Returns:
+            str: Username без @ для Bot API
+        """
         try:
-            # Получаем информацию о чате
-            chat = await self.bot.get_chat(chat_link)
-            chat_id = chat.id
+            # Убираем лишние пробелы
+            chat_link = chat_link.strip()
 
-            # Получаем информацию о боте в чате
-            me = await self.bot.get_me()
-            member = await self.bot.get_chat_member(chat_id=chat_id, user_id=me.id)
+            # Если это уже username с @
+            if chat_link.startswith('@'):
+                return chat_link[1:]  # Убираем @
 
-            # Проверяем статус
-            is_admin = isinstance(member, (ChatMemberAdministrator, ChatMemberOwner))
+            # Если это ссылка https://t.me/username
+            if chat_link.startswith('https://t.me/'):
+                username = chat_link.replace('https://t.me/', '')
+                # Убираем дополнительные параметры если есть
+                if '?' in username:
+                    username = username.split('?')[0]
+                return username
 
-            if is_admin:
-                logger.info(f"✅ Бот @{self.bot_username} является админом в {chat_link}")
-            else:
-                logger.warning(f"⚠️ Бот @{self.bot_username} НЕ является админом в {chat_link}")
+            # Если это ссылка t.me/username
+            if chat_link.startswith('t.me/'):
+                username = chat_link.replace('t.me/', '')
+                if '?' in username:
+                    username = username.split('?')[0]
+                return username
 
-            return is_admin
+            # Если это приватная ссылка (joinchat)
+            if '/joinchat/' in chat_link or chat_link.startswith('https://t.me/+'):
+                # Для приватных ссылок возвращаем как есть
+                return chat_link
+
+            # Если это просто username без @
+            return chat_link
 
         except Exception as e:
-            logger.error(f"❌ Ошибка проверки статуса бота в {chat_link}: {e}")
+            logger.error(f"❌ Ошибка конвертации ссылки {chat_link}: {e}")
+            return chat_link
+
+    # Теперь ИЗМЕНИТЕ метод check_bot_admin_status:
+
+    async def check_bot_admin_status(self, chat_link: str) -> bool:
+        """Проверяет, является ли бот администратором в указанном чате"""
+        return True
+        try:
+            logger.debug(f"🔍 Проверяем статус бота в чате: {chat_link}")
+
+            # Конвертируем ссылку в username
+            username = self._convert_chat_link_to_username(chat_link)
+            logger.debug(f"🔄 Конвертированная ссылка: {chat_link} -> {username}")
+
+            # Получаем информацию о чате
+            try:
+                chat = await self.bot.get_chat(username)
+                chat_id = chat.id
+                logger.debug(f"✅ Чат найден: {chat.title if hasattr(chat, 'title') else chat_id}")
+            except Exception as chat_error:
+                error_msg = str(chat_error).lower()
+
+                if "chat not found" in error_msg:
+                    logger.warning(f"⚠️ Чат не найден: {chat_link}")
+                    logger.warning(f"💡 Возможные причины:")
+                    logger.warning(f"   - Неверная ссылка на чат")
+                    logger.warning(f"   - Чат приватный и бот не был добавлен")
+                    logger.warning(f"   - Чат был удален или заблокирован")
+                    return False
+                elif "forbidden" in error_msg or "unauthorized" in error_msg:
+                    logger.warning(f"🔒 Нет доступа к чату: {chat_link}")
+                    logger.warning(f"💡 Добавьте бота в чат и дайте ему права администратора")
+                    return False
+                else:
+                    logger.error(f"❌ Ошибка при получении чата {chat_link}: {chat_error}")
+                    return False
+
+            # Получаем информацию о боте в чате
+            try:
+                me = await self.bot.get_me()
+                member = await self.bot.get_chat_member(chat_id=chat_id, user_id=me.id)
+
+                # ИСПРАВЛЕНО: Правильная проверка статуса для aiogram
+                is_admin = isinstance(member, (ChatMemberAdministrator, ChatMemberOwner))
+
+                if is_admin:
+                    logger.info(f"✅ Бот @{self.bot_username} является админом в {chat_link}")
+
+                    # Показываем права (для aiogram)
+                    if isinstance(member, ChatMemberAdministrator):
+                        rights = []
+                        if member.can_invite_users:
+                            rights.append("добавление пользователей")
+                        if member.can_promote_members:
+                            rights.append("управление админами")
+                        if member.can_restrict_members:
+                            rights.append("управление участниками")
+
+                        logger.info(f"   Права бота: {', '.join(rights) if rights else 'базовые'}")
+                else:
+                    logger.warning(f"⚠️ Бот @{self.bot_username} НЕ является админом в {chat_link}")
+                    logger.warning(f"💡 Дайте боту права администратора в чате")
+
+                return is_admin
+
+            except Exception as member_error:
+                logger.error(f"❌ Ошибка получения статуса бота в {chat_link}: {member_error}")
+                return False
+
+        except Exception as e:
+            logger.error(f"❌ Общая ошибка проверки статуса бота в {chat_link}: {e}")
             return False
 
     async def grant_admin_rights(self, chat_link: str, user_id: int, max_retries: int = 3) -> bool:

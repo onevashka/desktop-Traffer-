@@ -45,17 +45,26 @@ class InviterDataLoader:
         return config
 
     def _load_bot_token(self) -> str:
-        """Загружает токен бота из файла"""
+        """Загружает токен бота из файла (ТОЛЬКО ИЗ ФАЙЛОВ, НЕ ИЗ КОНФИГА!)"""
         try:
-            # Проверяем bot_token.txt
+            # 1. Сначала пробуем bot_tokens.txt (множественный)
+            tokens_file = self.profile_folder / "bot_tokens.txt"
+            if tokens_file.exists():
+                content = tokens_file.read_text(encoding='utf-8').strip()
+                tokens = [line.strip() for line in content.split('\n') if line.strip()]
+                if tokens:
+                    logger.debug("🤖 Токен бота загружен из bot_tokens.txt")
+                    return tokens[0]  # Возвращаем первый токен
+
+            # 2. Пробуем bot_token.txt (legacy формат)
             token_file = self.profile_folder / "bot_token.txt"
             if token_file.exists():
                 token = token_file.read_text(encoding='utf-8').strip()
                 if token:
-                    logger.debug("🤖 Токен бота загружен из файла")
+                    logger.debug("🤖 Токен бота загружен из bot_token.txt")
                     return token
 
-            logger.debug("⚠️ Файл токена бота не найден")
+            logger.debug("⚠️ Токен бота не найден ни в одном файле")
             return ""
 
         except Exception as e:
@@ -203,7 +212,7 @@ class InviterDataLoader:
         """Сохраняет прогресс обработки пользователей"""
         try:
             users_file = self.profile_folder / "База юзеров.txt"
-            backup_file = self.profile_folder / f"База юзеров_backup_{int(datetime.now().timestamp())}.txt"
+            backup_file = self.profile_folder / f"База юзеров_backup_{int(datetime.datetime.now().timestamp())}.txt"
 
             # Делаем бэкап
             if users_file.exists():

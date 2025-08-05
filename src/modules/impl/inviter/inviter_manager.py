@@ -478,18 +478,19 @@ class InviterModuleManager:
             config = profile.get('config', {})
             profile_folder = Path(profile['folder_path'])
 
-            # Проверяем токен бота
-            bot_token = config.get('bot_token', '')
-            if not bot_token:
-                # Пытаемся загрузить из файла
-                from .data_loader import InviterDataLoader
-                loader = InviterDataLoader(profile_folder)
-                bot_token = loader._load_bot_token()
+            # ВАЖНО: Проверяем токен бота ТОЛЬКО ИЗ ФАЙЛА (не из конфига!)
+            from .data_loader import InviterDataLoader
+            loader = InviterDataLoader(profile_folder)
+            bot_token = loader._load_bot_token()
 
             if not bot_token:
                 errors.append("Не указан токен бота")
+                logger.warning(f"⚠️ Токен бота не найден в файлах профиля {profile['name']}")
             elif ':' not in bot_token:
                 errors.append("Неверный формат токена бота")
+                logger.warning(f"⚠️ Неверный формат токена бота в профиле {profile['name']}")
+            else:
+                logger.info(f"✅ Токен бота успешно загружен из файла для {profile['name']}")
 
             # ПРОСТАЯ ЛОГИКА: Ищем главного админа в папке Админы
             admins_folder = profile_folder / "Админы"
@@ -517,11 +518,16 @@ class InviterModuleManager:
 
         except Exception as e:
             errors.append(f"Ошибка валидации: {str(e)}")
+            logger.error(f"❌ Ошибка валидации админ-профиля: {e}")
 
         if errors:
-            return {'valid': False, 'message': '; '.join(errors)}
+            error_msg = '; '.join(errors)
+            logger.error(f"❌ Админ-профиль не готов: {error_msg}")
+            return {'valid': False, 'message': error_msg}
 
-        return {'valid': True, 'message': f'Админ-профиль готов. Главный админ: {main_admin_found}'}
+        success_msg = f'Админ-профиль готов. Главный админ: {main_admin_found}, токен: {bot_token}'
+        logger.info(f"✅ {success_msg}")
+        return {'valid': True, 'message': success_msg}
 
     def _validate_profile_for_start(self, profile_data: Dict) -> Dict[str, any]:
         """Валидирует профиль перед запуском"""
