@@ -20,7 +20,7 @@ from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, Signal
 
 from PySide6.QtGui import QFont, QColor
 from loguru import logger
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 
 class InviterProfileRow(QWidget):
@@ -932,7 +932,7 @@ class InviterProfileRow(QWidget):
             if not progress_data or not progress_data.get('is_running', False):
                 # Процесс завершен
                 if self.is_running:
-                    logger.info(f"🏁 Процесс {self.profile_name} завершен, обновляем UI")
+                    logger.debug(f"🏁 Процесс {self.profile_name} завершен, обновляем UI")
 
                     # Определяем причину остановки
                     if self.saved_progress.get('success', 0) >= self.saved_progress.get('total_goal', 1):
@@ -966,13 +966,55 @@ class InviterProfileRow(QWidget):
         """Удаляет профиль"""
         self.profile_deleted.emit(self.profile_name)
 
+    def _load_actual_users_from_file(self) -> List[str]:
+        """НОВЫЙ МЕТОД: Загружает актуальные данные пользователей из файла"""
+        try:
+            from src.modules.impl.inviter import get_profile_users_from_file
+
+            actual_users = get_profile_users_from_file(self.profile_name)
+
+            if actual_users is not None:
+                logger.debug(
+                    f"📁 Загружено из файла {self.profile_name}/База юзеров.txt: {len(actual_users)} пользователей")
+                return actual_users
+            else:
+                logger.warning(f"⚠️ Файл пользователей не найден для {self.profile_name}, используем данные из памяти")
+                return getattr(self, 'users_list', [])
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка загрузки пользователей из файла для {self.profile_name}: {e}")
+            return getattr(self, 'users_list', [])
+
+    def _load_actual_chats_from_file(self) -> List[str]:
+        """НОВЫЙ МЕТОД: Загружает актуальные данные чатов из файла"""
+        try:
+            from src.modules.impl.inviter import get_profile_chats_from_file
+
+            actual_chats = get_profile_chats_from_file(self.profile_name)
+
+            if actual_chats is not None:
+                logger.debug(f"📁 Загружено из файла {self.profile_name}/База чатов.txt: {len(actual_chats)} чатов")
+                return actual_chats
+            else:
+                logger.warning(f"⚠️ Файл чатов не найден для {self.profile_name}, используем данные из памяти")
+                return getattr(self, 'chats_list', [])
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка загрузки чатов из файла для {self.profile_name}: {e}")
+            return getattr(self, 'chats_list', [])
+
     def _on_users_settings(self):
         """Настройка базы пользователей"""
         try:
             logger.info(f"🔧 Открываем настройки пользователей для профиля: {self.profile_name}")
 
-            current_users = getattr(self, 'users_list', [])
-            users = show_users_base_dialog(self, current_users)
+            # ИСПРАВЛЕНИЕ: Загружаем АКТУАЛЬНЫЕ данные из файла, а не из памяти
+            actual_users = self._load_actual_users_from_file()
+
+            logger.info(f"📥 Загружено актуальных пользователей из файла: {len(actual_users)}")
+
+            # Показываем диалог с АКТУАЛЬНЫМИ данными и именем профиля
+            users = show_users_base_dialog(self, actual_users, self.profile_name)
 
             if users is not None:
                 logger.info(f"📥 Получено пользователей из диалога: {len(users)}")

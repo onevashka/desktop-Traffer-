@@ -4,7 +4,7 @@ from typing import Dict, Any
 
 
 def load_json_data(json_path: Path) -> Dict[str, Any]:
-    with open(json_path) as json_file:
+    with open(json_path, 'r', encoding='utf-8') as json_file:
         data = json.load(json_file)
         return data
 

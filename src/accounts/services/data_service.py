@@ -134,7 +134,6 @@ class DataService:
             AccountData или None если не найден
         """
         if category == "traffic":
-            print(self.traffic_accounts)
             return self.traffic_accounts.get(name)
         elif category == "sales":
             return self.sales_accounts.get(name)

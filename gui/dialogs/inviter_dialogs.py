@@ -22,15 +22,17 @@ from gui.dialogs.bot_token_dialog import show_bot_token_dialog, load_bot_token_f
 class UsersBaseDialog(QDialog):
     """Диалог настройки базы пользователей"""
 
-    def __init__(self, parent=None, current_users: List[str] = None):
+    def __init__(self, parent=None, current_users: List[str] = None, profile_name: str = None):
         super().__init__(parent)
         self.current_users = current_users or []
+        self.setWindowTitle("База пользователей")
         self.setWindowTitle("База пользователей")
         self.setModal(True)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Dialog)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setFixedSize(1400, 1200)
         self.init_ui()
+        self.profile_name = profile_name
         QTimer.singleShot(0, self._center_on_parent)
 
 
@@ -251,7 +253,7 @@ class UsersBaseDialog(QDialog):
 class ChatsBaseDialog(QDialog):
     """Диалог настройки базы чатов"""
 
-    def __init__(self, parent=None, current_chats: List[str] = None):
+    def __init__(self, parent=None, current_chats: List[str] = None, profile_name: str = None):
         super().__init__(parent)
         self.current_chats = current_chats or []
         self.setWindowTitle("База чатов")
@@ -260,6 +262,7 @@ class ChatsBaseDialog(QDialog):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setFixedSize(1400, 1200)
         self.init_ui()
+        self.profile_name = profile_name
         QTimer.singleShot(0, self._center_on_parent)
 
     def init_ui(self):
@@ -1182,21 +1185,19 @@ class CreateProfileDialog(QDialog):
 
 
 # Удобные функции для показа диалогов
-def show_users_base_dialog(parent, current_users: List[str] = None) -> List[str]:
-    """Показывает диалог настройки базы пользователей"""
-    dialog = UsersBaseDialog(parent, current_users)
+def show_users_base_dialog(parent, current_users: List[str] = None, profile_name: str = None) -> List[str]:
+    """Показывает диалог настройки базы пользователей с информацией о файле"""
+    dialog = UsersBaseDialog(parent, current_users, profile_name)
     if dialog.exec() == QDialog.Accepted:
         return dialog.get_users()
     return current_users or []
 
-
-def show_chats_base_dialog(parent, current_chats: List[str] = None) -> List[str]:
-    """Показывает диалог настройки базы чатов"""
-    dialog = ChatsBaseDialog(parent, current_chats)
+def show_chats_base_dialog(parent, current_chats: List[str] = None, profile_name: str = None) -> List[str]:
+    """Показывает диалог настройки базы чатов с информацией о файле"""
+    dialog = ChatsBaseDialog(parent, current_chats, profile_name)
     if dialog.exec() == QDialog.Accepted:
         return dialog.get_chats()
     return current_chats or []
-
 
 def show_create_profile_dialog(parent) -> Dict:
     """Показывает диалог создания профиля"""

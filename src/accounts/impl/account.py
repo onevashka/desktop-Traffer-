@@ -152,7 +152,6 @@ class Account:
                     username = link
 
                 result = await self.client(JoinChannelRequest(username))
-                logger.info(f"[{self.name}] Вступил в публичный чат {link}")
 
                 # Получаем entity чата
                 try:

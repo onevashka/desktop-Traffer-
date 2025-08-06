@@ -79,7 +79,7 @@ class BaseInviterProcess(threading.Thread, ABC):
             self.finished_at = datetime.now()
             asyncio.run(self._cleanup())
             self.is_running = False
-            logger.info(f"⏹️ Процесс остановлен: {self.profile_name}")
+            logger.debug(f"⏹️ Процесс остановлен: {self.profile_name}")
 
     def _load_data(self) -> bool:
         """Загружает все необходимые данные"""

@@ -1,7 +1,7 @@
 """
 ИСПРАВЛЕННАЯ система перемещения аккаунтов
 Правильный порядок: отключение → перемещение → освобождение
-ДОБАВЛЕНО: Новые папки для специфичных типов ошибок
+ДОБАВЛЕНО: Новые папки для специфичных типов ошибок + ПАПКА ФЛУД
 """
 
 import shutil
@@ -32,7 +32,8 @@ class AccountMover:
             'writeoff': WORK_TRAFFER_FOLDER / "Списанные",
             'spam_block': WORK_TRAFFER_FOLDER / "Спам_блок",
             'block_invite': WORK_TRAFFER_FOLDER / "Блок_инвайтов",
-            "finished" : WORK_TRAFFER_FOLDER / "Успешно отработанные"
+            'finished': WORK_TRAFFER_FOLDER / "Успешно_отработанные",
+            'flood': WORK_TRAFFER_FOLDER / "Флуд"  # НОВАЯ ПАПКА для FloodWait
         }
 
         # Отслеживание перемещенных аккаунтов
@@ -113,7 +114,6 @@ class AccountMover:
 
             if moved_count > 0:
                 folder_display = self._get_folder_display_name(folder_type)
-                logger.success(f"✅ Аккаунт {account_name} перемещен в '{folder_display}' ({moved_count} файлов)")
                 return True
             else:
                 logger.error(f"❌ Не удалось переместить файлы для {account_name}")
@@ -134,7 +134,9 @@ class AccountMover:
             'unauthorized': 'Не авторизованы',
             'writeoff': 'Списанные',
             'spam_block': 'Спам-блок',
-            'block_invite': 'Блок инвайтов'
+            'block_invite': 'Блок инвайтов',
+            'finished': 'Успешно отработанные',
+            'flood': 'Флуд'  # НОВОЕ отображение для флуда
         }
         return display_names.get(folder_type, folder_type)
 

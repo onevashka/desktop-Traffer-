@@ -67,7 +67,6 @@ class AccountManager:
         storages = await scanner.scan_all_folders()
 
         self.traffic_accounts = storages['traffic']
-        print(self.traffic_accounts)
         self.sales_accounts = storages['sales']
 
         # Обновляем зависимые сервисы
@@ -191,7 +190,7 @@ class AccountManager:
                 account_data.busy_by = None
                 released_count += 1
 
-        logger.info(f"🔓 Освобождено аккаунтов модуля {module_name}: {released_count}")
+        logger.debug(f"🔓 Освобождено аккаунтов модуля {module_name}: {released_count}")
         return released_count
 
     def get_free_accounts_count(self) -> int:
@@ -400,7 +399,6 @@ class AccountManager:
 
     def _get_data_service(self) -> DataService:
         """Получает сервис данных"""
-        print('fdsfds')
         if self._data_service is None:
             self._data_service = DataService(self.traffic_accounts, self.sales_accounts)
         return self._data_service
@@ -480,7 +478,6 @@ class AccountManager:
         """Возвращает объект Account по имени и категории"""
 
         account_data = self.get_account_by_name(name, category)
-        print(account_data)
         return account_data.account if account_data else None
 
     def get_accounts_by_category(self, category: str) -> List[str]:

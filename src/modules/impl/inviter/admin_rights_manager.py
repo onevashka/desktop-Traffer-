@@ -127,49 +127,51 @@ class AdminRightsManager:
 
 
 # НОВЫЕ ФУНКЦИИ: Прямое управление правами воркеров через главного админа
-async def grant_worker_rights_directly(main_admin_client, chat_entity, worker_user_id: int, worker_user_access_hash, worker_name: str) -> bool:
+async def grant_worker_rights_directly(main_admin, chat_entity, worker_user_id: int, worker_user_access_hash: int,
+                                       worker_name: str) -> bool:
     """
-    Выдает права воркеру напрямую через главного админа (не через бота!)
-
-    Args:
-        main_admin_client: Клиент главного админа (Telethon)
-        chat_entity: Entity чата
-        worker_user_id: ID воркера
-        worker_name: Имя воркера для логов
-
-    Returns:
-        bool: True если права выданы
+    Напрямую выдает права потоку через админа
     """
     try:
+        from telethon.tl.functions.channels import EditAdminRequest, GetParticipantRequest
+        from telethon.tl.types import ChatAdminRights, InputUser, InputPeerUser
+        from telethon.errors import UserNotParticipantError, UserIdInvalidError
 
-        from telethon.tl.types import InputChannel, InputUser, ChatAdminRights
-        from telethon.tl.functions.channels import EditAdminRequest
+        participants_checked = 0
 
-        input_channel = await main_admin_client.get_input_entity(chat_entity)
+        # БЕЗ ЛИМИТА - получаем ВСЕХ участников
+        async for participant in main_admin.client.iter_participants(chat_entity):
+            participants_checked += 1
 
+            if participant.id == worker_user_id:
+                logger.info(f"✅ НАЙДЕН {worker_name} на позиции {participants_checked}")
 
-        # 2) Получаем корректный InputUser для воркера (по его ID или username)
-        input_user = await main_admin_client.get_input_entity(worker_user_id)
+                # Используем актуальный access_hash из группы
+                actual_access_hash = participant.access_hash
 
-        # Права для воркера (ограниченные - только инвайт пользователей)
-        worker_rights = ChatAdminRights(
-            invite_users=True,  # Основное право - инвайт пользователей
-            add_admins=True,  # НЕ может назначать админов
-            anonymous=True
-        )
+                # Проверяем участие через GetParticipantRequest
+                worker_peer = InputPeerUser(user_id=worker_user_id, access_hash=actual_access_hash)
+                await main_admin.client(GetParticipantRequest(channel=chat_entity, participant=worker_peer))
 
-        # Выдаем права через главного админа
-        await main_admin_client(EditAdminRequest(
-            channel=input_channel,
-            user_id=input_user,
-            admin_rights=worker_rights,
-            rank="админ"  # Звание воркера
-        ))
+                # Выдаем права
+                worker_input = InputUser(user_id=worker_user_id, access_hash=actual_access_hash)
+                rights = ChatAdminRights(invite_users=True, add_admins=True, anonymous=True)
 
-        return True
+                await main_admin.client(EditAdminRequest(
+                    channel=chat_entity,
+                    user_id=worker_input,
+                    admin_rights=rights,
+                    rank="админ"
+                ))
+
+                return True
+
+        # Если дошли сюда - пользователь не найден
+        logger.error(f"❌ {worker_name} НЕ НАЙДЕН среди {participants_checked} участников")
+        return False
 
     except Exception as e:
-        logger.error(f"❌ Ошибка выдачи прав воркеру {worker_name} главным админом: {e}")
+        logger.error(f"❌ Ошибка для {worker_name}: {e}")
         return False
 
 
@@ -212,7 +214,6 @@ async def revoke_worker_rights_directly(main_admin_client, chat_entity, worker_u
             rank=""  # Убираем звание
         ))
 
-        logger.success(f"✅ Главный админ забрал права у воркера {worker_name}")
         return True
 
     except Exception as e:

@@ -361,7 +361,6 @@ async def ensure_main_admin_ready_in_chat(main_admin_account, admin_rights_manag
     try:
 
         # Шаг 1: Заход в группу
-        logger.info(f"🚪 Главный админ заходит в {chat_link}")
         join_result = await main_admin_account.join(chat_link)
 
         if join_result == "FROZEN_ACCOUNT":
@@ -370,8 +369,6 @@ async def ensure_main_admin_ready_in_chat(main_admin_account, admin_rights_manag
         elif join_result not in ["SUCCESS", "ALREADY_PARTICIPANT"]:
             logger.error(f"❌ Главный админ не смог зайти в {chat_link}: {join_result}")
             return False
-
-        logger.info(f"✅ Главный админ в группе {chat_link}")
 
         # Шаг 2: Небольшая пауза для стабилизации
         await asyncio.sleep(3)
@@ -406,8 +403,6 @@ async def ensure_main_admin_ready_in_chat(main_admin_account, admin_rights_manag
         if not rights_confirmed:
             logger.error(f"❌ Права главного админа не подтверждены в {chat_link}")
             return False
-
-        logger.success(f"🎉 Главный админ ПОЛНОСТЬЮ ГОТОВ в {chat_link}")
         return True
 
     except Exception as e:

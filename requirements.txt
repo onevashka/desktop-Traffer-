@@ -1,0 +1,6 @@
+PySide6~=6.9.1
+loguru~=0.7.3
+Telethon~=1.40.0
+aiogram~=3.21.0
+phonenumbers~=9.0.9
+qasync~=0.27.1

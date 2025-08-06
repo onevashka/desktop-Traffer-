@@ -201,7 +201,6 @@ class InviterDataLoader:
                 user = InviteUser(username=username, status=UserStatus.CLEAN)
                 return user, False  # Чистый
             else:
-                logger.warning(f"⚠️ Некорректный username: {line}")
                 return None, False
 
         except Exception as e:

@@ -331,7 +331,7 @@ class InviterModuleManager:
             self.profile_manager.set_profile_running(profile_name, False)
             self._update_stats_cache()
 
-            logger.info(f"⏸️ Профиль остановлен: {profile_name}")
+            logger.debug(f"⏸️ Профиль остановлен: {profile_name}")
             return True
 
         except Exception as e:

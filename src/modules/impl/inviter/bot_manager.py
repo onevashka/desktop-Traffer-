@@ -26,7 +26,6 @@ class BotManager:
     async def connect(self) -> bool:
         """Подключаемся к боту и проверяем его работоспособность"""
         try:
-            logger.info("🤖 Подключение к боту...")
 
             # Создаем экземпляр бота
             if self.proxy_url:
@@ -206,7 +205,7 @@ class BotManager:
                     can_restrict_members=True,
                     can_post_messages=True,
                     can_edit_messages=True,
-                    is_anonymous=True
+                    is_anonymous=True,
 
                 )
 
@@ -273,6 +272,7 @@ class BotManager:
                     can_restrict_members=False,
                     can_post_messages=False,
                     can_edit_messages=False,
+                    is_anonymous=False,
                 )
 
                 logger.info(f"✅ Права админа отозваны у пользователя {user_id} в {chat_link}")

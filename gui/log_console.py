@@ -4,6 +4,7 @@ from pathlib import Path
 import html
 
 from PySide6.QtCore    import Qt, QObject, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QFrame
 from loguru            import logger
 from log_config import DEBUG_MODE
@@ -40,6 +41,39 @@ class LogConsole(QWidget):
         self.editor = QTextEdit()
         self.editor.setReadOnly(True)
         self.editor.setAcceptRichText(True)
+
+        font = QFont("Consolas", 10)  # или другой моноширинный шрифт
+        font.setWeight(QFont.Weight.Normal)
+        font.setStyleHint(QFont.StyleHint.Monospace)
+        self.editor.setFont(font)
+
+        # Принудительно применяем стили
+        # Принудительно применяем стили
+        self.editor.setStyleSheet("""
+            QTextEdit {
+                background-color: #000000;
+                color: #e8e8e8;
+                border: none;
+                border-radius: 10px;
+                padding: 30px 28px;
+                font-family: "Consolas", "Monaco", "Courier New", monospace;
+                font-size: 13px;
+                font-weight: normal;
+                line-height: 1.8em;
+                letter-spacing: 0.2px;
+            }
+
+            QTextEdit p {
+                margin-top: 8px;
+                margin-bottom: 8px;
+                margin-left: 0px;
+                margin-right: 0px;
+            }
+
+            QTextEdit p:first-child {
+                margin-top: 0px;
+            }
+        """)
 
         # — Обёртка с бордюром (скруглённый QFrame) —
         container = QFrame()
@@ -80,8 +114,11 @@ class LogConsole(QWidget):
         # Подбираем цвет для уровня
         color = self.LEVEL_COLORS.get(level, "#AAD4FF")
 
+        # ДОБАВЛЯЕМ ОТСТУПЫ ПРЯМО В HTML
         html_line = (
+            f"<div style='margin-bottom: 8px;'>"  # Отступ снизу каждого лога
             f"<span style='color:#777;'>{ts}</span> "
             f"<span style='color:{color}; font-weight:bold;'>{safe}</span>"
+            f"</div>"
         )
         self.editor.append(html_line)

@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Optional
+from paths import Path
+import queue
 
 
 class UserStatus(Enum):
@@ -19,6 +21,7 @@ class UserStatus(Enum):
     SPAM_BLOCK = "spam_block"  # Спамблок
     NOT_FOUND = "not_found"  # Пользователь не найден
     FLOOD_WAIT = "flood_wait"  # Ожидание флуда
+    USER_ALREADY_CHATS = "user_already_chats"
 
 
 @dataclass
@@ -190,3 +193,50 @@ class InviterConfig:
             errors.append("Таймаут прав должен быть минимум 10 секунд")
 
         return len(errors) == 0, errors
+
+
+@dataclass
+class AdminCommand:
+    """Команда для главного админа"""
+    action: str  # "GRANT_RIGHTS" или "REVOKE_RIGHTS"
+    worker_name: str
+    worker_user_id: int
+    worker_access_hash: int
+    chat_link: str
+    response_queue: queue.Queue  # Для ответа воркеру
+
+
+@dataclass
+class AccountErrorCounters:
+    """Счетчики ошибок для аккаунта"""
+    consecutive_spam_blocks: int = 0
+    consecutive_writeoffs: int = 0
+    consecutive_block_invites: int = 0
+
+    def reset_all(self):
+        """Сброс всех счетчиков"""
+        self.consecutive_spam_blocks = 0
+        self.consecutive_writeoffs = 0
+        self.consecutive_block_invites = 0
+
+    def reset_spam_blocks(self):
+        """Сброс счетчика спам-блоков"""
+        self.consecutive_spam_blocks = 0
+
+    def reset_writeoffs(self):
+        """Сброс счетчика списаний"""
+        self.consecutive_writeoffs = 0
+
+    def reset_block_invites(self):
+        """Сброс счетчика блоков инвайтов"""
+        self.consecutive_block_invites = 0
+
+
+@dataclass
+class ChatAdmin:
+    """Информация о главном админе чата"""
+    name: str
+    account: Optional[object] = None
+    session_path: Optional[Path] = None
+    json_path: Optional[Path] = None
+    is_ready: bool = False
