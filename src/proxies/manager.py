@@ -88,8 +88,6 @@ class ProxyManager:
         # Парсим и возвращаем
         proxy_dict = self._parse_proxy_line(proxy_line)
 
-        if proxy_dict:
-            logger.debug(f"🌐 Выдан прокси: {proxy_dict['addr']}:{proxy_dict['port']}")
 
         return proxy_dict
 

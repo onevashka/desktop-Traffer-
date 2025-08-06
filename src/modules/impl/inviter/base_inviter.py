@@ -5,6 +5,7 @@
 
 import threading
 import queue
+import asyncio
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, List
@@ -76,7 +77,7 @@ class BaseInviterProcess(threading.Thread, ABC):
             logger.error(f"❌ Критическая ошибка: {e}")
         finally:
             self.finished_at = datetime.now()
-            self._cleanup()
+            asyncio.run(self._cleanup())
             self.is_running = False
             logger.info(f"⏹️ Процесс остановлен: {self.profile_name}")
 
@@ -138,7 +139,7 @@ class BaseInviterProcess(threading.Thread, ABC):
         """Основная логика инвайтинга (реализуется в наследниках)"""
         pass
 
-    def _cleanup(self):
+    async def _cleanup(self):
         """Очистка при завершении"""
         logger.info("🧹 Сохранение прогресса...")
 

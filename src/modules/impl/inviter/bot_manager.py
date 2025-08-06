@@ -187,7 +187,7 @@ class BotManager:
         """
         for attempt in range(1, max_retries + 1):
             try:
-                logger.info(f"🔑 Попытка {attempt}: выдача прав админа пользователю {user_id} в {chat_link}")
+                logger.debug(f"🔑 Попытка {attempt}: выдача прав админа пользователю {user_id} в {chat_link}")
 
                 # Получаем chat_id
                 #chat = await self.bot.get_chat(chat_link)
@@ -206,9 +206,10 @@ class BotManager:
                     can_restrict_members=True,
                     can_post_messages=True,
                     can_edit_messages=True,
+                    is_anonymous=True
+
                 )
 
-                logger.info(f"✅ Права админа выданы пользователю {user_id} в {chat_link}")
                 return True
 
             except TelegramAPIError as e:

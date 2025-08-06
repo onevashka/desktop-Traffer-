@@ -108,7 +108,7 @@ class AccountManager:
                     break
 
         if accounts:
-            logger.info(f"🔒 Выдано аккаунтов для {module_name}: {len(accounts)} из {count}")
+            logger.debug(f"🔒 Выдано аккаунтов для {module_name}: {len(accounts)} из {count}")
         else:
             logger.warning(f"⚠️ Нет свободных аккаунтов для {module_name}")
 
@@ -139,7 +139,7 @@ class AccountManager:
                 if len(accounts) >= count:
                     break
 
-        logger.info(f"🔒 Выдано аккаунтов для {module_name}: {len(accounts)} из {count}")
+        logger.debug(f"🔒 Выдано аккаунтов для {module_name}: {len(accounts)} из {count}")
         return accounts
 
     def release_account(self, account_name: str, module_name: str = None) -> bool:
@@ -160,7 +160,6 @@ class AccountManager:
         account_data = self.traffic_accounts[account_name]
 
         if not account_data.is_busy:
-            logger.debug(f"🔓 Аккаунт {account_name} не был занят")
             return True
 
         # Проверяем что освобождает тот же модуль
@@ -172,7 +171,6 @@ class AccountManager:
         account_data.is_busy = False
         account_data.busy_by = None
 
-        logger.debug(f"🔓 Аккаунт {account_name} освобожден")
         return True
 
     def release_all_module_accounts(self, module_name: str) -> int:

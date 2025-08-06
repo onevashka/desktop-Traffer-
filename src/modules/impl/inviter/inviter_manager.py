@@ -320,10 +320,10 @@ class InviterModuleManager:
                 process.stop()
 
                 # Ждем завершения (максимум 10 секунд)
-                process.join(timeout=10)
+                process.join(timeout=60)
 
                 if process.is_alive():
-                    logger.warning(f"⚠️ Процесс {profile_name} не завершился в течение 10 секунд")
+                    logger.warning(f"⚠️ Процесс {profile_name} не завершился в течение 60 секунд")
 
             del self.active_processes[profile_name]
 

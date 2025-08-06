@@ -50,12 +50,6 @@ class AdminRightsManager:
         """
         async with self._get_lock(chat_link):
             try:
-                logger.info(f"👑 Выдача прав главного админа через БОТА: {account_name} (ID: {user_id}) в {chat_link}")
-
-                # Проверяем, что бот сам является админом
-                if not await self.bot_manager.check_bot_admin_status(chat_link):
-                    logger.error(f"❌ Бот не является админом в {chat_link}")
-                    return False
 
                 # Выдаем права через бота
                 success = await self.bot_manager.grant_admin_rights(chat_link, user_id)
@@ -147,32 +141,21 @@ async def grant_worker_rights_directly(main_admin_client, chat_entity, worker_us
         bool: True если права выданы
     """
     try:
-        logger.info(f"👷 Главный админ выдает права воркеру {worker_name} (ID: {worker_user_id})")
 
         from telethon.tl.types import InputChannel, InputUser, ChatAdminRights
         from telethon.tl.functions.channels import EditAdminRequest
 
-        input_channel = InputChannel(
-            channel_id=chat_entity.id,
-            access_hash=chat_entity.access_hash
-        )
+        input_channel = await main_admin_client.get_input_entity(chat_entity)
 
-        input_user = InputUser(
-            user_id=worker_user_id,
-            access_hash=worker_user_access_hash
-        )
+
+        # 2) Получаем корректный InputUser для воркера (по его ID или username)
+        input_user = await main_admin_client.get_input_entity(worker_user_id)
 
         # Права для воркера (ограниченные - только инвайт пользователей)
         worker_rights = ChatAdminRights(
             invite_users=True,  # Основное право - инвайт пользователей
-            add_admins=False,  # НЕ может назначать админов
-            ban_users=False,  # НЕ может банить
-            delete_messages=False,  # НЕ может удалять сообщения
-            edit_messages=False,  # НЕ может редактировать
-            post_messages=False,  # НЕ может постить
-            pin_messages=False,  # НЕ может закреплять
-            manage_call=False,  # НЕ может управлять звонками
-            other=False  # Прочие права отключены
+            add_admins=True,  # НЕ может назначать админов
+            anonymous=True
         )
 
         # Выдаем права через главного админа
@@ -180,10 +163,9 @@ async def grant_worker_rights_directly(main_admin_client, chat_entity, worker_us
             channel=input_channel,
             user_id=input_user,
             admin_rights=worker_rights,
-            rank="Worker"  # Звание воркера
+            rank="админ"  # Звание воркера
         ))
 
-        logger.success(f"✅ Главный админ выдал права воркеру {worker_name}")
         return True
 
     except Exception as e:
@@ -205,7 +187,6 @@ async def revoke_worker_rights_directly(main_admin_client, chat_entity, worker_u
         bool: True если права забраны
     """
     try:
-        logger.info(f"🔒 Главный админ забирает права у воркера {worker_name} (ID: {worker_user_id})")
 
         input_user = await main_admin_client.get_input_entity(worker_user_id)
 
@@ -219,7 +200,8 @@ async def revoke_worker_rights_directly(main_admin_client, chat_entity, worker_u
             post_messages=False,
             pin_messages=False,
             manage_call=False,
-            other=False
+            other=False,
+            anonymous=False
         )
 
         # Забираем права через главного админа

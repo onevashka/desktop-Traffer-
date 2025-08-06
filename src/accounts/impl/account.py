@@ -122,9 +122,12 @@ class Account:
         from telethon.errors import UserAlreadyParticipantError
 
         try:
+
             if not self.client or not await self.client.is_user_authorized():
                 logger.error(f"[{self.name}] Клиент не подключен или не авторизован")
                 return "NOT_CONNECTED"
+
+            entity = await self.client.get_entity(link)
 
             # Приватный чат/канал
             if link.startswith("https://t.me/+"):
@@ -135,8 +138,8 @@ class Account:
                 # Получаем информацию о чате
                 if hasattr(result, 'chats') and result.chats:
                     chat_entity = result.chats[0]
-                    return chat_entity
-                return result
+                    return "SUCCESS"
+                return "SUCCESS"
 
             # Публичный чат/канал
             else:
@@ -154,9 +157,9 @@ class Account:
                 # Получаем entity чата
                 try:
                     chat_entity = await self.client.get_entity(username)
-                    return chat_entity
+                    return "SUCCESS"
                 except:
-                    return result
+                    return "SUCCESS"
 
         except UserAlreadyParticipantError:
             logger.warning(f"[{self.name}] Уже участник чата {link}")
@@ -187,7 +190,7 @@ class Account:
                 return "CHAT_NOT_FOUND"
 
             elif "No user has" in error_text:
-                logger.warning(f"[{self.name}] Данный чат не найден {link}")
+                logger.warning(f"[{self.name}] Данный чат не найден {link} {e}")
                 return "USER_NOT_FOUND"
 
             elif "successfully requested to join" in error_text:
@@ -231,8 +234,7 @@ class Account:
             self.update_json(session=actual_name)
 
         else:
-            # Все в порядке - имена совпадают
-            logger.debug(f"✅ [{actual_name}] Имя session актуально: '{actual_name}'")
+            pass
 
     async def get_info(self) -> dict:
         """

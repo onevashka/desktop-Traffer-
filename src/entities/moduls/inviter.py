@@ -77,36 +77,47 @@ class InviterConfig:
     """
     Конфигурация инвайтера с поддержкой админ-инвайтинга
     """
+    """Конфигурация админ-инвайтера"""
     # Основные параметры
-    invite_type: str = "classic"  # "classic" или "admin"
-    threads_per_chat: int = 2
+    invite_type: str = "admin"
+    threads_per_chat: int = 1
 
-    # Лимиты
-    success_per_chat: int = 0  # 0 = без ограничений
-    success_per_account: int = 0
+    # Лимиты успешных инвайтов
+    success_per_chat: int = 2
+    success_per_account: int = 1
 
     # Задержки
-    delay_after_start: int = 0
-    delay_between: int = 30
+    delay_after_start: int = 5
+    delay_between: int = 5
 
-    # Безопасность аккаунтов
-    acc_spam_limit: int = 3
-    acc_error_limit: int = 10
+    # Лимиты спама и ошибок
+    acc_spam_limit: int = 33
+    acc_writeoff_limit: int = 24
+    acc_block_invite_limit: int = 55
 
-    # Безопасность чатов
-    chat_error_limit: int = 3
+    # Лимиты по чатам
+    chat_spam_accounts: int = 35
+    chat_writeoff_accounts: int = 24
+    chat_unknown_error_accounts: int = 15
+    chat_freeze_accounts: int = 41
 
+    # Общие лимиты
+    chat_limit: int = 50
+    account_limit: int = 100
+    invite_delay: int = 30
+    spam_errors: int = 3
+    writeoff_limit: int = 2
+
+    # Админ-специфичные настройки
+    delay_between_workers: int = 10
+    sequential_workers: bool = True
+    admin_rights_timeout: int = 30
     # ========== НОВЫЕ ПОЛЯ ДЛЯ АДМИН-ИНВАЙТИНГА ==========
     # Настройки бота
     bot_token: str = ""  # Токен бота для управления правами
 
     # Главный админ
     main_admin_account: str = ""  # Имя аккаунта главного админа
-
-    # Дополнительные настройки админ-инвайтинга
-    delay_between_workers: int = 10  # Задержка между сменой воркеров
-    sequential_workers: bool = True  # Последовательная работа воркеров
-    admin_rights_timeout: int = 30  # Таймаут выдачи прав (сек)
 
     @classmethod
     def from_dict(cls, data: dict) -> 'InviterConfig':
