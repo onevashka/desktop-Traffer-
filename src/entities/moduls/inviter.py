@@ -204,6 +204,7 @@ class AdminCommand:
     worker_access_hash: int
     chat_link: str
     response_queue: queue.Queue  # Для ответа воркеру
+    username: str
 
 
 @dataclass

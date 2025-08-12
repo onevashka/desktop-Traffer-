@@ -24,6 +24,7 @@ from .report_generator import ReportGenerator
 from .realtime_logger import RealtimeLogger  # ДОБАВЛЕНО
 from .utils import clean_expired_accounts, ensure_main_admin_ready_in_chat
 from src.entities.moduls.inviter import *
+from .chat_protection import ChatProtectionManager
 
 
 class AdminInviterProcess(BaseInviterProcess):
@@ -94,6 +95,8 @@ class AdminInviterProcess(BaseInviterProcess):
 
         self.chat_threads = []
         self.shutdown_in_progress = False
+
+        self.chat_protection_manager = ChatProtectionManager(self)
 
     # ============================================================================
     # ДЕЛЕГИРОВАННЫЕ МЕТОДЫ - используют специализированные менеджеры
@@ -489,7 +492,8 @@ class AdminInviterProcess(BaseInviterProcess):
                     chat_entity=chat_entity,
                     worker_user_id=command.worker_user_id,
                     worker_user_access_hash=command.worker_access_hash,
-                    worker_name=command.worker_name
+                    worker_name=command.worker_name,
+                    worker_username=command.username,
                 )
                 command.response_queue.put(success)
                 if success:
@@ -505,7 +509,8 @@ class AdminInviterProcess(BaseInviterProcess):
                     main_admin_client=chat_admin.account.client,
                     chat_entity=chat_entity,
                     worker_user_id=command.worker_user_id,
-                    worker_name=command.worker_name
+                    worker_name=command.worker_name,
+                    worker_username=command.username,
                 )
                 command.response_queue.put(True)
 

@@ -6,6 +6,9 @@
 
 import asyncio
 import queue
+import time
+import random
+import hashlib
 import threading
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
@@ -29,6 +32,8 @@ from telethon.errors import (
     AuthKeyUnregisteredError, SessionRevokedError,
     ChannelPrivateError, ChannelInvalidError
 )
+from telethon.errors import UsernameOccupiedError, UsernameInvalidError, FloodWaitError
+from telethon.tl.functions.account import UpdateUsernameRequest
 
 
 def get_fresh_accounts(parent_process, module_name: str, count: int) -> List:
@@ -526,3 +531,185 @@ async def check_main_admin_health(main_admin_client, chat_links: List[str]) -> D
     logger.info(f"🩺 Результат: {healthy_count}/{len(chat_links)} чатов здоровы")
 
     return results
+
+
+async def ensure_username_for_account(account, account_name: str) -> Optional[str]:
+    """
+    Проверяет и устанавливает уникальный username для аккаунта
+
+    Args:
+        account: Объект аккаунта с клиентом Telethon
+        account_name: Имя аккаунта для логов
+
+    Returns:
+        str: Username аккаунта (существующий или установленный) или None если не удалось
+    """
+    try:
+        # Проверяем текущий username
+        me = await account.client.get_me()
+        if me.username:
+            logger.info(f"[{account_name}] ✅ Username уже есть: @{me.username}")
+            return me.username  # Возвращаем существующий username
+
+        logger.info(f"[{account_name}] ⚠️ Username отсутствует, генерируем уникальный...")
+
+        # Пытаемся установить username
+        max_attempts = 15
+        for attempt in range(1, max_attempts + 1):
+            try:
+                # Генерируем человеческую комбинацию
+                username = _generate_super_unique_username(account_name, attempt)
+
+                logger.info(f"[{account_name}] 🔄 Попытка {attempt}: @{username}")
+
+                # Устанавливаем username
+                await account.client(UpdateUsernameRequest(username=username))
+
+                # Проверяем что установился
+                await asyncio.sleep(2)
+                me_updated = await account.client.get_me()
+
+                if me_updated.username == username:
+                    logger.success(f"[{account_name}] ✅ Username установлен: @{username}")
+                    return username  # Возвращаем установленный username
+                else:
+                    logger.warning(f"[{account_name}] ⚠️ Username не применился, пробуем еще раз...")
+
+            except UsernameOccupiedError:
+                logger.warning(f"[{account_name}] ⚠️ @{username} занят, пробуем другой...")
+
+            except UsernameInvalidError:
+                logger.warning(f"[{account_name}] ⚠️ @{username} недопустимый, пробуем другой...")
+
+            except FloodWaitError as e:
+                wait_time = e.seconds
+                if wait_time > 300:  # Больше 5 минут
+                    logger.error(f"[{account_name}] ❌ FloodWait слишком долгий ({wait_time}с)")
+                    return None
+
+                logger.warning(f"[{account_name}] ⏳ FloodWait {wait_time}с...")
+                await asyncio.sleep(wait_time + 1)
+
+            # Задержка между попытками
+            await asyncio.sleep(min(attempt * 1.5, 8))
+
+        logger.error(f"[{account_name}] ❌ Не удалось установить username за {max_attempts} попыток")
+
+        # Финальная проверка - может username все-таки есть
+        try:
+            me_final = await account.client.get_me()
+            if me_final.username:
+                logger.info(f"[{account_name}] ℹ️ Найден существующий username: @{me_final.username}")
+                return me_final.username  # Возвращаем любой найденный username
+        except:
+            pass
+
+        return None
+
+    except Exception as e:
+        logger.error(f"[{account_name}] ❌ Критическая ошибка с username: {e}")
+
+        # Попытка получить username даже при ошибке
+        try:
+            me_error = await account.client.get_me()
+            if me_error.username:
+                logger.info(f"[{account_name}] ℹ️ Username найден несмотря на ошибку: @{me_error.username}")
+                return me_error.username
+        except:
+            pass
+
+        return None
+
+
+def _generate_super_unique_username(account_name: str, attempt: int) -> str:
+    """
+    Генерирует человеческие username для настоящих пользовательских аккаунтов
+    Выглядят как обычные пользователи, но уникальны
+    """
+    # Человеческие имена и фамилии для базы
+    first_names = [
+        'alex', 'anna', 'max', 'kate', 'john', 'mary', 'david', 'lisa', 'mike', 'sara',
+        'tom', 'emma', 'nick', 'jane', 'paul', 'rose', 'mark', 'amy', 'luke', 'nina',
+        'sam', 'lily', 'dan', 'eva', 'jack', 'mia', 'ryan', 'zoe', 'adam', 'chloe',
+        'eric', 'ivy', 'noah', 'ruby', 'owen', 'leah', 'finn', 'grace', 'cole', 'belle'
+    ]
+
+    last_names = [
+        'smith', 'brown', 'davis', 'wilson', 'moore', 'taylor', 'anderson', 'thomas',
+        'jackson', 'white', 'harris', 'martin', 'garcia', 'martinez', 'robinson',
+        'clark', 'rodriguez', 'lewis', 'lee', 'walker', 'hall', 'allen', 'young',
+        'hernandez', 'king', 'wright', 'lopez', 'hill', 'scott', 'green', 'adams',
+        'baker', 'gonzalez', 'nelson', 'carter', 'mitchell', 'perez', 'roberts', 'turner'
+    ]
+
+    # Обычные слова для username
+    words = [
+        'sun', 'moon', 'star', 'sky', 'sea', 'lake', 'river', 'mountain', 'forest',
+        'wind', 'rain', 'snow', 'fire', 'light', 'shadow', 'dream', 'hope', 'love',
+        'life', 'time', 'world', 'peace', 'music', 'dance', 'smile', 'happy', 'free',
+        'wild', 'cool', 'nice', 'good', 'best', 'new', 'real', 'true', 'blue', 'red'
+    ]
+
+    # Создаем базу для уникальности
+    account_hash = int(hashlib.md5(account_name.encode()).hexdigest()[:8], 16)
+    timestamp = int(time.time() * 1000) % 10000  # Последние 4 цифры времени
+
+    # Выбираем элементы на основе хеша для консистентности
+    first_name = first_names[account_hash % len(first_names)]
+    last_name = last_names[(account_hash + attempt) % len(last_names)]
+    word = words[(account_hash + timestamp + attempt) % len(words)]
+
+    # Разные человеческие стратегии
+    if attempt <= 3:
+        # Имя + фамилия + год рождения
+        year = random.randint(1985, 2005)
+        username = f"{first_name}{last_name}{year}"
+
+    elif attempt <= 6:
+        # Имя + цифры
+        numbers = str(timestamp)[-3:] + str(attempt)
+        username = f"{first_name}{numbers}"
+
+    elif attempt <= 9:
+        # Имя + слово + цифры
+        numbers = str(timestamp)[-2:]
+        username = f"{first_name}{word}{numbers}"
+
+    elif attempt <= 12:
+        # Слово + имя + цифры
+        numbers = str(account_hash)[-3:]
+        username = f"{word}{first_name}{numbers}"
+
+    else:
+        # Комбинация имя_фамилия с цифрами
+        separator = random.choice(['', '_', '.'])
+        numbers = str(timestamp + attempt)[-3:]
+        username = f"{first_name}{separator}{last_name}{numbers}"
+
+    # Убеждаемся что длина корректная (5-32 символа)
+    if len(username) < 5:
+        username += str(random.randint(10, 99))
+    elif len(username) > 32:
+        username = username[:29] + str(random.randint(10, 99))
+
+    return username
+
+
+# Функция для получения username аккаунта (если нужно просто проверить)
+async def get_account_username(account, account_name: str) -> Optional[str]:
+    """
+    Просто возвращает текущий username аккаунта
+
+    Args:
+        account: Объект аккаунта с клиентом
+        account_name: Имя аккаунта для логов
+
+    Returns:
+        str: Username или None если нет
+    """
+    try:
+        me = await account.client.get_me()
+        return me.username
+    except Exception as e:
+        logger.error(f"[{account_name}] Ошибка получения username: {e}")
+        return None

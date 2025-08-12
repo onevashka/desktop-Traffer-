@@ -10,7 +10,7 @@ from pathlib import Path
 from dataclasses import dataclass
 
 from src.entities.moduls.inviter import InviteUser, UserStatus
-from .utils import check_chat_limits, check_account_limits
+from .utils import check_chat_limits, check_account_limits, ensure_username_for_account
 from src.entities.moduls.inviter import *
 
 # Импорты Telethon
@@ -37,6 +37,7 @@ class ChatWorkerThread(threading.Thread):
         self.chat_total = 0
         self.active_threads = []
         self.threads_lock = threading.Lock()
+        self.stop_chat_flag = threading.Event()
 
         # Инициализируем статистику чата
         if chat_link not in parent.chat_stats:
@@ -52,7 +53,15 @@ class ChatWorkerThread(threading.Thread):
         module_name = f"admin_inviter_{self.parent.profile_name}"
 
         try:
-            while not self.parent.stop_flag.is_set():
+            while not self.parent.stop_flag.is_set() and not self.stop_chat_flag.is_set():
+
+                if self.parent.chat_protection_manager.is_chat_blocked(self.chat_link):
+                    logger.error(
+                        f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                        f"❌ ЧАТ ЗАБЛОКИРОВАН системой защиты - завершаем работу"
+                    )
+                    break
+
                 # Проверки лимитов
                 if not check_chat_limits(self.parent, self.chat_success):
                     logger.success(
@@ -242,6 +251,7 @@ class WorkerThread(threading.Thread):
         chat_id = self.chat_thread.chat_id
         client_connected = False
         rights_granted = False
+        account_finish_reason = "unknown"
 
         try:
             # 1. Проверяем файлы аккаунта
@@ -267,12 +277,7 @@ class WorkerThread(threading.Thread):
             self.thread_account = Account(session_path=session_path, json_path=json_path)
             await self.thread_account.create_client()
 
-            if not await self.thread_account.connect():
-                logger.error(
-                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Не подключился")
-                await self._ensure_disconnected()
-                await self._handle_problem("connection_failed")
-                return True
+            await self.thread_account.connect()
 
             client_connected = True
 
@@ -280,7 +285,8 @@ class WorkerThread(threading.Thread):
                 logger.error(
                     f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Не авторизован")
                 await self._ensure_disconnected()
-                await self._handle_problem("unauthorized")
+                await self._handle_problem("dead")
+                await self._finalize_current_account(False)
                 return True
 
             me = await self.thread_account.client.get_me()
@@ -290,8 +296,26 @@ class WorkerThread(threading.Thread):
             # 3. Вход в чат
             join_result = await self._join_chat()
             if join_result == "FROZEN_ACCOUNT":
+                logger.warning(
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Аккаунт заморожен")
+
+                should_block_chat = self.chat_thread.parent.chat_protection_manager.check_chat_protection(
+                    self.chat_thread.chat_link,
+                    self.current_account_name,
+                    "frozen"  # Тип проблемы - заморозка
+                )
+
+                if should_block_chat:
+                    logger.error(
+                        f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                        f"[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                        f"🚫 ЧАТ ЗАБЛОКИРОВАН после заморозки аккаунта"
+                    )
+                    self.chat_thread.stop_chat_flag.set()
+
                 await self._ensure_disconnected()
                 await self._handle_problem("frozen")
+                await self._finalize_current_account(False)
                 return True
             elif join_result != "SUCCESS":
                 await self._ensure_disconnected()
@@ -300,6 +324,7 @@ class WorkerThread(threading.Thread):
 
             # 4. Получение прав
             user_entity = await self.thread_account.client.get_entity('me')
+            username_thread_account = await ensure_username_for_account(account=self.thread_account, account_name=self.thread_account.name)
             response_queue = queue.Queue()
             command = AdminCommand(
                 action="GRANT_RIGHTS",
@@ -307,7 +332,8 @@ class WorkerThread(threading.Thread):
                 worker_user_id=user_entity.id,
                 worker_access_hash=user_entity.access_hash,
                 chat_link=self.chat_thread.chat_link,
-                response_queue=response_queue
+                response_queue=response_queue,
+                username=username_thread_account
             )
 
             self.chat_thread.parent.admin_command_queue.put(command)
@@ -337,7 +363,17 @@ class WorkerThread(threading.Thread):
             # 5. ГЛАВНЫЙ ЦИКЛ ИНВАЙТИНГА для текущего аккаунта
             invites_count = 0
 
-            while not self.chat_thread.parent.stop_flag.is_set():
+            while not self.chat_thread.parent.stop_flag.is_set() and not self.chat_thread.stop_chat_flag.is_set():
+
+                if self.chat_thread.parent.chat_protection_manager.is_chat_blocked(self.chat_thread.chat_link):
+                    logger.error(
+                        f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                        f"[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                        f"❌ ЧАТ ЗАБЛОКИРОВАН - прекращаем работу"
+                    )
+                    account_finish_reason = "chat_blocked"
+                    break
+
                 # Проверки лимитов
                 if not check_account_limits(self.chat_thread.parent, self.current_account_name, invites_count):
                     logger.info(
@@ -374,6 +410,12 @@ class WorkerThread(threading.Thread):
                         logger.success(
                             f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] ✅ УСПЕШНО ДОБАВЛЕН #{invites_count}: @{user.username}")
 
+                        self.chat_thread.parent.chat_protection_manager.check_chat_protection(
+                            self.chat_thread.chat_link,
+                            self.current_account_name,
+                            "success"
+                        )
+
                         # Сбрасываем счетчики ошибок при успехе
                         self.chat_thread.parent._check_account_error_limits(self.current_account_name, "success")
                         self.chat_thread.parent.update_account_stats(self.current_account_name, success=True)
@@ -401,6 +443,20 @@ class WorkerThread(threading.Thread):
                         # Обновляем статус в менеджере
                         await self._update_account_status_in_manager("flood")
 
+                        should_block_chat = self.chat_thread.parent.chat_protection_manager.check_chat_protection(
+                            self.chat_thread.chat_link,
+                            self.current_account_name,
+                            "flood"
+                        )
+
+                        if should_block_chat:
+                            logger.error(
+                                f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                                f"[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                                f"🚫 ЧАТ ЗАБЛОКИРОВАН после флуда"
+                            )
+                            self.chat_thread.stop_chat_flag.set()
+
                         # Отключаемся и завершаем
                         await self._ensure_disconnected()
                         await self._handle_problem("flood")
@@ -421,6 +477,20 @@ class WorkerThread(threading.Thread):
                                                                                "лимит списаний")
                             await self._update_account_status_in_manager("writeoff")
 
+                            should_block_chat = self.chat_thread.parent.chat_protection_manager.check_chat_protection(
+                                self.chat_thread.chat_link,
+                                self.current_account_name,
+                                "writeoff_limit"
+                            )
+
+                            if should_block_chat:
+                                logger.error(
+                                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                                    f"[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                                    f"🚫 ЧАТ ЗАБЛОКИРОВАН после превышения лимита списаний"
+                                )
+                                self.chat_thread.stop_chat_flag.set()
+
                             await self._ensure_disconnected()
                             await self._handle_problem("writeoff_limit")
                             break
@@ -440,7 +510,21 @@ class WorkerThread(threading.Thread):
                             self.chat_thread.parent.spam_block_accounts.add(self.current_account_name)
                             self.chat_thread.parent._mark_account_as_processed(self.current_account_name,
                                                                                "лимит спам-блоков")
-                            await self._update_account_status_in_manager("frozen")
+                            await self._update_account_status_in_manager("spam_block")
+
+                            should_block_chat = self.chat_thread.parent.chat_protection_manager.check_chat_protection(
+                                self.chat_thread.chat_link,
+                                self.current_account_name,
+                                "spam_limit"
+                            )
+
+                            if should_block_chat:
+                                logger.error(
+                                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                                    f"[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                                    f"🚫 ЧАТ ЗАБЛОКИРОВАН после превышения лимита спам-блоков"
+                                )
+                                self.chat_thread.stop_chat_flag.set()
 
                             await self._ensure_disconnected()
                             await self._handle_problem("spam_limit")
@@ -463,6 +547,20 @@ class WorkerThread(threading.Thread):
                             self.chat_thread.parent._mark_account_as_processed(self.current_account_name,
                                                                                "лимит блоков инвайтов")
                             await self._update_account_status_in_manager("dead")
+
+                            should_block_chat = self.chat_thread.parent.chat_protection_manager.check_chat_protection(
+                                self.chat_thread.chat_link,
+                                self.current_account_name,
+                                "block_limit"
+                            )
+
+                            if should_block_chat:
+                                logger.error(
+                                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                                    f"[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                                    f"🚫 ЧАТ ЗАБЛОКИРОВАН после превышения лимита блоков инвайтов"
+                                )
+                                self.chat_thread.stop_chat_flag.set()
 
                             await self._ensure_disconnected()
                             await self._handle_problem("block_limit")
@@ -516,7 +614,7 @@ class WorkerThread(threading.Thread):
 
             # 6. Отзыв прав
             if rights_granted:
-                await self._revoke_rights(user_entity.id)
+                await self._revoke_rights(user_entity.id, username_thread_account)
 
             # 7. ПОКАЗЫВАЕМ СТАТИСТИКУ ПРИ ЗАВЕРШЕНИИ АККАУНТА
             self._show_account_finish_stats("ЗАВЕРШИЛ РАБОТУ", invites_count)
@@ -627,7 +725,7 @@ class WorkerThread(threading.Thread):
                 rank="админ"
             ))
 
-            await asyncio.sleep(10)
+            await asyncio.sleep(15)
 
             no_rights = ChatAdminRights(
                 invite_users=False,
@@ -920,7 +1018,7 @@ class WorkerThread(threading.Thread):
                 f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Ошибка входа в чат: {e}")
             return "ERROR"
 
-    async def _revoke_rights(self, thread_user_id: int):
+    async def _revoke_rights(self, thread_user_id: int, username: str):
         """Отзыв прав через команду админу"""
         try:
             response_queue = queue.Queue()
@@ -930,7 +1028,8 @@ class WorkerThread(threading.Thread):
                 worker_user_id=thread_user_id,
                 worker_access_hash=0,
                 chat_link=self.chat_thread.chat_link,
-                response_queue=response_queue
+                response_queue=response_queue,
+                username=username
             )
 
             self.chat_thread.parent.admin_command_queue.put(command)

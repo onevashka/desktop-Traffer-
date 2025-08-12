@@ -2,7 +2,8 @@
 import asyncio
 
 import phonenumbers
-
+import datetime
+from datetime import timezone
 from pathlib import Path
 from telethon import TelegramClient
 from telethon.errors import (
@@ -13,6 +14,7 @@ from loguru import logger
 
 from src.accounts.impl.utils import load_json_data, save_json_data
 from src.entities import ProxyTelethon
+from telethon import functions
 
 
 class Account:
@@ -122,6 +124,10 @@ class Account:
         from telethon.errors import UserAlreadyParticipantError
 
         try:
+            result = await self.client(functions.help.GetAppConfigRequest(hash=0))
+            frozen, details = self.is_frozen(result)
+            if frozen:
+                return "FROZEN_ACCOUNT"
 
             if not self.client or not await self.client.is_user_authorized():
                 logger.error(f"[{self.name}] Клиент не подключен или не авторизован")
@@ -283,3 +289,30 @@ class Account:
 
         if changed:
             save_json_data(self.json_path, self.account_data)
+
+    def is_frozen(self, app_config) -> tuple:
+        if not app_config or not hasattr(app_config, 'config') or not hasattr(app_config.config, 'value'):
+            return False, None
+
+        values = {v.key: v.value for v in app_config.config.value}
+
+        since = values.get("freeze_since_date")
+        until = values.get("freeze_until_date")
+        appeal = values.get("freeze_appeal_url")
+
+        def to_datetime(val):
+            try:
+                return datetime.fromtimestamp(val.value, tz=timezone.utc)
+            except Exception:
+                return None
+
+        if since or until or appeal:
+            result = {
+                "since": to_datetime(since) if since else None,
+                "until": to_datetime(until) if until else None,
+                "appeal_url": appeal.value if hasattr(appeal, 'value') else str(appeal)
+            }
+            return True, result
+
+        return False, None
+
