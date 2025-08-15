@@ -18,6 +18,7 @@ class ChatProtectionStats:
     consecutive_writeoff_accounts: int = 0
     consecutive_spam_accounts: int = 0
     consecutive_freeze_accounts: int = 0
+    consecutive_flood_accounts: int = 0  # 🔥 НОВЫЙ счетчик специально для флуда!
     consecutive_unknown_error_accounts: int = 0
 
     # История последних результатов аккаунтов (для отслеживания "подряд")
@@ -46,6 +47,7 @@ class ChatProtectionStats:
         self.consecutive_writeoff_accounts = 0
         self.consecutive_spam_accounts = 0
         self.consecutive_freeze_accounts = 0
+        self.consecutive_flood_accounts = 0  # 🔥 НОВЫЙ сброс
         self.consecutive_unknown_error_accounts = 0
 
         # Считаем последовательные проблемы с конца списка
@@ -68,13 +70,21 @@ class ChatProtectionStats:
                     if self.last_account_results[-self.consecutive_spam_accounts] != "spam_limit":
                         self.consecutive_spam_accounts -= 1
                         break
-            elif result in ["frozen", "flood"]:
+            elif result == "frozen":  # 🔥 ИСПРАВЛЕНО: frozen отдельно от flood
                 self.consecutive_freeze_accounts += 1
                 if self.consecutive_freeze_accounts == 1:
                     continue
                 else:
-                    if self.last_account_results[-self.consecutive_freeze_accounts] not in ["frozen", "flood"]:
+                    if self.last_account_results[-self.consecutive_freeze_accounts] != "frozen":
                         self.consecutive_freeze_accounts -= 1
+                        break
+            elif result == "flood":  # 🔥 НОВАЯ ОБРАБОТКА: flood отдельно!
+                self.consecutive_flood_accounts += 1
+                if self.consecutive_flood_accounts == 1:
+                    continue
+                else:
+                    if self.last_account_results[-self.consecutive_flood_accounts] != "flood":
+                        self.consecutive_flood_accounts -= 1
                         break
             elif result in ["block_limit", "dead", "unknown_error"]:
                 self.consecutive_unknown_error_accounts += 1
@@ -91,6 +101,7 @@ class ChatProtectionStats:
                 self.consecutive_writeoff_accounts = 0
                 self.consecutive_spam_accounts = 0
                 self.consecutive_freeze_accounts = 0
+                self.consecutive_flood_accounts = 0  # 🔥 НОВЫЙ сброс!
                 self.consecutive_unknown_error_accounts = 0
                 break
             else:
@@ -112,6 +123,7 @@ class ChatProtectionStats:
         self.consecutive_writeoff_accounts = 0
         self.consecutive_spam_accounts = 0
         self.consecutive_freeze_accounts = 0
+        self.consecutive_flood_accounts = 0  # 🔥 НОВЫЙ сброс
         self.consecutive_unknown_error_accounts = 0
 
 
@@ -125,7 +137,7 @@ class ChatProtectionManager:
 
     def check_chat_protection(self, chat_link: str, account_name: str, finish_reason: str) -> bool:
         """
-        Проверяет защиту чата после завершения работы аккаунта
+        🔥 ИСПРАВЛЕННАЯ проверка защиты чата с отдельной обработкой флуда
 
         Args:
             chat_link: Ссылка на чат
@@ -151,17 +163,25 @@ class ChatProtectionManager:
         # При успехе сбрасываем счетчики
         if finish_reason == "success":
             stats.reset_on_success()
+            logger.info(f"[{self.parent.profile_name}] ✅ Успех в чате {chat_link} - сбрасываем счетчики защиты")
             return False
 
         # Пересчитываем последовательные проблемы более точно
         stats.consecutive_writeoff_accounts = stats._count_consecutive_from_end(["writeoff_limit"])
         stats.consecutive_spam_accounts = stats._count_consecutive_from_end(["spam_limit"])
-        stats.consecutive_freeze_accounts = stats._count_consecutive_from_end(["frozen", "flood"])
+        stats.consecutive_freeze_accounts = stats._count_consecutive_from_end(["frozen"])
+        stats.consecutive_flood_accounts = stats._count_consecutive_from_end(["flood"])  # 🔥 ОТДЕЛЬНЫЙ подсчет флуда!
         stats.consecutive_unknown_error_accounts = stats._count_consecutive_from_end(
             ["block_limit", "dead", "unknown_error"])
 
         # Проверяем лимиты
         config = self.parent.config
+
+        # 🔥 НОВАЯ ПРОВЕРКА: Специальная защита от флуда - ЖЕСТКИЙ лимит 2 аккаунта!
+        if stats.consecutive_flood_accounts >= 2:  # 🔥 ЖЕСТКО ЗАДАЕМ 2 флуд аккаунта подряд
+            self._block_chat(chat_link, stats,
+                             f"🚫 ФЛУД ЗАЩИТА: {stats.consecutive_flood_accounts} аккаунтов подряд получили FloodWait (лимит: 2)")
+            return True
 
         # Проверка лимита списаний
         if config.chat_writeoff_accounts > 0 and stats.consecutive_writeoff_accounts >= config.chat_writeoff_accounts:
@@ -175,7 +195,7 @@ class ChatProtectionManager:
                              f"Превышен лимит последовательных спам-блоков: {stats.consecutive_spam_accounts} подряд (лимит: {config.chat_spam_accounts})")
             return True
 
-        # Проверка лимита заморозок
+        # Проверка лимита заморозок (БЕЗ флуда)
         if config.chat_freeze_accounts > 0 and stats.consecutive_freeze_accounts >= config.chat_freeze_accounts:
             self._block_chat(chat_link, stats,
                              f"Превышен лимит последовательных заморозок: {stats.consecutive_freeze_accounts} подряд (лимит: {config.chat_freeze_accounts})")
@@ -187,12 +207,13 @@ class ChatProtectionManager:
                              f"Превышен лимит последовательных ошибок: {stats.consecutive_unknown_error_accounts} подряд (лимит: {config.chat_unknown_error_accounts})")
             return True
 
-        # Логируем текущее состояние
+        # 🔥 УЛУЧШЕННОЕ логирование с флудом
         logger.info(f"[{self.parent.profile_name}] Защита чата {chat_link}: "
-                    f"Списания: {stats.consecutive_writeoff_accounts}/{config.chat_writeoff_accounts}, "
-                    f"Спам: {stats.consecutive_spam_accounts}/{config.chat_spam_accounts}, "
-                    f"Заморозки: {stats.consecutive_freeze_accounts}/{config.chat_freeze_accounts}, "
-                    f"Ошибки: {stats.consecutive_unknown_error_accounts}/{config.chat_unknown_error_accounts}")
+                    f"🚫 Флуд: {stats.consecutive_flood_accounts}/2, "  # 🔥 ПОКАЗЫВАЕМ флуд отдельно!
+                    f"📝 Списания: {stats.consecutive_writeoff_accounts}/{config.chat_writeoff_accounts}, "
+                    f"🚫 Спам: {stats.consecutive_spam_accounts}/{config.chat_spam_accounts}, "
+                    f"🥶 Заморозки: {stats.consecutive_freeze_accounts}/{config.chat_freeze_accounts}, "
+                    f"💥 Ошибки: {stats.consecutive_unknown_error_accounts}/{config.chat_unknown_error_accounts}")
 
         return False
 
@@ -206,6 +227,8 @@ class ChatProtectionManager:
         logger.error(f"🚫 [{self.parent.profile_name}] ЧАТ ЗАБЛОКИРОВАН: {chat_link}")
         logger.error(f"🚫 [{self.parent.profile_name}] Причина: {reason}")
         logger.error(f"🚫 [{self.parent.profile_name}] История последних результатов: {stats.last_account_results[-5:]}")
+
+        self.parent.record_stopped_chat(chat_link, reason)
 
         # Устанавливаем флаг остановки для всех потоков этого чата
         if hasattr(self.parent, 'chat_threads'):
@@ -227,7 +250,7 @@ class ChatProtectionManager:
         return self.chat_stats[chat_link]
 
     def get_protection_report(self) -> str:
-        """Генерирует отчет по защите чатов"""
+        """🔥 ОБНОВЛЕННЫЙ отчет по защите чатов с флудом"""
         report = []
         report.append("=" * 50)
         report.append("ОТЧЕТ ПО ЗАЩИТЕ ЧАТОВ")
@@ -242,6 +265,7 @@ class ChatProtectionManager:
             report.append(f"  Последовательные списания: {stats.consecutive_writeoff_accounts}")
             report.append(f"  Последовательные спам-блоки: {stats.consecutive_spam_accounts}")
             report.append(f"  Последовательные заморозки: {stats.consecutive_freeze_accounts}")
+            report.append(f"  🔥 Последовательные флуды: {stats.consecutive_flood_accounts}")  # 🔥 НОВАЯ строка!
             report.append(f"  Последовательные ошибки: {stats.consecutive_unknown_error_accounts}")
             report.append(f"  История (последние 5): {stats.last_account_results[-5:]}")
 

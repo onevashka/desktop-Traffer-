@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Dict
 from loguru import logger
 from src.entities.moduls.inviter import *
+from datetime import datetime
 
 
 class AccountErrorManager:
@@ -74,11 +75,71 @@ class AccountErrorManager:
         return False
 
     def mark_account_as_processed(self, account_name: str, reason: str):
-        """
-        Помечает аккаунт как обработанный чтобы он больше не использовался
-        """
-        self.parent.processed_accounts.add(account_name)
-        logger.debug(f"[{self.parent.profile_name}] Аккаунт {account_name} помечен как обработанный: {reason}")
+        """ПРАВИЛЬНАЯ логика для мертвых аккаунтов"""
+        try:
+            # МЕРТВЫЕ аккаунты - больше НИКОГДА не будут работать
+            permanently_dead_reasons = {
+                'dead', 'frozen', 'missing_files', 'unauthorized'
+            }
+
+            # ЗАКОНЧИВШИЕ работу
+            finished_work_reasons = {
+                'достигнут лимит успехов', 'лимит списаний', 'лимит спам-блоков',
+                'лимит блоков инвайтов', 'флуд лимит'
+            }
+
+            is_permanently_dead = any(dead_reason in reason for dead_reason in permanently_dead_reasons)
+            is_finished_work = any(finished_reason in reason for finished_reason in finished_work_reasons)
+
+            if is_permanently_dead or is_finished_work:
+                # НАВСЕГДА исключаем
+                self.parent.processed_accounts.add(account_name)
+
+                if is_permanently_dead:
+                    logger.error(f"[{self.parent.profile_name}] 💀 Аккаунт {account_name} МЕРТВ: {reason}")
+                else:
+                    logger.info(f"[{self.parent.profile_name}] 🏁 Аккаунт {account_name} закончил: {reason}")
+
+                # КРИТИЧНО: Обновляем статус в менеджере
+                self._mark_account_as_dead_in_manager(account_name, reason)
+            else:
+                logger.warning(f"[{self.parent.profile_name}] ⚠️ Временная проблема: {account_name} - {reason}")
+
+            self.parent.account_finish_times[account_name] = datetime.now()
+
+        except Exception as e:
+            logger.error(f"[{self.parent.profile_name}] Ошибка пометки {account_name}: {e}")
+
+    def _mark_account_as_dead_in_manager(self, account_name: str, reason: str):
+        """КРИТИЧНО: Помечаем аккаунт как мертвый в AccountManager"""
+        try:
+            if hasattr(self.parent.account_manager, 'traffic_accounts'):
+                if account_name in self.parent.account_manager.traffic_accounts:
+                    account_data = self.parent.account_manager.traffic_accounts[account_name]
+
+                    # Определяем новый статус
+                    if 'dead' in reason or 'unauthorized' in reason or 'missing_files' in reason:
+                        new_status = 'dead'
+                    elif 'frozen' in reason:
+                        new_status = 'frozen'
+                    elif 'флуд' in reason:
+                        new_status = 'flood'
+                    elif 'лимит успехов' in reason:
+                        new_status = 'finished'
+                    else:
+                        new_status = 'dead'
+
+                    # КРИТИЧНО: Меняем статус
+                    old_status = account_data.status
+                    account_data.status = new_status
+                    account_data.is_busy = False
+                    account_data.busy_by = None
+
+                    logger.success(
+                        f"[{self.parent.profile_name}] 📝 AccountManager: {account_name} {old_status} -> {new_status}")
+
+        except Exception as e:
+            logger.error(f"[{self.parent.profile_name}] Ошибка обновления статуса {account_name}: {e}")
 
     def update_account_status_in_manager_sync(self, account_name: str, new_status: str):
         """

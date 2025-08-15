@@ -214,6 +214,10 @@ class Account:
                 logger.error(f"[{self.name}] Флуд при попытке вступить в {link}")
                 return "FLOOD_WAIT"
 
+            elif "The channel specified is private and you lack permission to access it. Another reason may be that you were banned from it" in error_text:
+                logger.error(f"[{self.name}] Аккаунт ранее был кикнут из группы {link}")
+                return f"ERROR: {error_text[:100]}"
+
             else:
                 logger.error(f"[{self.name}] Ошибка при вступлении в {link}: {e}")
                 return f"ERROR: {error_text[:100]}"

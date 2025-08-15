@@ -35,6 +35,7 @@ class ChatWorkerThread(threading.Thread):
         self.parent = parent
         self.chat_success = 0
         self.chat_total = 0
+        self.chat_accounts_used = set()  # НОВОЕ!
         self.active_threads = []
         self.threads_lock = threading.Lock()
         self.stop_chat_flag = threading.Event()
@@ -126,7 +127,7 @@ class ChatWorkerThread(threading.Thread):
                     if worker.is_alive():
                         logger.info(
                             f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] ⏳ Ожидаем завершения worker потока {i}/{len(threads_to_wait)}")
-                        worker.join(timeout=60)  # Ждем до 60 секунд каждый поток
+                        worker.join(timeout=200)  # Ждем до 60 секунд каждый поток
 
                         if worker.is_alive():
                             logger.warning(
@@ -200,6 +201,23 @@ class WorkerThread(threading.Thread):
         # ОСНОВНОЙ ЦИКЛ ПОТОКА - продолжает работать пока есть пользователи и аккаунты
         while not self.chat_thread.parent.stop_flag.is_set():
 
+            if self.chat_thread.stop_chat_flag.is_set():
+                logger.error(
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                    f"[{self.chat_thread.chat_link}]-[Поток-{self.thread_id}] "
+                    f"🛑 ФЛАГ ОСТАНОВКИ ЧАТА УСТАНОВЛЕН - ЗАВЕРШАЕМ ПОТОК"
+                )
+                break
+
+                # 🔥 ПРОВЕРКА БЛОКИРОВКИ ЧАТА ЧЕРЕЗ МЕНЕДЖЕР
+            if self.chat_thread.parent.chat_protection_manager.is_chat_blocked(self.chat_thread.chat_link):
+                logger.error(
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                    f"[{self.chat_thread.chat_link}]-[Поток-{self.thread_id}] "
+                    f"❌ ЧАТ ЗАБЛОКИРОВАН - ЗАВЕРШАЕМ ПОТОК"
+                )
+                break
+
             # Проверяем есть ли пользователи для обработки
             if self.chat_thread.parent.user_queue.empty():
                 logger.info(
@@ -252,6 +270,27 @@ class WorkerThread(threading.Thread):
         client_connected = False
         rights_granted = False
         account_finish_reason = "unknown"
+
+        # КРИТИЧНО: Регистрируем аккаунт для ЭТОГО чата
+        self.chat_thread.chat_accounts_used.add(self.current_account_name)
+
+        # 🔥 ПРОВЕРКА ФЛАГА ОСТАНОВКИ ЧАТА В НАЧАЛЕ!
+        if self.chat_thread.stop_chat_flag.is_set():
+            logger.error(
+                f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                f"[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                f"🛑 ФЛАГ ОСТАНОВКИ ЧАТА УСТАНОВЛЕН - НЕ НАЧИНАЕМ РАБОТУ"
+            )
+            return True
+
+        # 🔥 ПРОВЕРКА БЛОКИРОВКИ ЧАТА В НАЧАЛЕ!
+        if self.chat_thread.parent.chat_protection_manager.is_chat_blocked(self.chat_thread.chat_link):
+            logger.error(
+                f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
+                f"[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                f"❌ ЧАТ ЗАБЛОКИРОВАН - НЕ НАЧИНАЕМ РАБОТУ"
+            )
+            return True
 
         try:
             # 1. Проверяем файлы аккаунта
@@ -664,6 +703,7 @@ class WorkerThread(threading.Thread):
                 user.status = UserStatus.NOT_FOUND
                 user.last_attempt = datetime.now()
                 user.error_message = "Пользователь не найден"
+                user.chat_link = self.chat_thread.chat_link
 
                 # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
                 if self.realtime_logger:
@@ -697,6 +737,7 @@ class WorkerThread(threading.Thread):
                                 user.status = UserStatus.ALREADY_IN
                                 user.last_attempt = datetime.now()
                                 user.error_message = "Уже в чате"
+                                user.chat_link = self.chat_thread.chat_link
 
                                 # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
                                 if self.realtime_logger:
@@ -765,6 +806,7 @@ class WorkerThread(threading.Thread):
             user.status = UserStatus.INVITED
             user.last_attempt = datetime.now()
             user.error_message = "Успешно приглашен"
+            user.chat_link = self.chat_thread.chat_link
 
             # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус и логируем успех
             if self.realtime_logger:
@@ -783,6 +825,7 @@ class WorkerThread(threading.Thread):
             user.status = UserStatus.FLOOD_WAIT
             user.last_attempt = datetime.now()
             user.error_message = f"FloodWait: {str(e)}"
+            user.chat_link = self.chat_thread.chat_link
 
             # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
             if self.realtime_logger:
@@ -801,6 +844,7 @@ class WorkerThread(threading.Thread):
             user.status = UserStatus.PRIVACY
             user.last_attempt = datetime.now()
             user.error_message = "Приватные ограничения"
+            user.chat_link = self.chat_thread.chat_link
 
             # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
             if self.realtime_logger:
@@ -813,6 +857,7 @@ class WorkerThread(threading.Thread):
             user.status = UserStatus.NOT_FOUND
             user.last_attempt = datetime.now()
             user.error_message = "Пользователь деактивирован"
+            user.chat_link = self.chat_thread.chat_link
 
             # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
             if self.realtime_logger:
@@ -828,6 +873,7 @@ class WorkerThread(threading.Thread):
                 user.status = UserStatus.SPAM_BLOCK
                 user.last_attempt = datetime.now()
                 user.error_message = "Спамблок"
+                user.chat_link = self.chat_thread.chat_link
 
                 # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
                 if self.realtime_logger:
@@ -839,6 +885,7 @@ class WorkerThread(threading.Thread):
                 user.status = UserStatus.ERROR
                 user.last_attempt = datetime.now()
                 user.error_message = f"Ошибка: {str(e)[:50]}"
+                user.chat_link = self.chat_thread.chat_link
 
                 # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
                 if self.realtime_logger:
@@ -849,33 +896,8 @@ class WorkerThread(threading.Thread):
                 return "BLOCK_INVITE"
 
     def _count_accounts_used_in_chat(self) -> int:
-        """
-        🔥 ОБНОВЛЕНО: Подсчитывает количество аккаунтов, которые уже работали в данном чате
-        """
-        try:
-            chat_link = self.chat_thread.chat_link
-            accounts_count = 0
-
-            # Считаем все типы завершенных аккаунтов - ДОБАВЛЯЕМ ФЛУД!
-            all_finished_accounts = (
-                    self.chat_thread.parent.finished_successfully_accounts |
-                    self.chat_thread.parent.writeoff_accounts |
-                    self.chat_thread.parent.spam_block_accounts |
-                    self.chat_thread.parent.block_invite_accounts |
-                    self.chat_thread.parent.frozen_accounts |
-                    self.chat_thread.parent.blocked_accounts |
-                    getattr(self.chat_thread.parent, 'flood_accounts', set())  # 🔥 НОВОЕ МНОЖЕСТВО!
-            )
-
-            # Добавляем текущий аккаунт
-            all_finished_accounts.add(self.current_account_name)
-            accounts_count = len(all_finished_accounts)
-
-            return accounts_count
-
-        except Exception as e:
-            logger.error(f"[{self.chat_thread.parent.profile_name}] Ошибка подсчета аккаунтов: {e}")
-            return 1  # По крайней мере текущий аккаунт
+        """Подсчитывает аккаунты использованные ИМЕННО В ЭТОМ ЧАТЕ"""
+        return len(self.chat_thread.chat_accounts_used)
 
     async def _finalize_current_account(self, client_connected: bool):
         """🔥 ОБНОВЛЕНО: Финализация текущего аккаунта С ПРОВЕРКОЙ ОТКЛЮЧЕНИЯ"""
@@ -974,24 +996,22 @@ class WorkerThread(threading.Thread):
                 f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Ошибка обновления статуса в менеджере: {e}")
 
     def _show_account_finish_stats(self, reason: str, account_invites: int = 0):
-        """Показывает статистику по чату при завершении аккаунта"""
+        """Статистика ТОЛЬКО ПО ЭТОМУ ЧАТУ"""
         try:
             chat_link = self.chat_thread.chat_link
-            chat_success = self.chat_thread.parent.chat_stats.get(chat_link, {}).get("success", 0)
-            chat_total = self.chat_thread.parent.chat_stats.get(chat_link, {}).get("total", 0)
-            accounts_used = self._count_accounts_used_in_chat()
 
-            # Подсчитываем сколько пользователей осталось в очереди
+            # Берем данные ИМЕННО ПО ЭТОМУ ЧАТУ
+            chat_success = self.chat_thread.chat_success
+            chat_total = self.chat_thread.chat_total
+            accounts_used = len(self.chat_thread.chat_accounts_used)
+
             users_remaining = self.chat_thread.parent.user_queue.qsize()
-
-            # Получаем изначальное количество пользователей (если доступно)
             total_users = getattr(self.chat_thread.parent, 'total_users_count', users_remaining + chat_total)
 
-            logger.success(
-                f"💼 СТАТИСТИКА ЧАТА: ✅ Успешных инвайтов: {chat_success}, 📝 Всего попыток: {chat_total}, 👥 Потрачено аккаунтов: {accounts_used}, 📊 Осталось пригласить: {users_remaining} из {total_users}, Чат {self.chat_thread.chat_link}")
+            logger.success(f"💼 СТАТИСТИКА ЧАТА {chat_link}: ✅ Успешных: {chat_success}, 📝 Попыток: {chat_total}, 👥 Аккаунтов: {accounts_used}, 📊 Осталось: {users_remaining}/{total_users}")
 
         except Exception as e:
-            logger.error(f"[{self.chat_thread.parent.profile_name}] Ошибка показа статистики аккаунта: {e}")
+            logger.error(f"Ошибка статистики чата: {e}")
 
     async def _join_chat(self):
         """Вход в чат"""

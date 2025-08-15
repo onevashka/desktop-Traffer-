@@ -98,9 +98,59 @@ class AdminInviterProcess(BaseInviterProcess):
 
         self.chat_protection_manager = ChatProtectionManager(self)
 
+        self.clear_stopped_chats_file()
+
     # ============================================================================
     # ДЕЛЕГИРОВАННЫЕ МЕТОДЫ - используют специализированные менеджеры
     # ============================================================================
+
+    def clear_stopped_chats_file(self):
+        """Очищает файл остановленных чатов при запуске профиля"""
+        try:
+            profile_folder = Path(self.profile_data['folder_path'])
+            stopped_chats_file = profile_folder / "Остановка_чата.txt"
+
+            if stopped_chats_file.exists():
+                # Читаем сколько было записей для логирования
+                try:
+                    with open(stopped_chats_file, 'r', encoding='utf-8') as f:
+                        content = f.read().strip()
+                    if content:
+                        lines = [line for line in content.split('\n') if line.strip() and 'https://t.me/' in line]
+                        if lines:
+                            logger.info(
+                                f"[{self.profile_name}] 📄 Найден файл остановленных чатов с {len(lines)} записями")
+                except:
+                    pass
+
+                # Очищаем файл
+                with open(stopped_chats_file, 'w', encoding='utf-8') as f:
+                    f.write("")
+                logger.success(f"[{self.profile_name}] 🧹 Файл остановленных чатов очищен")
+            else:
+                logger.info(f"[{self.profile_name}] 📄 Файл остановленных чатов не найден")
+
+        except Exception as e:
+            logger.error(f"[{self.profile_name}] ❌ Ошибка очистки файла остановленных чатов: {e}")
+
+    def record_stopped_chat(self, chat_link: str, reason: str):
+        """Записывает остановленный чат в файл"""
+        try:
+            profile_folder = Path(self.profile_data['folder_path'])
+            stopped_chats_file = profile_folder / "Остановка_чата.txt"
+
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            record_line = f"[{current_time}] {chat_link} - {reason}\n"
+
+            # Создаем или дополняем файл
+            with open(stopped_chats_file, 'a', encoding='utf-8') as f:
+                f.write(record_line)
+
+            logger.warning(f"[{self.profile_name}] 📝 ЗАПИСАН ОСТАНОВЛЕННЫЙ ЧАТ: {chat_link}")
+            logger.warning(f"[{self.profile_name}] 📝 Причина: {reason}")
+
+        except Exception as e:
+            logger.error(f"[{self.profile_name}] ❌ Ошибка записи остановленного чата: {e}")
 
     def _check_account_error_limits(self, account_name: str, error_type: str) -> bool:
         """Делегируем AccountErrorManager"""
@@ -135,34 +185,49 @@ class AdminInviterProcess(BaseInviterProcess):
     # ============================================================================
 
     def get_fresh_accounts(self, module_name: str, count: int) -> List:
-        """Получение свежих аккаунтов с проверкой уже обработанных"""
+        """ИСПРАВЛЕНО: Получаем аккаунты И фильтруем исключенные"""
         try:
-            accounts = self.account_manager.get_free_accounts(module_name, count)
+            logger.debug(f"[{self.profile_name}] 🎯 Запрос: {count}, исключенных: {len(self.processed_accounts)}")
+
+            # Запрашиваем в 2 раза больше для фильтрации
+            request_count = min(count * 2, 100)
+            accounts = self.account_manager.get_free_accounts(module_name, request_count)
 
             if not accounts:
-                logger.warning(f"[{self.profile_name}] Менеджер не предоставил аккаунты (запрошено: {count})")
+                free_count = self.account_manager.get_free_accounts_count()
+                logger.warning(f"[{self.profile_name}] ❌ Нет аккаунтов. Свободных: {free_count}")
                 return []
 
+            # Фильтруем исключенные
             fresh_accounts = []
             for account_data in accounts:
                 if account_data.name not in self.processed_accounts:
                     fresh_accounts.append(account_data)
+                    if len(fresh_accounts) >= count:
+                        break
                 else:
+                    # Освобождаем исключенный
                     try:
                         self.account_manager.release_account(account_data.name, module_name)
-                    except Exception as e:
-                        logger.error(
-                            f"[{self.profile_name}] Ошибка освобождения обработанного аккаунта {account_data.name}: {e}")
+                    except Exception:
+                        pass
+
+            # Освобождаем лишние
+            for i in range(len(fresh_accounts), len(accounts)):
+                try:
+                    self.account_manager.release_account(accounts[i].name, module_name)
+                except Exception:
+                    pass
 
             if fresh_accounts:
-                pass
+                logger.success(f"[{self.profile_name}] ✅ Получено {len(fresh_accounts)} свежих")
             else:
-                logger.warning(f"[{self.profile_name}] Все полученные аккаунты уже были обработаны")
+                logger.error(f"[{self.profile_name}] ❌ Все {len(accounts)} аккаунтов исключены!")
 
             return fresh_accounts
 
         except Exception as e:
-            logger.error(f"[{self.profile_name}] Ошибка получения аккаунтов от менеджера: {e}")
+            logger.error(f"[{self.profile_name}] 💥 Ошибка получения аккаунтов: {e}")
             return []
 
     def check_accounts_availability(self) -> bool:
@@ -417,7 +482,7 @@ class AdminInviterProcess(BaseInviterProcess):
                     work_finished = True
                     break
 
-                await asyncio.sleep(0.5)  # Увеличили интервал для снижения нагрузки
+                await asyncio.sleep(0.05)  # Увеличили интервал для снижения нагрузки
 
             except Exception as e:
                 logger.error(f"[{self.profile_name}] Ошибка главного цикла: {e}")

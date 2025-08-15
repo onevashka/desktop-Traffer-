@@ -28,6 +28,7 @@ class UserStatus(Enum):
 class InviteUser:
     """Модель пользователя для инвайта"""
     username: str  # Username без @
+    chat_link: str = None
     status: UserStatus = UserStatus.CLEAN
     last_attempt: Optional[datetime] = None
     error_message: Optional[str] = None
