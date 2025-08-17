@@ -347,7 +347,7 @@ async def wait_for_main_admin_rights(main_admin_client, chat_link: str, timeout_
     return False
 
 
-async def ensure_main_admin_ready_in_chat(main_admin_account, admin_rights_manager, chat_link: str) -> bool:
+async def ensure_main_admin_ready_in_chat(main_admin_account, admin_rights_manager, chat_link: str, chat_admin) -> bool:
     """
     Обеспечивает полную готовность главного админа в чате
 
@@ -381,11 +381,13 @@ async def ensure_main_admin_ready_in_chat(main_admin_account, admin_rights_manag
         # Шаг 3: Получение user_id главного админа
         me = await main_admin_account.client.get_me()
         main_admin_user_id = me.id
+        chat_admin.user_id = me.id
         main_admin_name = main_admin_account.session_path.stem
 
         chat_entity = await main_admin_account.client.get_input_entity(chat_link)
         chat = await main_admin_account.client.get_entity(chat_entity)
         chat_id = getattr(chat, 'id', None)
+        chat_admin.chat_id = chat_id
 
         # Шаг 4: Бот выдает права
         rights_granted = await admin_rights_manager.grant_main_admin_rights(
@@ -548,10 +550,10 @@ async def ensure_username_for_account(account, account_name: str) -> Optional[st
         # Проверяем текущий username
         me = await account.client.get_me()
         if me.username:
-            logger.info(f"[{account_name}] ✅ Username уже есть: @{me.username}")
+            logger.debug(f"[{account_name}] ✅ Username уже есть: @{me.username}")
             return me.username  # Возвращаем существующий username
 
-        logger.info(f"[{account_name}] ⚠️ Username отсутствует, генерируем уникальный...")
+        logger.debug(f"[{account_name}] ⚠️ Username отсутствует, генерируем уникальный...")
 
         # Пытаемся установить username
         max_attempts = 15
@@ -560,7 +562,7 @@ async def ensure_username_for_account(account, account_name: str) -> Optional[st
                 # Генерируем человеческую комбинацию
                 username = _generate_super_unique_username(account_name, attempt)
 
-                logger.info(f"[{account_name}] 🔄 Попытка {attempt}: @{username}")
+                logger.debug(f"[{account_name}] 🔄 Попытка {attempt}: @{username}")
 
                 # Устанавливаем username
                 await account.client(UpdateUsernameRequest(username=username))
@@ -570,7 +572,7 @@ async def ensure_username_for_account(account, account_name: str) -> Optional[st
                 me_updated = await account.client.get_me()
 
                 if me_updated.username == username:
-                    logger.success(f"[{account_name}] ✅ Username установлен: @{username}")
+                    logger.debug(f"[{account_name}] ✅ Username установлен: @{username}")
                     return username  # Возвращаем установленный username
                 else:
                     logger.warning(f"[{account_name}] ⚠️ Username не применился, пробуем еще раз...")

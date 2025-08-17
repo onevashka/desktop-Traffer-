@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from loguru import logger
 from src.entities.moduls.inviter import InviteUser, UserStatus
-
+from .cumulative_reports import CumulativeReportsManager
 
 class RealtimeLogger:
     """Система последовательного логирования в реальном времени"""
@@ -25,6 +25,9 @@ class RealtimeLogger:
 
         # Инициализируем отчет успешных приглашений
         self._init_success_report()
+
+        # 🔥 НОВОЕ: Инициализируем систему накопительных отчетов
+        self.cumulative_reports = CumulativeReportsManager(profile_name, profile_folder)
 
         logger.success(f"[{self.profile_name}] Система реального времени готова")
         logger.info(f"[{self.profile_name}] Отчет успехов: {self.success_report_file}")
@@ -58,6 +61,13 @@ class RealtimeLogger:
                 with open(self.success_report_file, 'a', encoding='utf-8') as f:
                     f.write(log_line)
                     f.flush()  # Принудительное сохранение на диск
+
+                self.cumulative_reports.log_successful_invite(username, chat_link)
+
+                # Логируем краткую сводку накопительной статистики
+                stats = self.cumulative_reports.get_stats_summary()
+                logger.debug(
+                    f"[{self.profile_name}] 📊 Накопительная статистика: сегодня {stats['daily_total']}, всего {stats['total_invites']}")
 
             except Exception as e:
                 logger.error(f"[{self.profile_name}] ОШИБКА записи успеха: {e}")
@@ -130,9 +140,10 @@ class RealtimeLogger:
         return status_mapping.get(status, "БЛОК_ИНВАЙТА")  # По умолчанию для неизвестных ошибок
 
     def finalize_report(self, total_processed: int, total_successful: int):
-        """Завершает отчет итоговой статистикой"""
+        """🔥 УСИЛЕННОЕ ЗАВЕРШЕНИЕ: Завершает отчет с принудительным сохранением"""
         with self.lock:
             try:
+                # 1. Завершаем последовательный отчет (как было)
                 with open(self.success_report_file, 'a', encoding='utf-8') as f:
                     f.write(f"\n" + "=" * 70 + "\n")
                     f.write(f"🏁 ИТОГОВАЯ СТАТИСТИКА\n")
@@ -144,7 +155,40 @@ class RealtimeLogger:
                     f.write(f"=" * 70 + "\n")
                     f.flush()
 
-                logger.success(f"[{self.profile_name}] 📄 ОТЧЕТ ЗАВЕРШЕН!")
+                # 🔥 2. КРИТИЧНО: Принудительное сохранение накопительных данных
+                logger.info(f"[{self.profile_name}] 💾 Выполняем финальное сохранение накопительных данных...")
+
+                save_success = self.cumulative_reports.force_save_and_verify()
+
+                if save_success:
+                    logger.success(f"[{self.profile_name}] ✅ Накопительные данные надежно сохранены")
+                else:
+                    logger.error(f"[{self.profile_name}] ❌ ПРОБЛЕМЫ с сохранением накопительных данных!")
+
+                    # Показываем диагностику
+                    integrity_report = self.cumulative_reports.get_data_integrity_report()
+                    logger.error(f"[{self.profile_name}] 🔍 Диагностика целостности: {integrity_report}")
+
+                # 3. Генерируем финальные версии накопительных отчетов
+                self.cumulative_reports._generate_daily_report()
+                self.cumulative_reports._generate_total_report()
+
+                # 4. Показываем итоговую сводку накопительной статистики
+                stats = self.cumulative_reports.get_stats_summary()
+                logger.success(f"[{self.profile_name}] 📊 НАКОПИТЕЛЬНАЯ СТАТИСТИКА:")
+                logger.success(
+                    f"[{self.profile_name}] 📅 За сегодня: {stats['daily_total']} приглашений в {stats['daily_chats']} чатов")
+                logger.success(
+                    f"[{self.profile_name}] 📈 За все время: {stats['total_invites']} приглашений в {stats['total_chats']} чатов")
+
+                logger.success(f"[{self.profile_name}] 📄 ВСЕ ОТЧЕТЫ ЗАВЕРШЕНЫ!")
 
             except Exception as e:
-                logger.error(f"[{self.profile_name}] Ошибка завершения отчета: {e}")
+                logger.error(f"[{self.profile_name}] ❌ Ошибка завершения отчета: {e}")
+
+                # В случае ошибки пытаемся хотя бы сохранить накопительные данные
+                try:
+                    logger.warning(f"[{self.profile_name}] 🆘 Аварийное сохранение накопительных данных...")
+                    self.cumulative_reports.force_save_and_verify()
+                except Exception as emergency_error:
+                    logger.error(f"[{self.profile_name}] ❌ Аварийное сохранение не удалось: {emergency_error}")

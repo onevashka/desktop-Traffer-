@@ -242,3 +242,5 @@ class ChatAdmin:
     session_path: Optional[Path] = None
     json_path: Optional[Path] = None
     is_ready: bool = False
+    user_id: Optional[int] = None
+    chat_id: Optional[int] = None

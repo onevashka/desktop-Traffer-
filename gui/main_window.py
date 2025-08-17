@@ -1,10 +1,9 @@
 # desktop-Traffer/gui/main_window.py
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QPushButton, QLabel, QFrame, QStackedWidget, QSizePolicy
+    QPushButton, QLabel, QFrame, QStackedWidget
 )
-from PySide6.QtCore import Qt, QPropertyAnimation, QRect, QEasingCurve, QTimer
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtCore import Qt, QTimer
 from gui.account_manager import AccountManagerTab
 from gui.inviter_manager import InviterManagerTab
 from log_config import logger

@@ -245,6 +245,39 @@ class Account:
         else:
             pass
 
+    def increment_green_people(self) -> int:
+        """
+        🔥 НОВЫЙ МЕТОД: Увеличивает счетчик green_people на 1 и сохраняет в JSON
+
+        Returns:
+            int: Новое значение счетчика
+        """
+        try:
+            # Получаем текущее значение
+            current_count = self.account_data.get('green_people', 0)
+
+            # Проверяем что это число
+            if not isinstance(current_count, (int, float)):
+                current_count = 0
+
+            # Увеличиваем на 1
+            new_count = int(current_count) + 1
+
+            # 🔥 ПРЯМОЕ ОБНОВЛЕНИЕ: минуя проверку равенства в update_json
+            self.account_data['green_people'] = new_count
+
+            # Сразу сохраняем в файл
+            save_json_data(self.json_path, self.account_data)
+
+            logger.debug(f"[{self.name}] 📈 Счетчик green_people: {current_count} → {new_count}")
+
+            return new_count
+
+        except Exception as e:
+            logger.error(f"[{self.name}] ❌ Ошибка обновления счетчика green_people: {e}")
+            # Возвращаем текущее значение или 0 при ошибке
+            return self.account_data.get('green_people', 0)
+
     async def get_info(self) -> dict:
         """
         Возвращает словарь с информацией об аккаунте.

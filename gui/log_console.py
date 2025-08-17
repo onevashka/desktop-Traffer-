@@ -3,7 +3,7 @@
 from pathlib import Path
 import html
 
-from PySide6.QtCore    import Qt, QObject, Signal
+from PySide6.QtCore    import QObject, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QFrame
 from loguru            import logger

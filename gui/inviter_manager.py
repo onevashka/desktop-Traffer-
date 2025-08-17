@@ -3,12 +3,10 @@
 Главный менеджер инвайтера - интерфейс для массовых инвайтов
 ИНТЕГРИРОВАН С МОДУЛЕМ src/modules/impl/inviter/
 """
-
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame,
-    QScrollArea, QSizePolicy
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 )
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QTimer
 from gui.component_inviter.inviter_table import InviterTableWidget
 from gui.component_inviter.inviter_stats import InviterStatsWidget
 from gui.dialogs.inviter_dialogs import show_create_profile_dialog
@@ -132,6 +130,29 @@ class InviterManagerTab(QWidget):
         """)
         self.stop_all_btn.clicked.connect(self._on_stop_all_profiles)
 
+        # 🔥 НОВАЯ КНОПКА: Генерация отчета по аккаунтам
+        self.report_btn = QPushButton("📊 Отчет по аккаунтам")
+        self.report_btn.setObjectName("ReportButton")
+        self.report_btn.setFixedSize(170, 40)
+        self.report_btn.setStyleSheet("""
+                    QPushButton#ReportButton {
+                        background: #8B5CF6;
+                        border: 1px solid #7C3AED;
+                        border-radius: 8px;
+                        color: #FFFFFF;
+                        font-size: 14px;
+                        font-weight: 600;
+                    }
+                    QPushButton#ReportButton:hover {
+                        background: #7C3AED;
+                        border-color: #6D28D9;
+                    }
+                    QPushButton#ReportButton:pressed {
+                        background: #6D28D9;
+                    }
+                """)
+        self.report_btn.clicked.connect(self._on_generate_accounts_report)
+
         # Кнопка обновления
         self.refresh_btn = QPushButton("🔄 Обновить")
         self.refresh_btn.setObjectName("RefreshButton")
@@ -153,9 +174,11 @@ class InviterManagerTab(QWidget):
         """)
         self.refresh_btn.clicked.connect(self._on_refresh_profiles)
 
+
         buttons_layout.addWidget(self.create_profile_btn)
         buttons_layout.addWidget(self.start_all_btn)
         buttons_layout.addWidget(self.stop_all_btn)
+        buttons_layout.addWidget(self.report_btn)
         buttons_layout.addWidget(self.refresh_btn)
 
         return buttons_layout
@@ -387,6 +410,172 @@ class InviterManagerTab(QWidget):
             except:
                 pass
 
+    def _on_generate_accounts_report(self):
+        """🔥 НОВЫЙ ОБРАБОТЧИК: Генерация отчета по аккаунтам с красивым диалогом"""
+        try:
+            from gui.dialogs.report_progress_dialog import show_report_progress_dialog
+            from PySide6.QtCore import QThread, Signal
+
+            # Показываем диалог прогресса
+            progress_dialog = show_report_progress_dialog(self)
+
+            # Создаем рабочий поток для генерации отчета
+            class ReportWorker(QThread):
+                status_update = Signal(str, str)  # status, details
+                progress_update = Signal(int, int)  # current, total
+                finished = Signal(str, dict)  # file_path, stats
+                error = Signal(str)
+
+                def run(self):
+                    try:
+                        from src.services.account_report_service import AccountReportService
+
+                        self.status_update.emit("Инициализация сервиса отчетов",
+                                                "Создаем сервис для сканирования аккаунтов...")
+
+                        # Создаем сервис отчетов
+                        report_service = AccountReportService()
+
+                        self.status_update.emit("Сканирование папок аккаунтов",
+                                                "Проверяем доступные папки с аккаунтами...")
+
+                        # Получаем список папок для сканирования
+                        folders_to_scan = [
+                            ("Аккаунты", "Основная папка с активными аккаунтами"),
+                            ("Списанные", "Аккаунты с ошибками списания"),
+                            ("Мертвые", "Заблокированные аккаунты"),
+                            ("Замороженные", "Замороженные аккаунты"),
+                            ("Спам_блок", "Аккаунты со спам-блоками"),
+                            ("Блок_инвайтов", "Аккаунты с блоками инвайтов"),
+                            ("Успешно_отработанные", "Успешно завершившие работу"),
+                            ("Флуд", "Аккаунты с флуд-лимитами")
+                        ]
+
+                        total_folders = len(folders_to_scan)
+                        self.progress_update.emit(0, total_folders)
+
+                        # Эмулируем пошаговый прогресс
+                        for i, (folder_name, folder_desc) in enumerate(folders_to_scan):
+                            self.status_update.emit(
+                                f"Сканирование папки: {folder_name}",
+                                f"📁 {folder_desc}"
+                            )
+
+                            # Небольшая задержка для визуализации прогресса
+                            import time
+                            time.sleep(0.3)
+
+                            self.progress_update.emit(i + 1, total_folders)
+
+                        self.status_update.emit("Генерация отчета", "📝 Создаем итоговый файл отчета...")
+
+                        # Генерируем отчет
+                        report_path = report_service.generate_report()
+
+                        self.status_update.emit("Сбор статистики", "📊 Подготавливаем краткую сводку...")
+
+                        # Получаем краткую статистику
+                        stats = report_service.get_summary_stats()
+
+                        self.status_update.emit("Завершение", "✅ Отчет успешно создан!")
+
+                        self.finished.emit(report_path, stats)
+
+                    except Exception as e:
+                        import traceback
+                        error_details = f"{str(e)}\n\nДетали:\n{traceback.format_exc()}"
+                        self.error.emit(error_details)
+
+            # Создаем и настраиваем рабочий поток
+            self.report_worker = ReportWorker()
+
+            def on_status_update(status: str, details: str):
+                progress_dialog.update_status(status, details)
+
+            def on_progress_update(current: int, total: int):
+                progress_dialog.set_progress_range(0, total)
+                progress_dialog.set_progress_value(current)
+
+            def on_report_finished(file_path: str, stats: dict):
+                progress_dialog.finish_success(file_path, stats)
+
+                # Логируем успех
+                logger.info(f"📊 Отчет по аккаунтам создан: {file_path}")
+
+                # Показываем уведомление
+                from gui.notifications import show_success
+                show_success(
+                    "Отчет готов! 📊",
+                    f"✅ Отчет по аккаунтам успешно создан!\n\n"
+                    f"📊 Статистика:\n"
+                    f"👥 Всего аккаунтов: {stats['total_accounts']:,}\n"
+                    f"✅ С инвайтами: {stats['accounts_with_invites']:,}\n"
+                    f"🎯 Общее количество инвайтов: {stats['total_invites']:,}\n"
+                    f"🏆 Лучший аккаунт: {stats['top_account_name']} ({stats['top_account_invites']} инвайтов)\n"
+                    f"📁 Папок просканировано: {stats['folders_scanned']}\n\n"
+                    f"📄 Файл: {Path(file_path).name}"
+                )
+
+                # Пытаемся открыть папку с отчетом
+                try:
+                    import os
+                    import platform
+                    from pathlib import Path
+
+                    report_folder = Path(file_path).parent
+
+                    if platform.system() == "Windows":
+                        os.startfile(report_folder)
+                    elif platform.system() == "Darwin":  # macOS
+                        os.system(f"open '{report_folder}'")
+                    else:  # Linux
+                        os.system(f"xdg-open '{report_folder}'")
+
+                except Exception as e:
+                    logger.debug(f"Не удалось открыть папку: {e}")
+
+            def on_report_error(error_msg: str):
+                progress_dialog.finish_error(error_msg)
+
+                # Логируем ошибку
+                logger.error(f"❌ Ошибка генерации отчета по аккаунтам: {error_msg}")
+
+                # Показываем уведомление об ошибке
+                from gui.notifications import show_error
+                show_error(
+                    "Ошибка генерации отчета",
+                    f"❌ Не удалось создать отчет:\n\n{error_msg}"
+                )
+
+            def on_progress_cancelled():
+                if hasattr(self, 'report_worker') and self.report_worker.isRunning():
+                    self.report_worker.terminate()
+                    self.report_worker.wait()
+
+                from gui.notifications import show_info
+                show_info(
+                    "Генерация отменена",
+                    "Создание отчета было отменено пользователем"
+                )
+
+            # Подключаем сигналы
+            self.report_worker.status_update.connect(on_status_update)
+            self.report_worker.progress_update.connect(on_progress_update)
+            self.report_worker.finished.connect(on_report_finished)
+            self.report_worker.error.connect(on_report_error)
+            progress_dialog.cancelled.connect(on_progress_cancelled)
+
+            # Показываем диалог и запускаем генерацию
+            progress_dialog.show()
+            self.report_worker.start()
+
+        except Exception as e:
+            logger.error(f"❌ Критическая ошибка генерации отчета: {e}")
+            from gui.notifications import show_error
+            show_error(
+                "Критическая ошибка",
+                f"Не удалось запустить генерацию отчета:\n{e}"
+            )
     def _reload_stats_from_module(self):
         """Перезагружает статистику из модуля"""
         try:

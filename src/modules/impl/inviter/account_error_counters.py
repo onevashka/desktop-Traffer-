@@ -98,7 +98,7 @@ class AccountErrorManager:
                 if is_permanently_dead:
                     logger.error(f"[{self.parent.profile_name}] 💀 Аккаунт {account_name} МЕРТВ: {reason}")
                 else:
-                    logger.info(f"[{self.parent.profile_name}] 🏁 Аккаунт {account_name} закончил: {reason}")
+                    pass
 
                 # КРИТИЧНО: Обновляем статус в менеджере
                 self._mark_account_as_dead_in_manager(account_name, reason)
@@ -135,7 +135,7 @@ class AccountErrorManager:
                     account_data.is_busy = False
                     account_data.busy_by = None
 
-                    logger.success(
+                    logger.debug(
                         f"[{self.parent.profile_name}] 📝 AccountManager: {account_name} {old_status} -> {new_status}")
 
         except Exception as e:

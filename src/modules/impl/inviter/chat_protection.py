@@ -20,6 +20,7 @@ class ChatProtectionStats:
     consecutive_freeze_accounts: int = 0
     consecutive_flood_accounts: int = 0  # 🔥 НОВЫЙ счетчик специально для флуда!
     consecutive_unknown_error_accounts: int = 0
+    consecutive_too_many_admins: int = 0
 
     # История последних результатов аккаунтов (для отслеживания "подряд")
     last_account_results: List[str] = field(default_factory=list)
@@ -49,6 +50,7 @@ class ChatProtectionStats:
         self.consecutive_freeze_accounts = 0
         self.consecutive_flood_accounts = 0  # 🔥 НОВЫЙ сброс
         self.consecutive_unknown_error_accounts = 0
+        self.consecutive_too_many_admins = 0  # 🔥 НОВЫЙ сброс
 
         # Считаем последовательные проблемы с конца списка
         for result in reversed(self.last_account_results):
@@ -85,6 +87,14 @@ class ChatProtectionStats:
                 else:
                     if self.last_account_results[-self.consecutive_flood_accounts] != "flood":
                         self.consecutive_flood_accounts -= 1
+                        break
+            elif result == "too_many_admins":  # 🔥 НОВАЯ ОБРАБОТКА!
+                self.consecutive_too_many_admins += 1
+                if self.consecutive_too_many_admins == 1:
+                    continue
+                else:
+                    if self.last_account_results[-self.consecutive_too_many_admins] != "too_many_admins":
+                        self.consecutive_too_many_admins -= 1
                         break
             elif result in ["block_limit", "dead", "unknown_error"]:
                 self.consecutive_unknown_error_accounts += 1
@@ -163,7 +173,6 @@ class ChatProtectionManager:
         # При успехе сбрасываем счетчики
         if finish_reason == "success":
             stats.reset_on_success()
-            logger.info(f"[{self.parent.profile_name}] ✅ Успех в чате {chat_link} - сбрасываем счетчики защиты")
             return False
 
         # Пересчитываем последовательные проблемы более точно
@@ -234,7 +243,7 @@ class ChatProtectionManager:
         if hasattr(self.parent, 'chat_threads'):
             for thread in self.parent.chat_threads:
                 if hasattr(thread, 'chat_link') and thread.chat_link == chat_link:
-                    logger.info(f"[{self.parent.profile_name}] Останавливаем поток чата {chat_link}")
+                    logger.debug(f"[{self.parent.profile_name}] Останавливаем поток чата {chat_link}")
                     # Можно установить специальный флаг для потока
                     if hasattr(thread, 'stop_chat_flag'):
                         thread.stop_chat_flag.set()

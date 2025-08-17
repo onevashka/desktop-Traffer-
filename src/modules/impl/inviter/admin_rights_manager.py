@@ -72,42 +72,37 @@ class AdminRightsManager:
                 logger.error(f"❌ Ошибка выдачи прав главному админу {account_name}: {e}")
                 return False
 
-    async def revoke_main_admin_rights(self, chat_link: str) -> bool:
+    async def revoke_main_admin_rights(self, chat_link: str, user_id: int, account_name: str) -> bool:
         """
-        ТОЛЬКО забирает права у главного админа через бота
+        🔥 ИСПРАВЛЕНО: ТОЛЬКО забирает права у главного админа через бота (точно как grant_main_admin_rights только наоборот)
 
         Args:
             chat_link: Ссылка на чат
+            user_id: ID главного админа
+            account_name: Имя аккаунта главного админа
 
         Returns:
             bool: True если права забраны успешно
         """
         async with self._get_lock(chat_link):
             try:
-                main_admin = self.main_admins.get(chat_link)
-                if not main_admin:
-                    logger.warning(f"⚠️ Нет главного админа для отзыва прав в {chat_link}")
-                    return True
-
-                user_id = main_admin['user_id']
-                account_name = main_admin['account_name']
-
-                logger.info(f"👑🔒 Отзыв прав у главного админа через БОТА: {account_name} (ID: {user_id}) в {chat_link}")
 
                 # Забираем права через бота
                 success = await self.bot_manager.revoke_admin_rights(chat_link, user_id)
 
                 if success:
                     # Удаляем из отслеживания
-                    del self.main_admins[chat_link]
-                    logger.success(f"✅ Права отозваны у главного админа {account_name} в {chat_link} через БОТА")
+                    if chat_link in self.main_admins:
+                        del self.main_admins[chat_link]
+
+                    logger.debug(f"✅ Права отозваны у главного админа {account_name} в {chat_link} через БОТА")
                     return True
                 else:
-                    logger.warning(f"⚠️ Не удалось отозвать права у главного админа {account_name} через бота")
+                    logger.error(f"❌ Не удалось отозвать права у главного админа {account_name} через бота")
                     return False
 
             except Exception as e:
-                logger.error(f"❌ Ошибка отзыва прав у главного админа в {chat_link}: {e}")
+                logger.error(f"❌ Ошибка отзыва прав у главного админа {account_name}: {e}")
                 return False
 
     def get_main_admin(self, chat_link: str) -> Optional[Dict]:
@@ -128,53 +123,69 @@ class AdminRightsManager:
 
 # НОВЫЕ ФУНКЦИИ: Прямое управление правами воркеров через главного админа
 async def grant_worker_rights_directly(main_admin, chat_entity, worker_user_id: int, worker_user_access_hash: int,
-                                       worker_name: str, worker_username: str) -> bool:
+                                       worker_name: str, worker_username: str, chat_link) -> bool | str:
     """
-    Напрямую выдает права потоку через админа
+    Напрямую выдает права потоку через админа с повторными попытками
     """
-    try:
-        from telethon.tl.functions.channels import EditAdminRequest, GetParticipantRequest
-        from telethon.tl.types import ChatAdminRights, InputUser, InputPeerUser
-        from telethon.errors import UserNotParticipantError, UsernameNotOccupiedError
+    max_retries = 3
+    retry_delay = 10  # секунд
 
-        # --- Точечный поиск по username (без полного перебора) ---
-        uname = (worker_username or "").lstrip("@").strip()
-        if not uname:
-            logger.error("❌ Пустой username")
-            return False
-
+    for attempt in range(max_retries):
         try:
-            # получаем юзера по username
-            user = await main_admin.client.get_entity(uname)  # tl.types.User
-        except (UsernameNotOccupiedError, ValueError):
-            logger.error(f"❌ @{uname} не существует или недоступен")
-            return False
+            from telethon.tl.functions.channels import EditAdminRequest, GetParticipantRequest
+            from telethon.tl.types import ChatAdminRights, InputUser, InputPeerUser
+            from telethon.errors import UserNotParticipantError, UsernameNotOccupiedError
 
-        # проверяем факт участия именно в этом чате
-        '''try:
-            worker_peer = InputPeerUser(user_id=user.id, access_hash=user.access_hash)
-            await main_admin.client(GetParticipantRequest(channel=chat_entity, participant=worker_peer))
-        except UserNotParticipantError:
-            logger.error(f"❌ {worker_name} (@{uname}) не является участником чата")
-            return False'''
+            # --- Точечный поиск по username (без полного перебора) ---
+            uname = (worker_username or "").lstrip("@").strip()
+            if not uname:
+                logger.error("❌ Пустой username")
+                return False
 
-        # выдаём права (НЕ меняю набор прав)
-        worker_input = InputUser(user_id=user.id, access_hash=user.access_hash)
-        rights = ChatAdminRights(invite_users=True, add_admins=True, anonymous=True)
+            try:
+                # получаем юзера по username
+                user = await main_admin.client.get_entity(uname)  # tl.types.User
+            except (UsernameNotOccupiedError, ValueError):
+                logger.error(f"❌ @{uname} не существует или недоступен")
+                return False
 
-        await main_admin.client(EditAdminRequest(
-            channel=chat_entity,
-            user_id=worker_input,
-            admin_rights=rights,
-            rank="админ"
-        ))
+            # выдаём права (НЕ меняю набор прав)
+            worker_input = InputUser(user_id=user.id, access_hash=user.access_hash)
+            rights = ChatAdminRights(invite_users=True, add_admins=True, anonymous=True)
 
-        logger.info(f"✅ Права выданы {worker_name} (@{uname})")
-        return True
+            await main_admin.client(EditAdminRequest(
+                channel=chat_entity,
+                user_id=worker_input,
+                admin_rights=rights,
+                rank="админ"
+            ))
 
-    except Exception as e:
-        logger.error(f"❌ Ошибка для {worker_name}: {e}")
-        return False
+            logger.info(f"✅ Права успешно выданы {worker_name} (@{uname}) с попытки {attempt + 1}")
+            return True
+
+        except Exception as e:
+            error_message = str(e).lower()
+
+            # Проверяем, содержит ли ошибка нужный текст
+            if "chat admin privileges are required to do that in the specified chat" in error_message:
+                if attempt < max_retries - 1:  # Если это не последняя попытка
+                    logger.warning(f"⚠️ Попытка {attempt + 1}/{max_retries} для {worker_name}: {e}")
+                    logger.info(f"🔄 Повторная попытка через {retry_delay} секунд...")
+                    await asyncio.sleep(retry_delay)
+                    continue
+                else:
+                    logger.error(f"❌ Все {max_retries} попытки исчерпаны для {worker_name}: {e}")
+                    return False
+            elif "Too many admins" in error_message:
+                logger.error(f"❌ Главный админ  {main_admin.name} сообщает: В чате {chat_link} много админов")
+                return "TOO_MANY_ADMINS"
+            else:
+                # Если это другая ошибка, не повторяем
+                logger.error(f"❌ Ошибка для {worker_name}: {e}")
+                return False
+
+    # Этот код никогда не должен выполниться, но на всякий случай
+    return False
 
 
 
@@ -223,7 +234,7 @@ async def revoke_worker_rights_directly(main_admin_client, chat_entity, worker_u
             rank=""  # убрать звание
         ))
 
-        logger.info(f"✅ Права сняты с {worker_name} (@{uname})")
+        logger.debug(f"✅ Права сняты с {worker_name} (@{uname})")
         return True
 
     except Exception as e:

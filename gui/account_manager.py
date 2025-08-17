@@ -6,7 +6,6 @@
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QLabel
 )
-from PySide6.QtCore import Qt
 from gui.component_account_manager.traffic_accounts import TrafficAccountsTab
 from gui.component_account_manager.sales_accounts import SalesAccountsTab
 from loguru import logger

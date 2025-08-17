@@ -257,7 +257,7 @@ class BotManager:
         """
         for attempt in range(1, max_retries + 1):
             try:
-                logger.info(f"🔒 Попытка {attempt}: отзыв прав админа у пользователя {user_id} в {chat_link}")
+                logger.debug(f"🔒 Попытка {attempt}: отзыв прав админа у пользователя {user_id} в {chat_link}")
 
                 # Забираем все права (устанавливаем в False)
                 await self.bot.promote_chat_member(
@@ -275,7 +275,7 @@ class BotManager:
                     is_anonymous=False,
                 )
 
-                logger.info(f"✅ Права админа отозваны у пользователя {user_id} в {chat_link}")
+                logger.debug(f"✅ Права админа отозваны у пользователя {user_id} в {chat_link}")
                 return True
 
             except TelegramAPIError as e:

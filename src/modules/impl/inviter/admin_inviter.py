@@ -1,9 +1,11 @@
 # src/modules/impl/inviter/admin_inviter.py - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ
 """
-ОПТИМИЗИРОВАНО: Админ-инвайтер с системой реального времени
+ОПТИМИЗИРОВАНО: Админ-инвайтер с системой реального времени и персональными очередями
 - Убрано избыточное сохранение в конце процесса
 - Все записи ведутся в реальном времени
 - Оставлен только необходимый функционал
+- ДОБАВЛЕНО: Отдельные очереди команд для каждого чата
+- ИСПРАВЛЕНО: Полностью убрана общая очередь admin_command_queue
 """
 import asyncio
 import queue
@@ -28,7 +30,7 @@ from .chat_protection import ChatProtectionManager
 
 
 class AdminInviterProcess(BaseInviterProcess):
-    """Главный класс админ-инвайтера с системой реального времени"""
+    """Главный класс админ-инвайтера с системой реального времени и персональными очередями"""
 
     def __init__(self, profile_name: str, profile_data: Dict, account_manager):
         super().__init__(profile_name, profile_data, account_manager)
@@ -67,8 +69,16 @@ class AdminInviterProcess(BaseInviterProcess):
         self.bot_manager: Optional[BotManager] = None
         self.admin_rights_manager: Optional[AdminRightsManager] = None
 
-        # Очереди и потоки
-        self.admin_command_queue = queue.Queue()
+        # 🔥 ИСПРАВЛЕНО: УБИРАЕМ общую очередь - она больше не нужна!
+        # self.admin_command_queue = queue.Queue()  # УДАЛЕНА!
+
+        # 🔥 НОВОЕ: Отдельная очередь для каждого чата
+        self.chat_command_queues: Dict[str, queue.Queue] = {}
+        self.chat_processors: Dict[str, asyncio.Task] = {}
+
+        self.bot_command_queue: queue.Queue = queue.Queue()
+        self.bot_command_processor_task: Optional[asyncio.Task] = None
+
         self.chat_threads = []
         self.ready_chats = set()
 
@@ -90,6 +100,9 @@ class AdminInviterProcess(BaseInviterProcess):
         self.finished_successfully_accounts = set()
         self.processed_accounts = set()
 
+        # 🔥 ДОБАВЛЕНО: Поддержка флуд аккаунтов
+        self.flood_accounts = set()
+
         # Путь к файлу пользователей
         self.users_file_path = profile_folder / "База юзеров.txt"
 
@@ -99,6 +112,163 @@ class AdminInviterProcess(BaseInviterProcess):
         self.chat_protection_manager = ChatProtectionManager(self)
 
         self.clear_stopped_chats_file()
+
+    # ============================================================================
+    # 🔥 НОВЫЕ МЕТОДЫ ДЛЯ РАБОТЫ С ПЕРСОНАЛЬНЫМИ ОЧЕРЕДЯМИ
+    # ============================================================================
+
+    def send_command_to_chat(self, chat_link: str, command: AdminCommand):
+        """Отправляет команду в персональную очередь конкретного чата"""
+        if chat_link in self.chat_command_queues:
+            self.chat_command_queues[chat_link].put(command)
+            admin_name = self.chat_admins[chat_link].name if chat_link in self.chat_admins else "Unknown"
+            logger.debug(
+                f"[{self.profile_name}] 📤 Команда {command.action} для воркера {command.worker_name} отправлена админу {admin_name} в чате {chat_link}")
+        else:
+            logger.error(f"[{self.profile_name}] ❌ Очередь для чата {chat_link} не найдена!")
+            if command.response_queue:
+                command.response_queue.put(False)
+
+    def get_chat_admin_info(self, chat_link: str) -> str:
+        """Получает информацию об админе для чата"""
+        if chat_link in self.chat_admins:
+            admin = self.chat_admins[chat_link]
+            queue_size = self.chat_command_queues[chat_link].qsize() if chat_link in self.chat_command_queues else 0
+            return f"Админ: {admin.name}, Очередь команд: {queue_size}, Готовность: {admin.is_ready}"
+        return "Админ не назначен"
+
+    # ПОЛНОСТЬЮ ЗАМЕНИТЕ метод revoke_main_admin_rights_for_chat:
+
+    async def revoke_main_admin_rights_for_chat(self, chat_link: str, reason: str) -> bool:
+        """🔥 ОБНОВЛЕНО: Отзыв прав через основной поток"""
+        try:
+            logger.info(f"[{self.profile_name}] 👑🔒 Отзыв прав у главного админа в чате {chat_link} (причина: {reason})")
+
+            # ПРОВЕРЯЕМ наличие админа для этого чата
+            if chat_link not in self.chat_admins:
+                logger.warning(f"[{self.profile_name}] ⚠️ Главный админ для чата {chat_link} не найден")
+                return True
+
+            admin_data = self.chat_admins[chat_link]
+
+            # 🔥 ИСПОЛЬЗУЕМ СОХРАНЕННЫЕ ДАННЫЕ!
+            admin_user_id = admin_data.user_id
+            chat_id = admin_data.chat_id
+
+            if not admin_user_id or not chat_id:
+                logger.warning(
+                    f"[{self.profile_name}] ⚠️ Данные админа {admin_data.name} не сохранены (ID: {admin_user_id}, Chat: {chat_id})")
+                return True
+
+            logger.info(
+                f"[{self.profile_name}] 🔑 Используем сохраненные данные админа {admin_data.name}: user_id={admin_user_id}, chat_id={chat_id}")
+
+            # 🔥 НОВОЕ: Отправляем команду в основной поток где живет бот
+            success = self.send_bot_command(
+                action="REVOKE_ADMIN_RIGHTS",
+                chat_id=chat_id,
+                user_id=admin_user_id,
+                account_name=admin_data.name,
+                timeout=20  # 20 секунд таймаут
+            )
+
+            if success:
+                logger.debug(
+                    f"[{self.profile_name}] ✅ Права отозваны у главного админа {admin_data.name} в {chat_link}")
+            else:
+                logger.warning(
+                    f"[{self.profile_name}] ⚠️ Не удалось отозвать права у главного админа {admin_data.name}")
+
+            return True  # Всегда возвращаем True чтобы не блокировать завершение
+
+        except Exception as e:
+            logger.error(f"[{self.profile_name}] ❌ Критическая ошибка отзыва прав у главного админа: {e}")
+            return True
+
+    async def _start_bot_command_processor(self):
+        """🔥 НОВОЕ: Запускаем процессор команд бота в основном event loop"""
+        self.bot_command_processor_task = asyncio.create_task(self._process_bot_commands())
+        logger.info(f"[{self.profile_name}] 🚀 Процессор команд бота запущен в основном потоке")
+
+    async def _process_bot_commands(self):
+        """🔥 НОВОЕ: Обработка команд бота в основном event loop"""
+        while not self.stop_flag.is_set():
+            try:
+                # Обрабатываем команды бота
+                commands_processed = 0
+                while commands_processed < 5:  # До 5 команд за раз
+                    try:
+                        command = self.bot_command_queue.get_nowait()
+                        await self._execute_bot_command(command)
+                        commands_processed += 1
+                    except queue.Empty:
+                        break
+
+                # Быстрый цикл
+                await asyncio.sleep(0.01)
+
+            except Exception as e:
+                logger.error(f"[{self.profile_name}] ❌ Ошибка процессора команд бота: {e}")
+                await asyncio.sleep(1)
+
+        logger.info(f"[{self.profile_name}] 🛑 Процессор команд бота остановлен")
+
+    async def _execute_bot_command(self, command: dict):
+        """🔥 НОВОЕ: Выполнение команды бота в основном потоке"""
+        try:
+            if command["action"] == "REVOKE_ADMIN_RIGHTS":
+                success = await self.admin_rights_manager.revoke_main_admin_rights(
+                    chat_link=command["chat_id"],
+                    user_id=command["user_id"],
+                    account_name=command["account_name"]
+                )
+
+                # Отправляем результат обратно
+                if command.get("response_queue"):
+                    command["response_queue"].put(success)
+
+            elif command["action"] == "GRANT_ADMIN_RIGHTS":
+                success = await self.admin_rights_manager.grant_main_admin_rights(
+                    chat_link=command["chat_id"],
+                    user_id=command["user_id"],
+                    account_name=command["account_name"]
+                )
+
+                if command.get("response_queue"):
+                    command["response_queue"].put(success)
+
+        except Exception as e:
+            logger.error(f"[{self.profile_name}] ❌ Ошибка выполнения команды бота {command['action']}: {e}")
+            if command.get("response_queue"):
+                command["response_queue"].put(False)
+
+    def send_bot_command(self, action: str, chat_id: str, user_id: int, account_name: str, timeout: int = 30) -> bool:
+        """🔥 НОВОЕ: Отправляет команду боту в основной поток"""
+        try:
+            response_queue = queue.Queue()
+
+            command = {
+                "action": action,
+                "chat_id": chat_id,
+                "user_id": user_id,
+                "account_name": account_name,
+                "response_queue": response_queue
+            }
+
+            # Отправляем команду в основной поток
+            self.bot_command_queue.put(command)
+
+            # Ждем ответ
+            try:
+                result = response_queue.get(timeout=600)
+                return result
+            except queue.Empty:
+                logger.error(f"[{self.profile_name}] ⏰ Таймаут команды бота {action} ({timeout} сек)")
+                return False
+
+        except Exception as e:
+            logger.error(f"[{self.profile_name}] ❌ Ошибка отправки команды боту: {e}")
+            return False
 
     # ============================================================================
     # ДЕЛЕГИРОВАННЫЕ МЕТОДЫ - используют специализированные менеджеры
@@ -123,10 +293,6 @@ class AdminInviterProcess(BaseInviterProcess):
                 except:
                     pass
 
-                # Очищаем файл
-                with open(stopped_chats_file, 'w', encoding='utf-8') as f:
-                    f.write("")
-                logger.success(f"[{self.profile_name}] 🧹 Файл остановленных чатов очищен")
             else:
                 logger.info(f"[{self.profile_name}] 📄 Файл остановленных чатов не найден")
 
@@ -146,8 +312,8 @@ class AdminInviterProcess(BaseInviterProcess):
             with open(stopped_chats_file, 'a', encoding='utf-8') as f:
                 f.write(record_line)
 
-            logger.warning(f"[{self.profile_name}] 📝 ЗАПИСАН ОСТАНОВЛЕННЫЙ ЧАТ: {chat_link}")
-            logger.warning(f"[{self.profile_name}] 📝 Причина: {reason}")
+            logger.debug(f"[{self.profile_name}] 📝 ЗАПИСАН ОСТАНОВЛЕННЫЙ ЧАТ: {chat_link}")
+            logger.debug(f"[{self.profile_name}] 📝 Причина: {reason}")
 
         except Exception as e:
             logger.error(f"[{self.profile_name}] ❌ Ошибка записи остановленного чата: {e}")
@@ -220,7 +386,7 @@ class AdminInviterProcess(BaseInviterProcess):
                     pass
 
             if fresh_accounts:
-                logger.success(f"[{self.profile_name}] ✅ Получено {len(fresh_accounts)} свежих")
+                logger.debug(f"[{self.profile_name}] ✅ Получено {len(fresh_accounts)} свежих")
             else:
                 logger.error(f"[{self.profile_name}] ❌ Все {len(accounts)} аккаунтов исключены!")
 
@@ -241,7 +407,7 @@ class AdminInviterProcess(BaseInviterProcess):
             return False
 
     def _assign_admins_to_chats(self):
-        """Назначает отдельного админа каждому чату"""
+        """🔥 ОБНОВЛЕНО: Назначает отдельного админа каждому чату с созданием персональных очередей"""
         # Получаем все чаты
         chat_links = []
         temp_chats = []
@@ -274,6 +440,13 @@ class AdminInviterProcess(BaseInviterProcess):
             )
             self.chat_admins[chat_link] = chat_admin
             logger.success(f"[{self.profile_name}] Чат {chat_link} -> Админ {admin_name}")
+
+        # 🔥 ИСПРАВЛЕНО: Создаем персональную очередь для каждого чата
+        for chat_link in self.chat_admins.keys():
+            self.chat_command_queues[chat_link] = queue.Queue()
+            admin_name = self.chat_admins[chat_link].name
+            logger.success(f"[{self.profile_name}] ✅ Создана персональная очередь для чата: {chat_link}")
+            logger.success(f"[{self.profile_name}] 👨‍💼 Админ для этого чата: {admin_name}")
 
         return True
 
@@ -324,6 +497,102 @@ class AdminInviterProcess(BaseInviterProcess):
             # Завершаем отчет реального времени
             self.realtime_logger.finalize_report(total_processed, successful_invites)
 
+    async def _start_chat_processors(self):
+        """🔥 НОВОЕ: Запускаем отдельный процессор команд для каждого чата"""
+        for chat_link in self.chat_admins.keys():
+            processor = asyncio.create_task(
+                self._process_chat_commands(chat_link)
+            )
+            self.chat_processors[chat_link] = processor
+            admin_name = self.chat_admins[chat_link].name
+            logger.success(
+                f"[{self.profile_name}] 🚀 Запущен процессор команд для чата: {chat_link} (Админ: {admin_name})")
+
+    async def _process_chat_commands(self, chat_link: str):
+        """🔥 ИСПРАВЛЕНО: Процессор команд для конкретного чата"""
+        chat_admin = self.chat_admins.get(chat_link)
+        if not chat_admin:
+            logger.error(f"[{self.profile_name}] Админ для чата {chat_link} не найден!")
+            return
+
+        logger.info(f"[{self.profile_name}] 🚀 Процессор команд запущен для чата: {chat_link}")
+        logger.info(f"[{self.profile_name}] 👨‍💼 Админ для этого чата: {chat_admin.name}")
+
+        while not self.stop_flag.is_set():
+            try:
+                # 🔥 КРИТИЧНО: Обрабатываем команды ТОЛЬКО этого чата!
+                chat_queue = self.chat_command_queues[chat_link]
+
+                # Обрабатываем до 10 команд за раз для быстродействия
+                commands_processed = 0
+                while commands_processed < 20:
+                    try:
+                        command = chat_queue.get_nowait()
+
+                        # Обрабатываем команду для ЭТОГО чата с ЕГО админом
+                        await self._execute_chat_command(command, chat_link, chat_admin)
+                        commands_processed += 1
+
+                    except queue.Empty:
+                        break
+
+                # Очень быстрый цикл для отзывчивости
+                await asyncio.sleep(0.01)
+
+            except Exception as e:
+                logger.error(f"[{self.profile_name}] ❌ Ошибка процессора команд для чата {chat_link}: {e}")
+                await asyncio.sleep(1)
+
+        logger.info(f"[{self.profile_name}] 🛑 Процессор команд остановлен для чата: {chat_link}")
+
+    async def _execute_chat_command(self, command: AdminCommand, chat_link: str, chat_admin):
+        """🔥 ИСПРАВЛЕНО: Быстрая обработка команды для конкретного чата"""
+        try:
+            if not chat_admin.is_ready:
+                logger.error(f"[{self.profile_name}] ❌ Админ {chat_admin.name} не готов для чата {chat_link}")
+                if command.response_queue:
+                    command.response_queue.put(False)
+                return
+
+            if command.action == "GRANT_RIGHTS":
+                from .admin_rights_manager import grant_worker_rights_directly
+                chat_entity = await chat_admin.account.client.get_entity(command.chat_link)
+                success = await grant_worker_rights_directly(
+                    main_admin=chat_admin.account,
+                    chat_entity=chat_entity,
+                    worker_user_id=command.worker_user_id,
+                    worker_user_access_hash=command.worker_access_hash,
+                    worker_name=command.worker_name,
+                    worker_username=command.username,
+                    chat_link=chat_link
+                )
+
+                if success == "TOO_MANY_ADMINS":
+                    logger.error(f"[{self.profile_name}] 👑❌ СЛИШКОМ МНОГО АДМИНОВ в чате {chat_link}")
+                    command.response_queue.put("TOO_MANY_ADMINS")
+                elif success == True:
+                    command.response_queue.put(True)
+                else:
+                    logger.error(f"[{self.profile_name}] ❌ Не удалось выдать права воркеру {command.worker_name}")
+                    command.response_queue.put(False)
+
+            elif command.action == "REVOKE_RIGHTS":
+                from .admin_rights_manager import revoke_worker_rights_directly
+                chat_entity = await chat_admin.account.client.get_entity(command.chat_link)
+                await revoke_worker_rights_directly(
+                    main_admin_client=chat_admin.account.client,
+                    chat_entity=chat_entity,
+                    worker_user_id=command.worker_user_id,
+                    worker_name=command.worker_name,
+                    worker_username=command.username,
+                )
+                command.response_queue.put(True)
+
+        except Exception as e:
+            logger.error(f"[{self.profile_name}] ❌ Ошибка выполнения команды {command.action} в чате {chat_link}: {e}")
+            if command.response_queue:
+                command.response_queue.put(False)
+
     async def _async_run_inviting(self):
         """Асинхронная логика"""
         try:
@@ -335,6 +604,13 @@ class AdminInviterProcess(BaseInviterProcess):
                 return
             if not await self._setup_chat_admins():
                 return
+
+            # 🔥 НОВОЕ: Запускаем процессоры команд
+            await self._start_chat_processors()
+
+            # 🔥 НОВОЕ: Запускаем процессор команд бота в основном потоке
+            await self._start_bot_command_processor()
+
             if not await self._prepare_admins_in_chats():
                 return
             await self._main_work_loop()
@@ -426,7 +702,8 @@ class AdminInviterProcess(BaseInviterProcess):
             success = await ensure_main_admin_ready_in_chat(
                 main_admin_account=chat_admin.account,
                 admin_rights_manager=self.admin_rights_manager,
-                chat_link=chat_link
+                chat_link=chat_link,
+                chat_admin=chat_admin
             )
 
             if success:
@@ -445,7 +722,7 @@ class AdminInviterProcess(BaseInviterProcess):
         return True
 
     async def _main_work_loop(self):
-        """ИСПРАВЛЕННЫЙ главный цикл без зацикливания"""
+        """🔥 ИЗМЕНЕНО: Убрана обработка команд из главного цикла - теперь каждый чат обрабатывает свои команды"""
         if self.config.delay_after_start > 0:
             await asyncio.sleep(self.config.delay_after_start)
 
@@ -460,12 +737,8 @@ class AdminInviterProcess(BaseInviterProcess):
 
         while not self.stop_flag.is_set() and not work_finished:
             try:
-                # Обрабатываем команды от воркеров
-                try:
-                    command = self.admin_command_queue.get_nowait()
-                    await self._execute_admin_command(command)
-                except queue.Empty:
-                    pass
+                # 🔥 УБРАНО: Обработка команд (теперь каждый чат сам обрабатывает)
+                # 🔥 ОСТАЕТСЯ: Только мониторинг потоков
 
                 # Проверяем состояние потоков
                 alive_threads = [t for t in self.chat_threads if t.is_alive()]
@@ -482,7 +755,7 @@ class AdminInviterProcess(BaseInviterProcess):
                     work_finished = True
                     break
 
-                await asyncio.sleep(0.05)  # Увеличили интервал для снижения нагрузки
+                await asyncio.sleep(0.1)  # 🔥 БЫСТРЕЕ: было 0.05
 
             except Exception as e:
                 logger.error(f"[{self.profile_name}] Ошибка главного цикла: {e}")
@@ -497,7 +770,7 @@ class AdminInviterProcess(BaseInviterProcess):
                     # Устанавливаем флаг остановки
                     self.stop_flag.set()
                     # Ждем завершения с таймаутом
-                    thread.join(timeout=10)
+                    thread.join(timeout=400)
 
                     # Если поток все еще жив - принудительно завершаем
                     if thread.is_alive():
@@ -530,62 +803,60 @@ class AdminInviterProcess(BaseInviterProcess):
                 thread = ChatWorkerThread(chat_id=i, chat_link=chat_link, parent=self)
                 thread.start()
                 self.chat_threads.append(thread)
+                admin_name = self.chat_admins.get(chat_link, ChatAdmin('Неизвестен')).name
                 logger.success(
-                    f"[{self.profile_name}]-[Поток-{i}] Запущен чат: {chat_link} (Админ: {self.chat_admins.get(chat_link, ChatAdmin('Неизвестен')).name})")
+                    f"[{self.profile_name}]-[Поток-{i}] Запущен чат: {chat_link} (Админ: {admin_name})")
             except Exception as e:
                 logger.error(f"[{self.profile_name}] Ошибка запуска чата {chat_link}: {e}")
 
-    async def _execute_admin_command(self, command: AdminCommand):
-        """Выполнение команды от воркера с правильным админом для чата"""
-        try:
-            if command.chat_link not in self.ready_chats:
-                logger.error(f"[{self.profile_name}] Чат {command.chat_link} не готов для работы с потоками")
-                command.response_queue.put(False)
-                return
-
-            chat_admin = self.chat_admins.get(command.chat_link)
-            if not chat_admin or not chat_admin.is_ready:
-                logger.error(f"[{self.profile_name}] Админ для чата {command.chat_link} не готов")
-                command.response_queue.put(False)
-                return
-
-            if command.action == "GRANT_RIGHTS":
-                from .admin_rights_manager import grant_worker_rights_directly
-                chat_entity = await chat_admin.account.client.get_entity(command.chat_link)
-                success = await grant_worker_rights_directly(
-                    main_admin=chat_admin.account,
-                    chat_entity=chat_entity,
-                    worker_user_id=command.worker_user_id,
-                    worker_user_access_hash=command.worker_access_hash,
-                    worker_name=command.worker_name,
-                    worker_username=command.username,
-                )
-                command.response_queue.put(success)
-                if success:
-                    logger.success(
-                        f"[{self.profile_name}] Права выданы воркеру {command.worker_name} админом {chat_admin.name}")
-                else:
-                    pass
-
-            elif command.action == "REVOKE_RIGHTS":
-                from .admin_rights_manager import revoke_worker_rights_directly
-                chat_entity = await chat_admin.account.client.get_entity(command.chat_link)
-                await revoke_worker_rights_directly(
-                    main_admin_client=chat_admin.account.client,
-                    chat_entity=chat_entity,
-                    worker_user_id=command.worker_user_id,
-                    worker_name=command.worker_name,
-                    worker_username=command.username,
-                )
-                command.response_queue.put(True)
-
-        except Exception as e:
-            logger.error(f"[{self.profile_name}] Ошибка выполнения команды {command.action}: {e}")
-            command.response_queue.put(False)
-
     async def _cleanup(self):
-        """ОПТИМИЗИРОВАННАЯ очистка без лишнего сохранения"""
+        """🔥 УЛУЧШЕНО: Очистка с остановкой процессоров команд"""
         try:
+
+            # 🔥 НОВОЕ: Останавливаем процессор команд бота
+            if self.bot_command_processor_task and not self.bot_command_processor_task.done():
+                logger.info(f"[{self.profile_name}] 🛑 Останавливаем процессор команд бота...")
+                self.bot_command_processor_task.cancel()
+                try:
+                    await asyncio.wait_for(self.bot_command_processor_task, timeout=400)
+                except (asyncio.TimeoutError, asyncio.CancelledError):
+                    logger.debug(f"[{self.profile_name}] ⚠️ Процессор команд бота не завершился за 5 секунд")
+                logger.success(f"[{self.profile_name}] ✅ Процессор команд бота остановлен")
+
+            # Очищаем очередь команд бота
+            while not self.bot_command_queue.empty():
+                try:
+                    command = self.bot_command_queue.get_nowait()
+                    if command.get("response_queue"):
+                        command["response_queue"].put(False)
+                except queue.Empty:
+                    break
+
+            # Останавливаем все процессоры команд
+            logger.debug(f"[{self.profile_name}] 🛑 Останавливаем процессоры команд...")
+
+            for chat_link, processor in self.chat_processors.items():
+                if not processor.done():
+                    processor.cancel()
+                    try:
+                        await asyncio.wait_for(processor, timeout=400)
+                    except (asyncio.TimeoutError, asyncio.CancelledError):
+                        logger.debug(
+                            f"[{self.profile_name}] ⚠️ Процессор для чата {chat_link} не завершился за 5 секунд")
+
+                    logger.success(f"[{self.profile_name}] ✅ Процессор команд остановлен для чата: {chat_link}")
+
+            # Очищаем все персональные очереди
+            for chat_link, queue_obj in self.chat_command_queues.items():
+                while not queue_obj.empty():
+                    try:
+                        command = queue_obj.get_nowait()
+                        if command.response_queue:
+                            command.response_queue.put(False)  # Сигнализируем об отмене
+                    except queue.Empty:
+                        break
+                logger.debug(f"[{self.profile_name}] 🧹 Очередь команд очищена для чата: {chat_link}")
+
             try:
                 module_name = f"admin_inviter_{self.profile_name}"
                 released_count = self.account_manager.release_all_module_accounts(module_name)
@@ -597,12 +868,13 @@ class AdminInviterProcess(BaseInviterProcess):
                     try:
                         if chat_admin.account.client and chat_admin.account.client.is_connected():
                             await chat_admin.account.disconnect()
-                            logger.info(f"[{self.profile_name}] Отключен админ {chat_admin.name}")
+                            logger.info(
+                                f"[{self.profile_name}] 🔌 Отключен админ {chat_admin.name} для чата {chat_link}")
                     except Exception as e:
-                        logger.error(f"[{self.profile_name}] Ошибка отключения админа {chat_admin.name}: {e}")
+                        logger.error(f"[{self.profile_name}] ❌ Ошибка отключения админа {chat_admin.name}: {e}")
 
         except Exception as e:
-            logger.error(f"[{self.profile_name}] Ошибка в _cleanup: {e}")
+            logger.error(f"[{self.profile_name}] ❌ Ошибка в _cleanup: {e}")
 
     def graceful_stop(self):
         """Корректная остановка всего профиля с ожиданием потоков"""

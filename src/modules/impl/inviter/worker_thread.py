@@ -45,56 +45,62 @@ class ChatWorkerThread(threading.Thread):
             parent.chat_stats[chat_link] = {"success": 0, "total": 0}
 
     def run(self):
-        """Основной цикл чата"""
+        """🔥 ОБНОВЛЕНО: Основной цикл чата с ОБЯЗАТЕЛЬНЫМ отзывом прав при любом завершении"""
         # Проверяем готовность чата
         if self.chat_link not in self.parent.ready_chats:
             logger.error(f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] Чат не готов")
             return
 
         module_name = f"admin_inviter_{self.parent.profile_name}"
+        chat_finish_reason = "неизвестная причина"
 
         try:
+            # ================================================================
+            # ОСНОВНОЙ ЦИКЛ РАБОТЫ ЧАТА
+            # ================================================================
             while not self.parent.stop_flag.is_set() and not self.stop_chat_flag.is_set():
 
+                # 🚫 ПРОВЕРКА: Чат заблокирован системой защиты
                 if self.parent.chat_protection_manager.is_chat_blocked(self.chat_link):
+                    chat_finish_reason = "чат заблокирован системой защиты"
                     logger.error(
                         f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
                         f"❌ ЧАТ ЗАБЛОКИРОВАН системой защиты - завершаем работу"
                     )
                     break
 
-                # Проверки лимитов
+                # 🎯 ПРОВЕРКА: Достигнут лимит чата
                 if not check_chat_limits(self.parent, self.chat_success):
+                    chat_finish_reason = "достигнут лимит чата"
                     logger.success(
                         f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] Достигнут лимит чата")
                     break
 
+                # 👥 ПРОВЕРКА: Закончились пользователи
                 if self.parent.user_queue.empty():
+                    chat_finish_reason = "закончились пользователи"
                     logger.info(
                         f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] Нет пользователей")
                     break
 
-                # Убираем мертвые потоки
+                # 🔄 УПРАВЛЕНИЕ WORKER ПОТОКАМИ
                 with self.threads_lock:
                     self.active_threads = [t for t in self.active_threads if t.is_alive()]
                     active_count = len(self.active_threads)
 
-                # Нужны новые потоки?
                 needed = self.parent.config.threads_per_chat - active_count
                 if needed > 0:
-                    # Проверка доступности аккаунтов
+                    # 💰 ПРОВЕРКА: Есть ли аккаунты
                     if not self.parent.check_accounts_availability():
-                        # Если нет аккаунтов и нет активных потоков - завершаем чат
                         if active_count == 0:
+                            chat_finish_reason = "закончились аккаунты и нет активных потоков"
                             logger.info(
                                 f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] Нет аккаунтов и потоков - завершаем")
                             break
-
-                        # Иначе ждем немного и проверяем снова
                         time.sleep(10)
                         continue
 
-                    # Запускаем новые потоки
+                    # 🚀 ЗАПУСК новых worker потоков
                     for i in range(needed):
                         worker = WorkerThread(
                             thread_id=active_count + i + 1,
@@ -109,53 +115,164 @@ class ChatWorkerThread(threading.Thread):
                         logger.success(
                             f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] Запущен поток-{active_count + i + 1}")
 
-                # Пауза между проверками
                 time.sleep(5)
 
-            # ОБНОВЛЕНО: Корректное ожидание всех потоков
+            # ================================================================
+            # НОРМАЛЬНОЕ ЗАВЕРШЕНИЕ ЧАТА
+            # ================================================================
+
             logger.info(
-                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] 🛑 Ожидаем завершения всех worker потоков...")
+                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                f"🛑 Завершение работы чата. Причина: {chat_finish_reason}")
 
-            with self.threads_lock:
-                threads_to_wait = self.active_threads.copy()
+            # 1️⃣ ЖДЕМ ЗАВЕРШЕНИЯ ВСЕХ WORKER ПОТОКОВ
+            self._wait_for_worker_threads()
 
-            if threads_to_wait:
-                logger.info(
-                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] ⏳ Найдено {len(threads_to_wait)} активных потоков для ожидания")
-
-                for i, worker in enumerate(threads_to_wait, 1):
-                    if worker.is_alive():
-                        logger.info(
-                            f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] ⏳ Ожидаем завершения worker потока {i}/{len(threads_to_wait)}")
-                        worker.join(timeout=200)  # Ждем до 60 секунд каждый поток
-
-                        if worker.is_alive():
-                            logger.warning(
-                                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] ⚠️ Worker поток {i} не завершился за 60 секунд")
-                        else:
-                            logger.success(
-                                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] ✅ Worker поток {i} успешно завершен")
-
-                logger.success(
-                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] ✅ Все worker потоки завершены")
-            else:
-                logger.info(
-                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] ℹ️ Нет активных потоков для ожидания")
+            # 2️⃣ ОТЗЫВАЕМ ПРАВА У ГЛАВНОГО АДМИНА
+            self._revoke_main_admin_rights_sync(chat_finish_reason)
 
         except Exception as e:
-            logger.error(f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] Ошибка: {e}")
-            # При ошибке тоже ждем потоки
-            with self.threads_lock:
-                threads_to_wait = self.active_threads.copy()
+            # ================================================================
+            # АВАРИЙНОЕ ЗАВЕРШЕНИЕ ЧАТА ПРИ ОШИБКЕ
+            # ================================================================
+            chat_finish_reason = f"критическая ошибка: {str(e)[:100]}"
+            logger.error(
+                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] 💥 Критическая ошибка: {e}")
 
-            for worker in threads_to_wait:
+            # 1️⃣ ЖДЕМ ЗАВЕРШЕНИЯ WORKER ПОТОКОВ (быстро)
+            self._wait_for_worker_threads(timeout=30)
+
+            # 2️⃣ ОТЗЫВАЕМ ПРАВА У ГЛАВНОГО АДМИНА (даже при ошибке!)
+            try:
+                self._revoke_main_admin_rights_sync(chat_finish_reason)
+            except Exception as cleanup_error:
+                logger.error(
+                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                    f"❌ Ошибка отзыва прав при аварийном завершении: {cleanup_error}")
+
+        finally:
+            # ================================================================
+            # ФИНАЛЬНАЯ ЗАЩИТА - ПОСЛЕДНЯЯ ПОПЫТКА ОТЗЫВА ПРАВ
+            # ================================================================
+            try:
+                logger.debug(
+                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                    f"🔒 ФИНАЛЬНАЯ проверка отзыва прав главного админа...")
+
+                self._revoke_main_admin_rights_sync("финальная защита")
+
+            except Exception as final_error:
+                logger.error(
+                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                    f"❌ Ошибка финальной защиты отзыва прав: {final_error}")
+
+            logger.debug(
+                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                f"🏁 ChatWorkerThread полностью завершен")
+
+    def _wait_for_worker_threads(self, timeout: int = 60):
+        """🔄 Ожидание завершения всех worker потоков"""
+        logger.debug(
+            f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+            f"⏳ Ожидаем завершения всех worker потоков...")
+
+        with self.threads_lock:
+            threads_to_wait = self.active_threads.copy()
+
+        if threads_to_wait:
+            logger.info(
+                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                f"⏳ Найдено {len(threads_to_wait)} активных потоков")
+
+            for i, worker in enumerate(threads_to_wait, 1):
                 if worker.is_alive():
-                    worker.join(timeout=30)
+                    logger.info(
+                        f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                        f"⏳ Ожидаем worker поток {i}/{len(threads_to_wait)}")
+
+                    worker.join(timeout=600)
+
+                    if worker.is_alive():
+                        logger.warning(
+                            f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                            f"⚠️ Worker поток {i} не завершился за {timeout} секунд")
+                    else:
+                        logger.success(
+                            f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                            f"✅ Worker поток {i} успешно завершен")
+
+            logger.success(
+                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                f"✅ Все worker потоки обработаны")
+        else:
+            logger.info(
+                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                f"ℹ️ Нет активных потоков для ожидания")
+
+    # ПОЛНОСТЬЮ ЗАМЕНИТЕ метод _revoke_main_admin_rights_sync в ChatWorkerThread:
+
+    def _revoke_main_admin_rights_sync(self, reason: str):
+        """👑🔒 ИСПРАВЛЕННАЯ СИНХРОННАЯ ОБЕРТКА - теперь использует систему команд бота"""
+        try:
+            logger.debug(
+                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                f"👑🔒 Отзываем права у главного админа... (причина: {reason})")
+
+            # 🔥 НОВОЕ: Проверяем наличие админа
+            if self.chat_link not in self.parent.chat_admins:
+                logger.warning(
+                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                    f"⚠️ Главный админ для чата не найден")
+                return
+
+            admin_data = self.parent.chat_admins[self.chat_link]
+
+            # Проверяем наличие данных
+            if not hasattr(admin_data, 'user_id') or not hasattr(admin_data, 'chat_id'):
+                logger.warning(
+                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                    f"⚠️ Данные админа {admin_data.name} не сохранены")
+                return
+
+            if not admin_data.user_id or not admin_data.chat_id:
+                logger.warning(
+                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                    f"⚠️ ID или chat_id админа {admin_data.name} пустые")
+                return
+
+            # 🔥 НОВОЕ: Используем систему команд бота из основного потока!
+            try:
+                success = self.parent.send_bot_command(
+                    action="REVOKE_ADMIN_RIGHTS",
+                    chat_id=admin_data.chat_id,
+                    user_id=admin_data.user_id,
+                    account_name=admin_data.name,
+                    timeout=15  # 15 секунд таймаут
+                )
+
+                if success:
+                    logger.info(
+                        f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                        f"✅ Права у главного админа {admin_data.name} успешно отозваны через систему команд")
+                else:
+                    logger.warning(
+                        f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                        f"⚠️ Не удалось отозвать права у главного админа {admin_data.name}")
+
+            except Exception as command_error:
+                logger.error(
+                    f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                    f"❌ Ошибка отправки команды боту: {command_error}")
+
+        except Exception as e:
+            logger.warning(
+                f"[{self.parent.profile_name}]-[Поток-{self.chat_id}]-[{self.chat_link}] "
+                f"❌ Ошибка отзыва прав у главного админа (игнорируем): {e}")
 
 
 class WorkerThread(threading.Thread):
     """
-    ОПТИМИЗИРОВАННЫЙ поток с системой реального времени
+    🔥 ОБНОВЛЕННЫЙ поток с системой реального времени и персональными очередями админов
     """
 
     def __init__(self, thread_id: int, chat_thread: ChatWorkerThread, module_name: str):
@@ -202,7 +319,7 @@ class WorkerThread(threading.Thread):
         while not self.chat_thread.parent.stop_flag.is_set():
 
             if self.chat_thread.stop_chat_flag.is_set():
-                logger.error(
+                logger.debug(
                     f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
                     f"[{self.chat_thread.chat_link}]-[Поток-{self.thread_id}] "
                     f"🛑 ФЛАГ ОСТАНОВКИ ЧАТА УСТАНОВЛЕН - ЗАВЕРШАЕМ ПОТОК"
@@ -258,9 +375,29 @@ class WorkerThread(threading.Thread):
                     f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[Поток-{self.thread_id}] ❌ Критическая ошибка - завершаем поток")
                 break
 
+    def _block_chat_immediately(self, reason: str):
+        """🔥 НОВЫЙ МЕТОД: Немедленная блокировка чата без счетчиков"""
+        try:
+            chat_link = self.chat_thread.chat_link
+
+            # Добавляем чат в заблокированные
+            self.chat_thread.parent.chat_protection_manager.blocked_chats.add(chat_link)
+
+            # Записываем в файл остановленных чатов
+            self.chat_thread.parent.record_stopped_chat(chat_link, reason)
+
+            # Останавливаем все потоки этого чата
+            self.chat_thread.stop_chat_flag.set()
+
+            logger.error(f"🚫 [{self.chat_thread.parent.profile_name}] ЧАТ НЕМЕДЛЕННО ЗАБЛОКИРОВАН: {chat_link}")
+            logger.error(f"🚫 [{self.chat_thread.parent.profile_name}] Причина: {reason}")
+
+        except Exception as e:
+            logger.error(f"[{self.chat_thread.parent.profile_name}] ❌ Ошибка блокировки чата: {e}")
+
     async def _work_with_current_account(self) -> bool:
         """
-        Работает с текущим аккаунтом до его завершения
+        🔥 ОБНОВЛЕНО: Работает с текущим аккаунтом до его завершения - теперь использует персональные очереди
 
         Returns:
             True - если аккаунт успешно завершен (достиг лимита/проблемы), можно брать следующий
@@ -329,7 +466,7 @@ class WorkerThread(threading.Thread):
                 return True
 
             me = await self.thread_account.client.get_me()
-            logger.success(
+            logger.info(
                 f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Подключен: {me.first_name}")
 
             # 3. Вход в чат
@@ -345,7 +482,7 @@ class WorkerThread(threading.Thread):
                 )
 
                 if should_block_chat:
-                    logger.error(
+                    logger.debug(
                         f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-"
                         f"[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
                         f"🚫 ЧАТ ЗАБЛОКИРОВАН после заморозки аккаунта"
@@ -361,9 +498,10 @@ class WorkerThread(threading.Thread):
                 await self._handle_problem("dead")
                 return True
 
-            # 4. Получение прав
+            # 4. 🔥 ИСПРАВЛЕНО: Получение прав через персональную очередь чата
             user_entity = await self.thread_account.client.get_entity('me')
-            username_thread_account = await ensure_username_for_account(account=self.thread_account, account_name=self.thread_account.name)
+            username_thread_account = await ensure_username_for_account(account=self.thread_account,
+                                                                        account_name=self.thread_account.name)
             response_queue = queue.Queue()
             command = AdminCommand(
                 action="GRANT_RIGHTS",
@@ -375,26 +513,37 @@ class WorkerThread(threading.Thread):
                 username=username_thread_account
             )
 
-            self.chat_thread.parent.admin_command_queue.put(command)
+            # 🔥 КРИТИЧНО: Отправляем команду в персональную очередь ЭТОГО чата!
+            admin_name = self.chat_thread.parent.chat_admins[self.chat_thread.chat_link].name
+
+            self.chat_thread.parent.send_command_to_chat(self.chat_thread.chat_link, command)
 
             try:
-                rights_granted = response_queue.get(timeout=30)
+                rights_granted = response_queue.get(timeout=250)
             except queue.Empty:
                 logger.error(
-                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Таймаут получения прав")
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] ❌ Таймаут получения прав от админа {admin_name}")
                 await self._ensure_disconnected()
-                await self._handle_problem("dead")
+                return True
+
+            if rights_granted == "TOO_MANY_ADMINS":
+                logger.error(
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] 👑❌ СЛИШКОМ МНОГО АДМИНОВ - БЛОКИРУЕМ ЧАТ НЕМЕДЛЕННО!")
+
+                # 🔥 БЛОКИРУЕМ ЧАТ СРАЗУ БЕЗ СЧЕТЧИКОВ!
+                self._block_chat_immediately("Слишком много администраторов в чате")
+
+                await self._ensure_disconnected()
                 return True
 
             if not rights_granted:
                 logger.error(
-                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Права не выданы")
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] ❌ Права не выданы админом {admin_name}")
                 await self._ensure_disconnected()
-                await self._handle_problem("dead")
                 return True
 
-            logger.success(
-                f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] ✅ Права получены")
+            logger.info(
+                f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] ✅ Права получены от админа {admin_name}")
 
             # НОВОЕ: Устанавливаем систему реального времени
             self.realtime_logger = self.chat_thread.parent.realtime_logger
@@ -473,9 +622,6 @@ class WorkerThread(threading.Thread):
                             f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] 🚫 ПОЛУЧЕН ФЛУД - ЗАВЕРШАЕМ АККАУНТ")
 
                         # Добавляем в множество флуд аккаунтов
-                        if not hasattr(self.chat_thread.parent, 'flood_accounts'):
-                            self.chat_thread.parent.flood_accounts = set()
-
                         self.chat_thread.parent.flood_accounts.add(self.current_account_name)
                         self.chat_thread.parent._mark_account_as_processed(self.current_account_name, "флуд лимит")
 
@@ -651,7 +797,7 @@ class WorkerThread(threading.Thread):
                 if self.chat_thread.parent.config.delay_between > 0:
                     await asyncio.sleep(self.chat_thread.parent.config.delay_between)
 
-            # 6. Отзыв прав
+            # 6. 🔥 ИСПРАВЛЕНО: Отзыв прав через персональную очередь
             if rights_granted:
                 await self._revoke_rights(user_entity.id, username_thread_account)
 
@@ -818,6 +964,7 @@ class WorkerThread(threading.Thread):
                 )
 
             self.chat_thread.parent.processed_users[username] = user
+            self.thread_account.increment_green_people()
             return "SUCCESS"
 
         except (PeerFloodError, FloodWaitError) as e:
@@ -919,8 +1066,7 @@ class WorkerThread(threading.Thread):
                     self.current_account_name in self.chat_thread.parent.finished_successfully_accounts or
                     self.current_account_name in self.chat_thread.parent.frozen_accounts or
                     self.current_account_name in self.chat_thread.parent.blocked_accounts or
-                    self.current_account_name in getattr(self.chat_thread.parent, 'flood_accounts',
-                                                         set())):  # 🔥 НОВОЕ УСЛОВИЕ!
+                    self.current_account_name in self.chat_thread.parent.flood_accounts):  # 🔥 НОВОЕ УСЛОВИЕ!
 
                 try:
                     # Определяем тип папки - ДОБАВЛЯЕМ ФЛУД!
@@ -934,8 +1080,7 @@ class WorkerThread(threading.Thread):
                         problem_type = 'finished'
                     elif self.current_account_name in self.chat_thread.parent.frozen_accounts:
                         problem_type = 'frozen'
-                    elif self.current_account_name in getattr(self.chat_thread.parent, 'flood_accounts',
-                                                              set()):  # 🔥 НОВАЯ ЛОГИКА!
+                    elif self.current_account_name in self.chat_thread.parent.flood_accounts:  # 🔥 НОВАЯ ЛОГИКА!
                         problem_type = 'flood'
                     else:
                         problem_type = 'dead'
@@ -944,7 +1089,7 @@ class WorkerThread(threading.Thread):
                                                                                  problem_type)
 
                     if success:
-                        logger.success(
+                        logger.debug(
                             f"[{self.chat_thread.parent.profile_name}]-[{self.current_account_name}] 📁 Файлы перемещены в папку: {problem_type}")
                     else:
                         logger.warning(
@@ -1008,7 +1153,8 @@ class WorkerThread(threading.Thread):
             users_remaining = self.chat_thread.parent.user_queue.qsize()
             total_users = getattr(self.chat_thread.parent, 'total_users_count', users_remaining + chat_total)
 
-            logger.success(f"💼 СТАТИСТИКА ЧАТА {chat_link}: ✅ Успешных: {chat_success}, 📝 Попыток: {chat_total}, 👥 Аккаунтов: {accounts_used}, 📊 Осталось: {users_remaining}/{total_users}")
+            logger.success(
+                f"💼 СТАТИСТИКА ЧАТА {chat_link}: ✅ Успешных: {chat_success}, 📝 Попыток: {chat_total}, 👥 Аккаунтов: {accounts_used}, 📊 Осталось: {users_remaining}/{total_users}")
 
         except Exception as e:
             logger.error(f"Ошибка статистики чата: {e}")
@@ -1029,7 +1175,7 @@ class WorkerThread(threading.Thread):
             elif isinstance(result, str) and result.startswith("ERROR:"):
                 return "ERROR"
             else:
-                logger.success(
+                logger.info(
                     f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Вступил в чат")
                 return "SUCCESS"
 
@@ -1039,7 +1185,7 @@ class WorkerThread(threading.Thread):
             return "ERROR"
 
     async def _revoke_rights(self, thread_user_id: int, username: str):
-        """Отзыв прав через команду админу"""
+        """🔥 ИСПРАВЛЕНО: Отзыв прав через персональную очередь чата"""
         try:
             response_queue = queue.Queue()
             command = AdminCommand(
@@ -1052,19 +1198,22 @@ class WorkerThread(threading.Thread):
                 username=username
             )
 
-            self.chat_thread.parent.admin_command_queue.put(command)
+            # 🔥 КРИТИЧНО: Отправляем команду в персональную очередь ЭТОГО чата!
+            admin_name = self.chat_thread.parent.chat_admins[self.chat_thread.chat_link].name
+
+            self.chat_thread.parent.send_command_to_chat(self.chat_thread.chat_link, command)
 
             try:
-                response_queue.get(timeout=15)
-                logger.success(
-                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Права отозваны")
+                response_queue.get(timeout=600)
+                logger.info(
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] ✅ Права отозваны админом {admin_name}")
             except queue.Empty:
                 logger.warning(
-                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Таймаут отзыва прав")
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] ⚠️ Таймаут отзыва прав у админа {admin_name}")
 
         except Exception as e:
             logger.error(
-                f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] Ошибка отзыва прав: {e}")
+                f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] ❌ Ошибка отзыва прав: {e}")
 
     async def _ensure_disconnected(self):
         """ПРИНУДИТЕЛЬНОЕ отключение от Telethon с проверкой"""
@@ -1096,8 +1245,6 @@ class WorkerThread(threading.Thread):
             if problem_type in ['frozen', 'spam_limit']:
                 self.chat_thread.parent.frozen_accounts.add(self.current_account_name)
             elif problem_type == 'flood':  # 🔥 НОВАЯ ОБРАБОТКА ФЛУДА!
-                if not hasattr(self.chat_thread.parent, 'flood_accounts'):
-                    self.chat_thread.parent.flood_accounts = set()
                 self.chat_thread.parent.flood_accounts.add(self.current_account_name)
             else:
                 self.chat_thread.parent.blocked_accounts.add(self.current_account_name)
