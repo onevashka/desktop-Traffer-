@@ -444,6 +444,8 @@ class InviterProfileRow(QWidget):
         self.expand_animation = None
         self.expand_button = None
 
+        self.manually_stopped = False
+
         self.bot_account = profile_data.get('bot_account', None)
         if not self.bot_account and profile_data.get('config', {}).get('bot_account'):
             self.bot_account = profile_data['config']['bot_account']
@@ -496,7 +498,9 @@ class InviterProfileRow(QWidget):
 
         if self.is_running:
             self.progress_timer.start(1000)
-            self.completion_timer.start(2000)
+            self.completion_timer.start(500)
+
+        QTimer.singleShot(500, self.sync_with_module_state)
 
     def _create_compact_header_content(self, header_widget):
         """Создает содержимое шапки внутри отдельного виджета"""
@@ -1552,11 +1556,12 @@ class InviterProfileRow(QWidget):
             self.settings_changed.emit(self.profile_name, {'name': new_name})
 
     def _update_start_button(self):
-        """Обновляет текст и цвет кнопки в зависимости от состояния."""
-        if not self.start_stop_btn:
+        """Обновляет текст и цвет кнопки в зависимости от состояния"""
+        if not hasattr(self, 'start_stop_btn') or not self.start_stop_btn:
             return
 
         if self.is_running:
+            # Процесс запущен - показываем кнопку "Стоп"
             self.start_stop_btn.setText("Стоп")
             self.start_stop_btn.setStyleSheet("""
                 QPushButton {
@@ -1574,6 +1579,7 @@ class InviterProfileRow(QWidget):
                 }
             """)
         else:
+            # Процесс не запущен - показываем кнопку "Запуск"
             self.start_stop_btn.setText("Запуск")
             self.start_stop_btn.setStyleSheet("""
                 QPushButton {
@@ -1666,38 +1672,67 @@ class InviterProfileRow(QWidget):
         """)
 
     def _toggle_profile(self):
-        """Переключает состояние профиля"""
+        """УЛУЧШЕННОЕ переключение состояния профиля"""
         if self.is_running:
+            logger.info(f"🛑 Пользователь вручную останавливает профиль: {self.profile_name}")
+            self.manually_stopped = True  # Помечаем как ручную остановку
             self.profile_stopped.emit(self.profile_name)
         else:
+            logger.info(f"🚀 Пользователь запускает профиль: {self.profile_name}")
+            self.manually_stopped = False  # Сбрасываем флаг
             self.profile_started.emit(self.profile_name)
 
     def update_running_state(self, is_running: bool):
-        """Обновляет состояние запуска профиля"""
+        """УЛУЧШЕННОЕ обновление состояния профиля с правильной логикой кнопки"""
+        old_state = self.is_running
         self.is_running = is_running
 
-        # Обновляем индикатор
-        self.status_indicator.setStyleSheet(f"""
-            QLabel {{
-                font-size: 14px;
-                color: {'#10B981' if self.is_running else '#6B7280'};
-                font-weight: bold;
-            }}
-        """)
+        logger.debug(f"🔄 Обновляем состояние {self.profile_name}: {old_state} → {is_running}")
 
-        # Обновляем кнопку
+        # Обновляем индикатор статуса
+        if hasattr(self, 'status_indicator'):
+            if is_running:
+                self.status_indicator.setStyleSheet("""
+                    QLabel {
+                        font-size: 14px;
+                        color: #10B981;
+                        font-weight: bold;
+                    }
+                """)
+            else:
+                self.status_indicator.setStyleSheet("""
+                    QLabel {
+                        font-size: 14px;
+                        color: #6B7280;
+                        font-weight: bold;
+                    }
+                """)
+
+        # ГЛАВНОЕ: Обновляем кнопку запуска/остановки
         self._update_start_button()
 
         # Управляем таймерами
         if self.is_running:
-            self.progress_timer.start(1000)
-            self.completion_timer.start(2000)
+            if hasattr(self, 'progress_timer'):
+                self.progress_timer.start(1000)
+            if hasattr(self, 'completion_timer'):
+                self.completion_timer.start(2000)  # Проверяем каждые 2 секунды
             if hasattr(self, 'status_label'):
-                self.status_label.setText("Запущен...")
+                self.status_label.setText("🚀 Запущен...")
         else:
-            self.progress_timer.stop()
-            self.completion_timer.stop()
-            self.chat_stats_timer.stop()
+            if hasattr(self, 'progress_timer'):
+                self.progress_timer.stop()
+            if hasattr(self, 'completion_timer'):
+                self.completion_timer.stop()
+            if hasattr(self, 'chat_stats_timer'):
+                self.chat_stats_timer.stop()
+
+            # Обновляем статус в зависимости от причины остановки
+            if hasattr(self, 'status_label'):
+                if self.manually_stopped:
+                    self.status_label.setText("⏹️ Остановлен пользователем")
+                else:
+                    self.status_label.setText("✅ Работа завершена")
 
     def _update_progress_from_module(self):
         """Обновляет прогресс-бар из данных модуля"""
@@ -1739,26 +1774,65 @@ class InviterProfileRow(QWidget):
             logger.error(f"❌ Ошибка обновления прогресса для {self.profile_name}: {e}")
 
     def _check_process_completion(self):
-        """Проверяет завершился ли процесс"""
+        """УЛУЧШЕННАЯ проверка завершения процесса"""
         try:
-            from src.modules.impl.inviter import get_profile_progress
+            from src.modules.impl.inviter.inviter_manager import _inviter_module_manager
 
-            progress_data = get_profile_progress(self.profile_name)
+            if not _inviter_module_manager:
+                return
 
-            if not progress_data or not progress_data.get('is_running', False):
-                if self.is_running:
-                    logger.debug(f"🏁 Процесс {self.profile_name} завершен")
+            # Проверяем есть ли процесс в активных
+            is_actually_running = self.profile_name in _inviter_module_manager.active_processes
 
-                    if self.saved_progress.get('success', 0) >= self.saved_progress.get('total_goal', 1):
-                        self.saved_progress['stop_reason'] = "✅ Цель достигнута"
+            # Если UI показывает что процесс запущен, но в модуле его нет
+            if self.is_running and not is_actually_running:
+                logger.info(f"🏁 Процесс {self.profile_name} завершен в модуле, обновляем UI")
 
-                    self.update_running_state(False)
+                # Определяем причину остановки
+                if not self.manually_stopped:
+                    # Процесс завершился сам (работа выполнена или ошибка)
+                    logger.info(f"✅ Процесс {self.profile_name} завершился автоматически")
+                    if hasattr(self, 'status_label'):
+                        self.status_label.setText("✅ Работа завершена")
+                else:
+                    # Процесс остановлен вручную
+                    logger.info(f"⏹️ Процесс {self.profile_name} остановлен пользователем")
+                    if hasattr(self, 'status_label'):
+                        self.status_label.setText("⏹️ Остановлен пользователем")
 
-                    if self.saved_progress['stop_reason'] and hasattr(self, 'status_label'):
-                        self.status_label.setText(f"⏹️ {self.saved_progress['stop_reason']}")
+                # Обновляем состояние на "остановлен"
+                self.update_running_state(False)
+
+                # Сбрасываем флаг ручной остановки после обработки
+                self.manually_stopped = False
 
         except Exception as e:
             logger.error(f"❌ Ошибка проверки завершения для {self.profile_name}: {e}")
+
+    def sync_with_module_state(self):
+        """УЛУЧШЕННАЯ синхронизация состояния с модулем"""
+        try:
+            from src.modules.impl.inviter.inviter_manager import _inviter_module_manager
+
+            if not _inviter_module_manager:
+                return
+
+            # Проверяем реальное состояние в модуле
+            is_actually_running = self.profile_name in _inviter_module_manager.active_processes
+
+            # Если состояния не совпадают - исправляем
+            if self.is_running != is_actually_running:
+                logger.info(
+                    f"🔄 ПРИНУДИТЕЛЬНАЯ синхронизация {self.profile_name}: UI={self.is_running}, Module={is_actually_running}")
+
+                # Если модуль говорит что процесс не запущен, а UI показывает запущен
+                if self.is_running and not is_actually_running:
+                    self.manually_stopped = False  # Это было автоматическое завершение
+
+                self.update_running_state(is_actually_running)
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка синхронизации состояния: {e}")
 
     def _delete_profile(self):
         """Удаляет профиль"""
@@ -1969,9 +2043,23 @@ class InviterTableWidget(QWidget):
         effect.setOpacity(0.0)
         self.setGraphicsEffect(effect)
 
+        self.sync_timer = QTimer()
+        self.sync_timer.timeout.connect(self.force_sync_all_profiles)
+        self.sync_timer.start(5000)  # Синхронизация каждые 5 секунд
+
     def set_parent_manager(self, manager):
         """Устанавливает ссылку на родительский менеджер"""
         self.parent_manager = manager
+
+    def force_sync_all_profiles(self):
+        """Принудительная синхронизация всех профилей с модулем"""
+        logger.debug("🔄 Принудительная синхронизация всех профилей...")
+
+        for profile_name, profile_row in self.profile_rows.items():
+            try:
+                profile_row.sync_with_module_state()
+            except Exception as e:
+                logger.error(f"❌ Ошибка синхронизации {profile_name}: {e}")
 
     def _create_scroll_area(self, layout):
         """Создает скроллируемую область"""
@@ -2185,41 +2273,70 @@ class InviterTableWidget(QWidget):
         self.profiles_layout.addStretch()
 
     def _on_profile_started(self, profile_name):
-        """Обработка запуска профиля"""
-        logger.info(f"🚀 Профиль запущен: {profile_name}")
+        """УЛУЧШЕННЫЙ запуск профиля"""
+        logger.info(f"🚀 Запуск профиля: {profile_name}")
 
-        try:
-            from src.modules.impl.inviter import start_profile
-            success = start_profile(profile_name)
+        # СРАЗУ меняем кнопку на "Стоп" и сбрасываем флаг ручной остановки
+        if profile_name in self.profile_rows:
+            profile_row = self.profile_rows[profile_name]
+            profile_row.manually_stopped = False  # Сбрасываем флаг
+            profile_row.update_running_state(True)
 
-            if profile_name in self.profile_rows:
-                self.profile_rows[profile_name].update_running_state(success)
+        # Запускаем в фоне
+        import threading
+        def start_task():
+            try:
+                from src.modules.impl.inviter import start_profile
+                success = start_profile(profile_name)
 
-            if success:
-                logger.info(f"✅ Профиль {profile_name} успешно запущен через модуль")
-            else:
-                logger.warning(f"⚠️ Не удалось запустить профиль {profile_name} через модуль")
-        except Exception as e:
-            logger.error(f"❌ Ошибка запуска профиля {profile_name}: {e}")
+                # Если запуск не удался - возвращаем кнопку в "Запуск"
+                if not success and profile_name in self.profile_rows:
+                    from PySide6.QtCore import QTimer
+                    def reset_button():
+                        if profile_name in self.profile_rows:
+                            self.profile_rows[profile_name].update_running_state(False)
+                            if hasattr(self.profile_rows[profile_name], 'status_label'):
+                                self.profile_rows[profile_name].status_label.setText("❌ Ошибка запуска")
+
+                    QTimer.singleShot(100, reset_button)
+
+            except Exception as e:
+                logger.error(f"❌ Ошибка запуска: {e}")
+                # При ошибке возвращаем кнопку в "Запуск"
+                if profile_name in self.profile_rows:
+                    from PySide6.QtCore import QTimer
+                    def reset_button_error():
+                        if profile_name in self.profile_rows:
+                            self.profile_rows[profile_name].update_running_state(False)
+                            if hasattr(self.profile_rows[profile_name], 'status_label'):
+                                self.profile_rows[profile_name].status_label.setText("❌ Ошибка запуска")
+
+                    QTimer.singleShot(100, reset_button_error)
+
+        threading.Thread(target=start_task, daemon=True).start()
 
     def _on_profile_stopped(self, profile_name):
-        """Обработка остановки профиля"""
-        logger.info(f"⏸️ Профиль остановлен: {profile_name}")
+        """УЛУЧШЕННАЯ остановка профиля"""
+        logger.info(f"⏸️ Ручная остановка профиля: {profile_name}")
 
-        try:
-            from src.modules.impl.inviter import stop_profile
-            success = stop_profile(profile_name)
+        # Помечаем как ручную остановку ПЕРЕД изменением UI
+        if profile_name in self.profile_rows:
+            profile_row = self.profile_rows[profile_name]
+            profile_row.manually_stopped = True  # Это ручная остановка
+            profile_row.update_running_state(False)
 
-            if profile_name in self.profile_rows:
-                self.profile_rows[profile_name].update_running_state(False)
-                self.profile_rows[profile_name].saved_progress['stop_reason'] = "Остановлен пользователем"
+        # Останавливаем в фоне
+        import threading
+        def stop_task():
+            try:
+                from src.modules.impl.inviter import stop_profile
+                result = stop_profile(profile_name)
+                logger.info(f"⏹️ Результат остановки {profile_name}: {result}")
+            except Exception as e:
+                logger.error(f"❌ Ошибка остановки: {e}")
 
-            if success:
-                logger.info(f"✅ Профиль {profile_name} успешно остановлен через модуль")
-            else:
-                logger.warning(f"⚠️ Не удалось остановить профиль {profile_name} через модуль")
-        except Exception as e:
-            logger.error(f"❌ Ошибка остановки профиля {profile_name}: {e}")
+        threading.Thread(target=stop_task, daemon=True).start()
+
 
     def _on_profile_deleted(self, profile_name):
         """Обработка удаления профиля"""

@@ -113,7 +113,9 @@ class AdminInviterProcess(BaseInviterProcess):
 
         self.clear_stopped_chats_file()
 
-    # ============================================================================
+        self.failed_admins = set()
+
+        # ============================================================================
     # 🔥 НОВЫЕ МЕТОДЫ ДЛЯ РАБОТЫ С ПЕРСОНАЛЬНЫМИ ОЧЕРЕДЯМИ
     # ============================================================================
 
@@ -407,7 +409,7 @@ class AdminInviterProcess(BaseInviterProcess):
             return False
 
     def _assign_admins_to_chats(self):
-        """🔥 ОБНОВЛЕНО: Назначает отдельного админа каждому чату с созданием персональных очередей"""
+        """🔥 ОБНОВЛЕНО: Назначает отдельного админа каждому чату"""
         # Получаем все чаты
         chat_links = []
         temp_chats = []
@@ -424,7 +426,7 @@ class AdminInviterProcess(BaseInviterProcess):
 
         if len(self.available_admins) < len(chat_links):
             logger.error(
-                f"[{self.profile_name}] Недостаточно админов: {len(self.available_admins)} админов для {len(chat_links)} чатов")
+                f"[{self.profile_name}] Недостаточно админов: {len(self.available_admins)} для {len(chat_links)} чатов")
             return False
 
         # Назначаем админа каждому чату
@@ -439,15 +441,14 @@ class AdminInviterProcess(BaseInviterProcess):
                 json_path=admins_folder / f"{admin_name}.json"
             )
             self.chat_admins[chat_link] = chat_admin
-            logger.success(f"[{self.profile_name}] Чат {chat_link} -> Админ {admin_name}")
+            logger.success(f"[{self.profile_name}] Чат {chat_link} → Админ {admin_name}")
 
-        # 🔥 ИСПРАВЛЕНО: Создаем персональную очередь для каждого чата
+        # Создаем персональную очередь для каждого чата
         for chat_link in self.chat_admins.keys():
             self.chat_command_queues[chat_link] = queue.Queue()
-            admin_name = self.chat_admins[chat_link].name
-            logger.success(f"[{self.profile_name}] ✅ Создана персональная очередь для чата: {chat_link}")
-            logger.success(f"[{self.profile_name}] 👨‍💼 Админ для этого чата: {admin_name}")
 
+        logger.info(
+            f"[{self.profile_name}] 📊 Назначено: {len(self.chat_admins)} админов, резерв: {len(self.available_admins) - len(self.chat_admins)}")
         return True
 
     def _run_inviting(self):
@@ -658,6 +659,60 @@ class AdminInviterProcess(BaseInviterProcess):
             await asyncio.sleep(60)
 
         return True
+
+    def _get_free_admin(self) -> Optional[str]:
+        """Получает свободного админа из резерва"""
+        used_admins = {ca.name for ca in self.chat_admins.values()}
+
+        for admin_name in self.available_admins:
+            if admin_name not in used_admins and admin_name not in self.failed_admins:
+                return admin_name
+        return None
+
+    def _mark_admin_failed(self, admin_name: str, reason: str):
+        """Помечает админа как неработающего"""
+        self.failed_admins.add(admin_name)
+        logger.error(f"[{self.profile_name}] ❌ Админ {admin_name} помечен как неработающий: {reason}")
+
+    async def _try_replace_failed_admin(self, chat_link: str, failed_admin_name: str, reason: str) -> bool:
+        """Пытается заменить неработающего админа"""
+        try:
+            logger.warning(f"[{self.profile_name}] 🔄 Заменяем админа {failed_admin_name} для {chat_link}")
+
+            # Отключаем старого админа
+            old_admin = self.chat_admins[chat_link]
+            if old_admin.account:
+                try:
+                    await old_admin.account.disconnect()
+                except:
+                    pass
+
+            # Ищем свободного админа
+            new_admin_name = self._get_free_admin()
+            if not new_admin_name:
+                logger.error(f"[{self.profile_name}] ❌ Нет свободных админов для замены!")
+                return False
+
+            # Создаем нового админа
+            profile_folder = Path(self.profile_data['folder_path'])
+            admins_folder = profile_folder / "Админы"
+
+            new_chat_admin = ChatAdmin(
+                name=new_admin_name,
+                session_path=admins_folder / f"{new_admin_name}.session",
+                json_path=admins_folder / f"{new_admin_name}.json"
+            )
+
+            # Заменяем в системе
+            self.chat_admins[chat_link] = new_chat_admin
+            self._mark_admin_failed(failed_admin_name, reason)
+
+            logger.success(f"[{self.profile_name}] ✅ Заменен: {failed_admin_name} → {new_admin_name}")
+            return True
+
+        except Exception as e:
+            logger.error(f"[{self.profile_name}] ❌ Ошибка замены админа: {e}")
+            return False
 
     async def _setup_chat_admins(self) -> bool:
         """Создание и подключение админов для каждого чата"""

@@ -160,7 +160,6 @@ async def grant_worker_rights_directly(main_admin, chat_entity, worker_user_id: 
                 rank="админ"
             ))
 
-            logger.info(f"✅ Права успешно выданы {worker_name} (@{uname}) с попытки {attempt + 1}")
             return True
 
         except Exception as e:

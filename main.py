@@ -9,7 +9,7 @@ import sys
 import os
 
 # СКРЫВАЕМ КОНСОЛЬНОЕ ОКНО В WINDOWS
-if os.name == 'nt':  # Windows
+'''if os.name == 'nt':  # Windows
     import ctypes
     from ctypes import wintypes
 
@@ -24,7 +24,7 @@ if os.name == 'nt':  # Windows
     # Скрываем консоль
     console_window = kernel32.GetConsoleWindow()
     if console_window:
-        user32.ShowWindow(console_window, SW_HIDE)
+        user32.ShowWindow(console_window, SW_HIDE)'''
 
 # 1. ОТКЛЮЧАЕМ ВСЕ WARNINGS
 warnings.filterwarnings("ignore")
@@ -84,7 +84,7 @@ class ErrorFilter:
 
 
 # Применяем фильтр к stderr (полностью блокируем вывод в консоль)
-sys.stderr = ErrorFilter(sys.stderr)
+#sys.stderr = ErrorFilter(sys.stderr)
 
 
 # Также блокируем stdout если нужно (обычный print)
@@ -104,7 +104,7 @@ class StdoutFilter:
 
 
 # Раскомментируй следующую строку, если хочешь заблокировать и обычные print()
-# sys.stdout = StdoutFilter(sys.stdout)
+#sys.stdout = StdoutFilter(sys.stdout)
 
 
 # 5. ПОЛНОСТЬЮ МОЛЧАЛИВЫЙ ОБРАБОТЧИК ИСКЛЮЧЕНИЙ
@@ -121,7 +121,7 @@ def filtered_excepthook(exc_type, exc_value, exc_traceback):
     pass
 
 
-sys.excepthook = filtered_excepthook
+#sys.excepthook = filtered_excepthook
 
 
 # 7. МОНКИ-ПАТЧ ДЛЯ ASYNCIO
@@ -208,13 +208,13 @@ from PySide6.QtCore import qInstallMessageHandler
 from qasync import QEventLoop
 
 from paths import ensure_folder_structure
-from gui.log_console import LogConsole
+#from gui.log_console import LogConsole
 from gui.main_window import MainWindow
 from src.accounts.manager import init_account_manager
 from src.proxies.manager import get_proxy_manager
 from loguru import logger
 
-log_console = None
+#log_console = None
 main_win = None
 
 
@@ -234,9 +234,9 @@ async def async_main():
     loop.set_exception_handler(completely_silent_exception_handler)
 
     # 1. Создаем и показываем консоль логов
-    log_console = LogConsole()
-    log_console.show()
-    logger.info("📋 Консоль логов открыта")
+    #log_console = LogConsole()
+    #log_console.show()
+    #logger.info("📋 Консоль логов открыта")
 
     await asyncio.sleep(0.5)
 
