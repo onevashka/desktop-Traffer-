@@ -7,7 +7,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
 )
 from PySide6.QtCore import QTimer
-from gui.component_inviter.inviter_table import InviterTableWidget
+from gui.component_inviter.inviter_table_old import InviterTableWidget
 from gui.component_inviter.inviter_stats import InviterStatsWidget
 from gui.dialogs.inviter_dialogs import show_create_profile_dialog
 from loguru import logger

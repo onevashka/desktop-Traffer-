@@ -1,20 +1,28 @@
-# desktop-Traffer/gui/main_window.py
+# gui/main_window_optimized.py - ОПТИМИЗИРОВАННАЯ ВЕРСИЯ ГЛАВНОГО ОКНА
+"""
+ОПТИМИЗИРОВАННОЕ главное окно - использует оптимизированный инвайтер
+"""
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QPushButton, QLabel, QFrame, QStackedWidget
 )
 from PySide6.QtCore import Qt, QTimer
 from gui.account_manager import AccountManagerTab
-from gui.inviter_manager import InviterManagerTab
-from log_config import logger
+from gui.inviter_manager_optimized import OptimizedInviterManagerTab  # ЗАМЕНИЛИ НА ОПТИМИЗИРОВАННУЮ ВЕРСИЮ
+from loguru import logger
 
 
-class MainWindow(QMainWindow):
+class OptimizedMainWindow(QMainWindow):
+    """ОПТИМИЗИРОВАННОЕ главное окно с фоновыми рабочими потоками"""
+
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("desktop-Traffer")
+        self.setWindowTitle("desktop-Traffer (Optimized)")
         self.resize(1400, 900)
         self.setMinimumSize(1200, 800)
+
+        # Инициализируем фоновую систему ПЕРЕД созданием UI
+        self._init_background_system()
 
         # Центральный виджет
         central_widget = QWidget()
@@ -36,10 +44,22 @@ class MainWindow(QMainWindow):
         # Устанавливаем первую вкладку активной
         self._switch_to_accounts()
 
-        logger.debug("MainWindow with sidebar initialized")
+        logger.debug("ОПТИМИЗИРОВАННОЕ MainWindow инициализировано")
 
         # ВАЖНО: Инициализируем уведомления ПОСЛЕ полного создания окна
         QTimer.singleShot(100, self._init_notifications)
+
+    def _init_background_system(self):
+        """Инициализирует систему фоновых рабочих потоков"""
+        try:
+            from gui.workers.background_workers import init_worker_manager
+
+            self.worker_manager = init_worker_manager()
+            logger.info("✅ Система фоновых рабочих потоков инициализирована")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка инициализации фоновой системы: {e}")
+            self.worker_manager = None
 
     def _init_notifications(self):
         """Инициализирует систему уведомлений после создания окна"""
@@ -60,7 +80,9 @@ class MainWindow(QMainWindow):
             from gui.notifications import show_success
             show_success(
                 "Приложение готово",
-                "desktop-Traffer успешно запущен!"
+                "🚀 desktop-Traffer (Optimized) успешно запущен!\n"
+                "⚡ Фоновые рабочие потоки активны\n"
+                "📊 Система оптимизирована для больших нагрузок"
             )
         except Exception as e:
             logger.error(f"❌ Ошибка показа уведомления: {e}")
@@ -77,8 +99,10 @@ class MainWindow(QMainWindow):
                 )
             elif section_name == "inviter":
                 show_info(
-                    "Инвайтер",
-                    "Массовые инвайты в чаты и каналы"
+                    "Инвайтер (Optimized)",
+                    "🚀 Оптимизированный массовый инвайтер\n"
+                    "⚡ Поддерживает большие нагрузки\n"
+                    "🔧 Фоновые обновления статистики"
                 )
             elif section_name == "modules":
                 show_info(
@@ -146,8 +170,8 @@ class MainWindow(QMainWindow):
             }
         """)
 
-        # Подзаголовок
-        subtitle = QLabel("Telegram Automation")
+        # Подзаголовок с индикацией оптимизации
+        subtitle = QLabel("Telegram Automation ⚡ Optimized")
         subtitle.setObjectName("Subtitle")
         subtitle.setStyleSheet("""
             QLabel#Subtitle {
@@ -172,7 +196,7 @@ class MainWindow(QMainWindow):
         # Кнопки навигации
         nav_buttons = [
             ("👥", "Менеджер аккаунтов", "accounts", True),
-            ("📨", "Инвайтер", "inviter", False),  # НОВАЯ КНОПКА
+            ("📨", "Инвайтер ⚡", "inviter", False),  # ДОБАВИЛИ ИНДИКАТОР ОПТИМИЗАЦИИ
             ("🏭", "Модули автоматизации", "modules", False),
             ("📊", "Аналитика", "analytics", False),
             ("⚙️", "Настройки", "settings", False),
@@ -254,7 +278,6 @@ class MainWindow(QMainWindow):
             btn.clicked.connect(self._switch_to_modules)
         elif key == "inviter":
             btn.clicked.connect(self._switch_to_inviter)
-        # Добавьте другие обработчики по мере необходимости
 
         return btn
 
@@ -269,7 +292,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(footer)
         layout.setContentsMargins(20, 15, 20, 15)
 
-        version_label = QLabel("v0.1.0 Beta")
+        version_label = QLabel("v0.1.0 Beta ⚡ Optimized")
         version_label.setStyleSheet("""
             font-size: 11px;
             color: rgba(255, 255, 255, 0.4);
@@ -298,7 +321,8 @@ class MainWindow(QMainWindow):
         self.account_tab = AccountManagerTab()
         self.stacked_widget.addWidget(self.account_tab)
 
-        self.inviter_tab = InviterManagerTab()
+        # ИСПОЛЬЗУЕМ ОПТИМИЗИРОВАННУЮ ВЕРСИЮ ИНВАЙТЕРА
+        self.inviter_tab = OptimizedInviterManagerTab()
         self.stacked_widget.addWidget(self.inviter_tab)
 
         # Заглушки для других разделов
@@ -348,7 +372,7 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(300, lambda: self.show_navigation_info("accounts"))
 
     def _switch_to_inviter(self):
-        """Переключение на инвайтер"""
+        """Переключение на ОПТИМИЗИРОВАННЫЙ инвайтер"""
         self.stacked_widget.setCurrentIndex(1)
         self._update_nav_buttons("inviter")
 
@@ -424,3 +448,30 @@ class MainWindow(QMainWindow):
         """Обработка перемещения окна"""
         super().moveEvent(event)
         # Уведомления автоматически обновят позицию через eventFilter
+
+    def closeEvent(self, event):
+        """ОПТИМИЗИРОВАННОЕ закрытие приложения"""
+        try:
+            logger.info("🔄 Закрытие ОПТИМИЗИРОВАННОГО приложения...")
+
+            # Останавливаем фоновую систему
+            if hasattr(self, 'worker_manager') and self.worker_manager:
+                from gui.workers.background_workers import shutdown_worker_manager
+                shutdown_worker_manager()
+                logger.info("✅ Фоновая система остановлена")
+
+            # Останавливаем все процессы инвайтера
+            try:
+                from src.modules.impl.inviter import stop_all_profiles
+                stop_all_profiles()
+                logger.info("✅ Все процессы инвайтера остановлены")
+            except:
+                pass
+
+            # Принимаем событие закрытия
+            event.accept()
+            logger.info("✅ ОПТИМИЗИРОВАННОЕ приложение корректно закрыто")
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка при закрытии приложения: {e}")
+            event.accept()  # Все равно закрываем

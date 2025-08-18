@@ -8,6 +8,7 @@ import asyncio
 import sys
 import os
 
+
 # СКРЫВАЕМ КОНСОЛЬНОЕ ОКНО В WINDOWS
 '''if os.name == 'nt':  # Windows
     import ctypes
@@ -209,7 +210,7 @@ from qasync import QEventLoop
 
 from paths import ensure_folder_structure
 #from gui.log_console import LogConsole
-from gui.main_window import MainWindow
+from gui.main_window_optimized import OptimizedMainWindow as MainWindow
 from src.accounts.manager import init_account_manager
 from src.proxies.manager import get_proxy_manager
 from loguru import logger

@@ -4,7 +4,7 @@
 """
 
 from .inviter_stats import InviterStatsWidget
-from .inviter_table import InviterTableWidget, InviterProfileRow
+from .inviter_table_old import InviterTableWidget, InviterProfileRow
 
 __all__ = [
     'InviterStatsWidget',
