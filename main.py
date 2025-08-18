@@ -213,7 +213,7 @@ from paths import ensure_folder_structure
 from gui.main_window_optimized import OptimizedMainWindow as MainWindow
 from src.accounts.manager import init_account_manager
 from src.proxies.manager import get_proxy_manager
-from loguru import logger
+from log_config import logger
 
 #log_console = None
 main_win = None

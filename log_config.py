@@ -1,35 +1,79 @@
+# log_config.py - ЦВЕТНАЯ ВЕРСИЯ БЕЗ DEBUG
+
 from loguru import logger
 import sys
 
-# ------------------------------------------------------------
-# Флаг режима работы:
-#   True  — развёрнутое DEBUG-логирование и в консоль, и в файл
-#   False — только INFO+ в оба места
+# ============================
+# ГЛАВНЫЙ ПЕРЕКЛЮЧАТЕЛЬ DEBUG
+# ============================
 DEBUG_MODE = False
-# ------------------------------------------------------------
+# ============================
 
-# Убираем все предустановленные хендлеры
+# Удаляем все стандартные обработчики
 logger.remove()
 
-# Вычисляем динамические уровни
-file_level    = "DEBUG" if DEBUG_MODE else "INFO"
-console_level = "DEBUG" if DEBUG_MODE else "INFO"
+# Простой и эффективный фильтр
+def simple_filter(record):
+    """Простой фильтр - блокируем DEBUG если режим выключен"""
+    if not DEBUG_MODE and record["level"].name == "DEBUG":
+        return False
+    return True
 
-# Хендлер для файла — mode="w" гарантирует, что при старте
-# файл очищается и туда попадут только новые записи не ниже file_level
-logger.add(
-    "logs/factory.log",
-    mode="w",
-    level=file_level,
-    rotation="1 MB",
-    retention="7 days",
-    encoding="utf-8",
-    format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>",
-)
+# Добавляем обработчики с фильтром
+if DEBUG_MODE:
+    # В DEBUG режиме - все логи с цветами
+    logger.add(
+        "logs/factory.log",
+        mode="w",
+        level="DEBUG",
+        rotation="1 MB",
+        retention="7 days",
+        encoding="utf-8",
+        format="<green>{time:HH:mm:ss}</green> | <level>{level:8}</level> | <level>{message}</level>",
+        colorize=True
+    )
 
-# Хендлер для консоли
-logger.add(
-    sys.stdout,
-    level=console_level,
-    format="<green>{time:HH:mm:ss}</green> | <level>{message}</level>",
-)
+    logger.add(
+        sys.stdout,
+        level="DEBUG",
+        format="<green>{time:HH:mm:ss}</green> | <level>{level:8}</level> | <level>{message}</level>",
+        colorize=True
+    )
+else:
+    # В PRODUCTION режиме - только INFO и выше + фильтр + ЦВЕТА
+    logger.add(
+        "logs/factory.log",
+        mode="w",
+        level="INFO",
+        filter=simple_filter,
+        rotation="1 MB",
+        retention="7 days",
+        encoding="utf-8",
+        format="<green>{time:HH:mm:ss}</green> | <level>{level:8}</level> | <level>{message}</level>",
+        colorize=True
+    )
+
+    logger.add(
+        sys.stdout,
+        level="INFO",
+        filter=simple_filter,
+        format="<green>{time:HH:mm:ss}</green> | <level>{level:8}</level> | <level>{message}</level>",
+        colorize=True
+    )
+
+# РАДИКАЛЬНОЕ решение - если DEBUG_MODE = False, заменяем logger.debug на пустышку
+if not DEBUG_MODE:
+    def empty_debug(*args, **kwargs):
+        pass
+
+    logger.debug = empty_debug
+
+# Логируем состояние системы с цветами
+logger.info(f"🔧 Система логирования: DEBUG_MODE = {DEBUG_MODE}")
+
+if not DEBUG_MODE:
+    logger.info("🔇 DEBUG логи полностью отключены")
+    # Эта строка НЕ должна появиться если все работает правильно:
+    logger.debug("❌ ТЕСТ: Этот DEBUG лог НЕ должен быть виден!")
+else:
+    logger.debug("🔍 DEBUG режим активен")

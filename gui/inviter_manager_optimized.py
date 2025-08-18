@@ -11,6 +11,7 @@ from gui.component_inviter.inviter_stats import InviterStatsWidget
 from gui.dialogs.inviter_dialogs import show_create_profile_dialog
 from loguru import logger
 import threading
+from paths import Path
 
 
 class OptimizedInviterManagerTab(QWidget):
@@ -681,6 +682,7 @@ class OptimizedInviterManagerTab(QWidget):
                 logger.info(f"📊 Отчет по аккаунтам создан: {file_path}")
 
                 from gui.notifications import show_success
+                from paths import Path
                 show_success(
                     "Отчет готов! 📊",
                     f"✅ Отчет по аккаунтам успешно создан!\n\n"

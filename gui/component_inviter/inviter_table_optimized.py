@@ -35,10 +35,15 @@ class OptimizedInviterProfileRow(QWidget):
         self.profile_name = profile_data.get('name', 'Профиль')
         self.is_running = profile_data.get('is_running', False)
 
-        # КЭШИРОВАНИЕ для предотвращения частых обновлений
+        # ОПТИМИЗАЦИЯ: Адаптивное кэширование для 100+ профилей
         self._cached_stats = {}
         self._last_update_time = 0
-        self._update_interval = 2.0  # Минимум 2 секунды между обновлениями
+        self._ui_update_interval = 5.0  # УВЕЛИЧЕНО с 2.0 до 5.0 секунд
+        self._stats_changed = False
+
+        # ОПТИМИЗАЦИЯ: Ограничение частоты UI обновлений
+        self._last_ui_update = 0
+        self._min_ui_interval = 2.0  # Минимум 2 секунды между обновлениями UI
 
         # Мьютекс для безопасности потоков
         self.mutex = QMutex()
@@ -58,7 +63,7 @@ class OptimizedInviterProfileRow(QWidget):
         if not self.bot_account and profile_data.get('config', {}).get('bot_account'):
             self.bot_account = profile_data['config']['bot_account']
 
-        # ОПТИМИЗИРОВАННЫЕ таймеры - РЕЖЕ ОБНОВЛЕНИЯ
+        # ОПТИМИЗИРОВАННЫЕ таймеры - ЗНАЧИТЕЛЬНО РЕЖЕ для 100+ профилей
         self.progress_timer = QTimer()
         self.progress_timer.timeout.connect(self._optimized_update_progress)
         self.progress_timer.setSingleShot(False)
@@ -66,8 +71,6 @@ class OptimizedInviterProfileRow(QWidget):
         self.completion_timer = QTimer()
         self.completion_timer.timeout.connect(self._optimized_check_completion)
         self.completion_timer.setSingleShot(False)
-
-        # УБИРАЕМ chat_stats_timer - это будет делать фоновый рабочий
 
         self.setObjectName("InviterProfileRow")
         self.setMinimumHeight(85)
@@ -91,13 +94,13 @@ class OptimizedInviterProfileRow(QWidget):
         # РЕГИСТРИРУЕМ в фоновом мониторинге
         self._register_for_background_monitoring()
 
-        # Если процесс запущен - запускаем РЕДКИЕ обновления
+        # ОПТИМИЗАЦИЯ: Более редкие таймеры для 100+ профилей
         if self.is_running:
-            self.progress_timer.start(3000)  # Каждые 3 секунды вместо 1
-            self.completion_timer.start(5000)  # Каждые 5 секунд вместо 0.5
+            self.progress_timer.start(4000)  # Было 3000, стало 10000 (10 секунд)
+            self.completion_timer.start(7000)  # Было 5000, стало 15000 (15 секунд)
 
-        # Синхронизация с модулем через 1 секунду
-        QTimer.singleShot(1000, self.sync_with_module_state)
+        # Синхронизация с модулем через 2 секунды (было 1)
+        QTimer.singleShot(2000, self.sync_with_module_state)
 
     def _register_for_background_monitoring(self):
         """Регистрирует профиль для фонового мониторинга"""
@@ -120,21 +123,115 @@ class OptimizedInviterProfileRow(QWidget):
             logger.error(f"❌ Ошибка регистрации фонового мониторинга: {e}")
 
     def _on_background_stats_updated(self, profile_name: str, stats_data: dict):
-        """Обрабатывает обновления от фонового рабочего"""
+        """Обрабатывает обновления от фонового рабочего - УЛЬТРА ОПТИМИЗИРОВАННО"""
         if profile_name != self.profile_name:
             return
 
         try:
-            with QMutexLocker(self.mutex):
-                # Проверяем изменились ли данные
-                if stats_data != self._cached_stats:
-                    self._cached_stats = stats_data
+            current_time = time.time()
 
-                    # Обновляем UI элементы БЕЗ обращения к модулю
-                    self._update_ui_from_cached_stats(stats_data)
+            with QMutexLocker(self.mutex):
+                # ОПТИМИЗАЦИЯ 1: Проверяем действительно ли данные изменились
+                if stats_data == self._cached_stats:
+                    return  # Данные не изменились - выходим немедленно
+
+                # ОПТИМИЗАЦИЯ 2: Ограничиваем частоту UI обновлений
+                if current_time - self._last_ui_update < self._min_ui_interval:
+                    # Кэшируем данные но не обновляем UI
+                    self._cached_stats = stats_data
+                    self._stats_changed = True
+                    return
+
+                # ОПТИМИЗАЦИЯ 3: Проверяем значимость изменений
+                if not self._are_changes_significant(stats_data):
+                    # Изменения незначительные - обновляем кэш но не UI
+                    self._cached_stats = stats_data
+                    return
+
+                # Значимые изменения - обновляем UI
+                self._cached_stats = stats_data
+                self._stats_changed = False
+                self._last_ui_update = current_time
+
+            # Обновляем UI элементы БЕЗ обращения к модулю
+            self._update_ui_from_cached_stats_optimized(stats_data)
 
         except Exception as e:
             logger.error(f"❌ Ошибка обработки фоновых статистик: {e}")
+
+    def _update_ui_from_cached_stats_optimized(self, stats_data: dict):
+        """УЛЬТРА-ОПТИМИЗИРОВАННОЕ обновление UI из кэшированных данных"""
+        try:
+            # ОПТИМИЗАЦИЯ: Обновляем только видимые и изменившиеся элементы
+
+            # Обновляем прогресс (самое важное)
+            if hasattr(self, 'progress_bar') and self.progress_bar:
+                total_goal = stats_data.get('total_goal', 0)
+                success = stats_data.get('success', 0)
+
+                if total_goal > 0:
+                    self.progress_bar.setRange(0, total_goal)
+                    self.progress_bar.setValue(success)
+                    self.progress_bar.setFormat(f"{success}/{total_goal}")
+
+            # Обновляем счетчики (только если видимы)
+            if hasattr(self, 'success_label') and self.success_label and self.success_label.isVisible():
+                self.success_label.setText(f"✅{stats_data.get('success', 0)}")
+
+            if hasattr(self, 'errors_label') and self.errors_label and self.errors_label.isVisible():
+                self.errors_label.setText(f"❌{stats_data.get('errors', 0)}")
+
+            if hasattr(self, 'speed_label') and self.speed_label and self.speed_label.isVisible():
+                self.speed_label.setText(f"⚡{stats_data.get('speed', 0)}")
+
+            # Обновляем статус (только если изменился)
+            new_status = stats_data.get('status', 'Неизвестно')
+            if hasattr(self, 'status_label') and self.status_label:
+                if self.status_label.text() != new_status:
+                    self.status_label.setText(new_status)
+
+            # Обновляем состояние запуска (только если изменилось)
+            new_running_state = stats_data.get('is_running', False)
+            if self.is_running != new_running_state:
+                self.update_running_state(new_running_state)
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка оптимизированного обновления UI: {e}")
+
+    def _are_changes_significant(self, new_stats: dict) -> bool:
+        """Проверяет значимость изменений для решения об обновлении UI"""
+        if not self._cached_stats:
+            return True  # Первое обновление всегда значимо
+
+        # Проверяем ключевые метрики
+        old_success = self._cached_stats.get('success', 0)
+        new_success = new_stats.get('success', 0)
+
+        old_errors = self._cached_stats.get('errors', 0)
+        new_errors = new_stats.get('errors', 0)
+
+        old_running = self._cached_stats.get('is_running', False)
+        new_running = new_stats.get('is_running', False)
+
+        # Значимые изменения:
+        # 1. Изменение статуса запуска
+        if old_running != new_running:
+            return True
+
+        # 2. Изменение счетчиков более чем на 5
+        if abs(new_success - old_success) >= 5:
+            return True
+
+        if abs(new_errors - old_errors) >= 2:
+            return True
+
+        # 3. Изменение статуса
+        old_status = self._cached_stats.get('status', '')
+        new_status = new_stats.get('status', '')
+        if old_status != new_status:
+            return True
+
+        return False  # Изменения незначительные
 
     def _update_ui_from_cached_stats(self, stats_data: dict):
         """Обновляет UI на основе кэшированных данных"""
@@ -691,51 +788,75 @@ class OptimizedInviterProfileRow(QWidget):
             logger.error(f"❌ Ошибка синхронизации состояния: {e}")
 
     def update_running_state(self, is_running: bool):
-        """Обновление состояния профиля"""
+        """ОПТИМИЗИРОВАННОЕ обновление состояния профиля"""
+        if self.is_running == is_running:
+            return  # Состояние не изменилось
+
         old_state = self.is_running
         self.is_running = is_running
 
-        # Обновляем индикатор статуса
-        if hasattr(self, 'status_indicator'):
-            if is_running:
-                self.status_indicator.setStyleSheet("""
-                    QLabel {
-                        font-size: 14px;
-                        color: #10B981;
-                        font-weight: bold;
-                    }
-                """)
-            else:
-                self.status_indicator.setStyleSheet("""
-                    QLabel {
-                        font-size: 14px;
-                        color: #6B7280;
-                        font-weight: bold;
-                    }
-                """)
+        # ОПТИМИЗАЦИЯ: Обновляем только необходимые элементы
+
+        # Обновляем индикатор статуса (только если есть)
+        if hasattr(self, 'status_indicator') and self.status_indicator:
+            color = '#10B981' if is_running else '#6B7280'
+            self.status_indicator.setStyleSheet(f"""
+                QLabel {{
+                    font-size: 14px;
+                    color: {color};
+                    font-weight: bold;
+                }}
+            """)
 
         # Обновляем кнопку запуска/остановки
         self._update_start_button()
 
-        # Управляем таймерами - РЕДКИЕ обновления
-        if self.is_running:
+        # ОПТИМИЗАЦИЯ: Управляем таймерами более эффективно
+        if is_running and not old_state:
+            # Запускаем - включаем таймеры
             if hasattr(self, 'progress_timer'):
-                self.progress_timer.start(3000)  # Каждые 3 секунды
+                self.progress_timer.start(4500)  # 10 секунд
             if hasattr(self, 'completion_timer'):
-                self.completion_timer.start(5000)  # Каждые 5 секунд
-            if hasattr(self, 'status_label'):
-                self.status_label.setText("🚀 Запущен...")
-        else:
+                self.completion_timer.start(8000)  # 15 секунд
+
+        elif not is_running and old_state:
+            # Останавливаем - выключаем таймеры
             if hasattr(self, 'progress_timer'):
                 self.progress_timer.stop()
             if hasattr(self, 'completion_timer'):
                 self.completion_timer.stop()
 
-            if hasattr(self, 'status_label'):
+            # Обновляем статус
+            if hasattr(self, 'status_label') and self.status_label:
                 if self.manually_stopped:
                     self.status_label.setText("⏹️ Остановлен пользователем")
                 else:
                     self.status_label.setText("✅ Работа завершена")
+
+    def get_performance_metrics(self) -> dict:
+        """Получает метрики производительности строки профиля"""
+        return {
+            'profile_name': self.profile_name,
+            'is_running': self.is_running,
+            'cache_size': len(self._cached_stats),
+            'last_update': self._last_ui_update,
+            'update_interval': self._ui_update_interval,
+            'stats_changed_pending': self._stats_changed
+        }
+
+    def force_ui_update(self):
+        """Принудительное обновление UI (используется редко)"""
+        try:
+            with QMutexLocker(self.mutex):
+                self._last_ui_update = 0  # Сбрасываем ограничение
+
+            # Если есть кэшированные изменения - применяем их
+            if self._stats_changed and self._cached_stats:
+                self._update_ui_from_cached_stats_optimized(self._cached_stats)
+                self._stats_changed = False
+
+        except Exception as e:
+            logger.error(f"❌ Ошибка принудительного обновления UI: {e}")
 
     def _update_start_button(self):
         """Обновляет текст и цвет кнопки в зависимости от состояния"""
