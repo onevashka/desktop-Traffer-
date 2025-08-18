@@ -715,66 +715,182 @@ class AdminInviterProcess(BaseInviterProcess):
             return False
 
     async def _setup_chat_admins(self) -> bool:
-        """Создание и подключение админов для каждого чата"""
+        """🔥 ОБНОВЛЕНО: Создание и подключение админов с заменой мертвых"""
         try:
-            for chat_link, chat_admin in self.chat_admins.items():
+            failed_chats = []
+
+            for chat_link, chat_admin in list(self.chat_admins.items()):
                 logger.info(f"[{self.profile_name}] Настройка админа {chat_admin.name} для чата {chat_link}")
 
-                if not chat_admin.session_path.exists() or not chat_admin.json_path.exists():
-                    logger.error(f"[{self.profile_name}] Файлы админа {chat_admin.name} не найдены")
-                    return False
+                # Попытка настройки админа (с возможной заменой)
+                success = await self._setup_single_admin(chat_link, chat_admin)
 
-                from src.accounts.impl.account import Account
-                chat_admin.account = Account(
-                    session_path=chat_admin.session_path,
-                    json_path=chat_admin.json_path
-                )
-                await chat_admin.account.create_client()
+                if not success:
+                    # Если даже после замены не получилось
+                    failed_chats.append(chat_link)
 
-                if not await chat_admin.account.connect():
-                    logger.error(f"[{self.profile_name}] Не удалось подключить админа {chat_admin.name}")
-                    return False
+            # Убираем неудачные чаты
+            for failed_chat in failed_chats:
+                if failed_chat in self.chat_admins:
+                    del self.chat_admins[failed_chat]
+                    if failed_chat in self.chat_command_queues:
+                        del self.chat_command_queues[failed_chat]
+                    self.record_stopped_chat(failed_chat, "не удалось подготовить рабочего админа")
 
-                if not await chat_admin.account.client.is_user_authorized():
-                    logger.error(f"[{self.profile_name}] Админ {chat_admin.name} не авторизован")
-                    return False
+            if not self.chat_admins:
+                logger.error(f"[{self.profile_name}] ❌ Ни один админ не готов!")
+                return False
 
-                me = await chat_admin.account.client.get_me()
-                logger.success(
-                    f"[{self.profile_name}] Админ {chat_admin.name} подключен: {me.first_name} (@{me.username or 'без username'})")
-
+            logger.success(f"[{self.profile_name}] ✅ Настроено админов: {len(self.chat_admins)}")
             return True
 
         except Exception as e:
-            logger.error(f"[{self.profile_name}] Ошибка настройки админов: {e}")
+            logger.error(f"[{self.profile_name}] ❌ Ошибка настройки админов: {e}")
             return False
 
+    async def _setup_single_admin(self, chat_link: str, chat_admin) -> bool:
+        """Настраивает одного админа с возможной заменой при неудаче"""
+        max_attempts = 3  # Максимум 3 попытки замены
+        current_attempt = 0
+
+        while current_attempt < max_attempts:
+            current_admin = self.chat_admins[chat_link]
+
+            try:
+                # Проверяем файлы
+                if not current_admin.session_path.exists() or not current_admin.json_path.exists():
+                    logger.error(f"[{self.profile_name}] Файлы админа {current_admin.name} не найдены")
+                    if not await self._try_replace_failed_admin(chat_link, current_admin.name, "файлы не найдены"):
+                        return False
+                    current_attempt += 1
+                    continue
+
+                # Создаем аккаунт
+                from src.accounts.impl.account import Account
+                current_admin.account = Account(
+                    session_path=current_admin.session_path,
+                    json_path=current_admin.json_path
+                )
+                await current_admin.account.create_client()
+
+                # ПРОВЕРКА 1: Подключение
+                if not await current_admin.account.connect():
+                    logger.error(f"[{self.profile_name}] ❌ Админ {current_admin.name} мертв - не подключается")
+                    if not await self._try_replace_failed_admin(chat_link, current_admin.name, "не подключается"):
+                        return False
+                    current_attempt += 1
+                    continue
+
+                # ПРОВЕРКА 2: Авторизация
+                if not await current_admin.account.client.is_user_authorized():
+                    logger.error(f"[{self.profile_name}] ❌ Админ {current_admin.name} не авторизован")
+                    await current_admin.account.disconnect()
+                    if not await self._try_replace_failed_admin(chat_link, current_admin.name, "не авторизован"):
+                        return False
+                    current_attempt += 1
+                    continue
+
+                # ВСЕ ПРОВЕРКИ ПРОШЛИ! (заморозку проверяем только при вступлении)
+                me = await current_admin.account.client.get_me()
+                logger.success(
+                    f"[{self.profile_name}] ✅ Админ {current_admin.name} подключен: {me.first_name} (@{me.username or 'без username'})")
+                return True
+
+            except Exception as e:
+                logger.error(f"[{self.profile_name}] ❌ Ошибка настройки админа {current_admin.name}: {e}")
+                try:
+                    if current_admin.account:
+                        await current_admin.account.disconnect()
+                except:
+                    pass
+
+                if not await self._try_replace_failed_admin(chat_link, current_admin.name, f"критическая ошибка: {e}"):
+                    return False
+                current_attempt += 1
+
+        logger.error(
+            f"[{self.profile_name}] ❌ Не удалось настроить рабочего админа для {chat_link} за {max_attempts} попыток")
+        return False
+
     async def _prepare_admins_in_chats(self) -> bool:
-        """Подготовка каждого админа в его чате"""
-        for chat_link, chat_admin in self.chat_admins.items():
+        """🔥 ОБНОВЛЕНО: Подготовка админов с заменой при заморозке во время вступления"""
+        for chat_link, chat_admin in list(self.chat_admins.items()):
             logger.info(f"[{self.profile_name}] Подготовка админа {chat_admin.name} в чате {chat_link}")
 
-            success = await ensure_main_admin_ready_in_chat(
-                main_admin_account=chat_admin.account,
-                admin_rights_manager=self.admin_rights_manager,
-                chat_link=chat_link,
-                chat_admin=chat_admin
-            )
+            # Попытка подготовки с возможной заменой
+            success = await self._prepare_single_admin(chat_link, chat_admin)
 
             if success:
                 chat_admin.is_ready = True
                 self.ready_chats.add(chat_link)
                 logger.success(f"[{self.profile_name}] Админ {chat_admin.name} готов в чате: {chat_link}")
             else:
-                logger.error(
-                    f"[{self.profile_name}] Не удалось подготовить админа {chat_admin.name} в чате: {chat_link}")
+                # Не удалось подготовить даже после замен
+                logger.error(f"[{self.profile_name}] ❌ Не удалось подготовить рабочего админа для {chat_link}")
+                self.record_stopped_chat(chat_link, "не удалось подготовить рабочего админа")
 
         if not self.ready_chats:
-            logger.error(f"[{self.profile_name}] Ни один админ не готов! Прекращаем работу.")
+            logger.error(f"[{self.profile_name}] ❌ Ни один админ не готов!")
             return False
 
-        logger.success(f"[{self.profile_name}] Готовых чатов: {len(self.ready_chats)} из {len(self.chat_admins)}")
+        logger.success(f"[{self.profile_name}] Готовых чатов: {len(self.ready_chats)}")
         return True
+
+    async def _prepare_single_admin(self, chat_link: str, chat_admin) -> bool:
+        """Подготавливает одного админа с возможной заменой при заморозке"""
+        max_attempts = 3  # Максимум 3 попытки замены
+        current_attempt = 0
+
+        while current_attempt < max_attempts:
+            current_admin = self.chat_admins[chat_link]
+
+            try:
+                # Пытаемся подготовить админа в чате
+                success = await ensure_main_admin_ready_in_chat(
+                    main_admin_account=current_admin.account,
+                    admin_rights_manager=self.admin_rights_manager,
+                    chat_link=chat_link,
+                    chat_admin=current_admin
+                )
+
+                if success:
+                    # Все хорошо!
+                    logger.success(f"[{self.profile_name}] ✅ Админ {current_admin.name} готов в чате!")
+                    return True
+                else:
+                    # Админ заморожен при вступлении
+                    logger.warning(
+                        f"[{self.profile_name}] ⚠️ Админ {current_admin.name} заморожен при вступлении в {chat_link}")
+
+                    if not await self._try_replace_failed_admin(chat_link, current_admin.name,
+                                                                "заморожен при вступлении"):
+                        return False
+
+                    # Пробуем настроить нового админа с самого начала
+                    new_admin = self.chat_admins[chat_link]
+                    if not await self._setup_single_admin(chat_link, new_admin):
+                        current_attempt += 1
+                        continue
+
+                    current_attempt += 1
+
+            except Exception as e:
+                logger.error(f"[{self.profile_name}] ❌ Ошибка подготовки админа {current_admin.name}: {e}")
+
+                if not await self._try_replace_failed_admin(chat_link, current_admin.name, f"ошибка подготовки: {e}"):
+                    return False
+
+                # Пробуем настроить нового админа с самого начала
+                new_admin = self.chat_admins[chat_link]
+                if not await self._setup_single_admin(chat_link, new_admin):
+                    current_attempt += 1
+                    continue
+
+                current_attempt += 1
+
+        logger.error(
+            f"[{self.profile_name}] ❌ Не удалось подготовить рабочего админа для {chat_link} за {max_attempts} попыток")
+        return False
 
     async def _main_work_loop(self):
         """🔥 ИЗМЕНЕНО: Убрана обработка команд из главного цикла - теперь каждый чат обрабатывает свои команды"""

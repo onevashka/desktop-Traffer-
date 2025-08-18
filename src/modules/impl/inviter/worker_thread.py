@@ -647,6 +647,27 @@ class WorkerThread(threading.Thread):
                         await self._handle_problem("flood")
                         break  # 🔥 ВЫХОДИМ ИЗ ЦИКЛА - аккаунт завершен!
 
+                    elif result == "CRITICAL_FLOOD":  # 🔥 НОВАЯ ОБРАБОТКА КРИТИЧЕСКОГО ФЛУДА!
+                        logger.error(
+                            f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                            f"🚨 КРИТИЧЕСКИЙ ФЛУД С ТАЙМАУТОМ - БЛОКИРУЕМ ЧАТ НЕМЕДЛЕННО!")
+
+                        # 🚨 БЛОКИРУЕМ ЧАТ СРАЗУ БЕЗ СЧЕТЧИКОВ!
+                        self._block_chat_immediately("Критический FloodWait с указанием времени ожидания")
+
+                        # Добавляем аккаунт в флуд аккаунты
+                        self.chat_thread.parent.flood_accounts.add(self.current_account_name)
+                        self.chat_thread.parent._mark_account_as_processed(self.current_account_name,
+                                                                           "критический флуд")
+
+                        # Обновляем статус в менеджере
+                        await self._update_account_status_in_manager("flood")
+
+                        # Отключаемся и завершаем
+                        await self._ensure_disconnected()
+                        await self._handle_problem("flood")
+                        break  # 🔥 ВЫХОДИМ ИЗ ЦИКЛА - аккаунт завершен!
+
                     elif result == "WRITEOFF":
                         logger.warning(
                             f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] ❌ СПИСАНИЕ (не добавлен): @{user.username}")
@@ -760,6 +781,10 @@ class WorkerThread(threading.Thread):
                     elif result == "NOT_FOUND":
                         logger.warning(
                             f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] 🔍 ПОЛЬЗОВАТЕЛЬ НЕ НАЙДЕН: @{user.username}")
+
+                    elif result == "USER_ALREADY_CHATS":
+                        logger.warning(
+                            f"[{self.chat_thread.parent.profile_name}]-[Поток-{chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] 👤 ПОЛЬЗОВАТЕЛЬ УЖЕ СОСТОИТ В БОЛЬШОМ КОЛИЧЕСТВЕ ГРУПП: @{user.username}")
 
                     elif result == "USER_ALREADY":
                         logger.info(
@@ -967,25 +992,49 @@ class WorkerThread(threading.Thread):
             self.thread_account.increment_green_people()
             return "SUCCESS"
 
+
         except (PeerFloodError, FloodWaitError) as e:
-            # 🔥 НОВАЯ ЛОГИКА - НЕ ЖДЕМ, А СРАЗУ ЗАВЕРШАЕМ АККАУНТ!
-            user.status = UserStatus.FLOOD_WAIT
-            user.last_attempt = datetime.now()
-            user.error_message = f"FloodWait: {str(e)}"
-            user.chat_link = self.chat_thread.chat_link
 
-            # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
-            if self.realtime_logger:
-                self.realtime_logger.update_user_status_immediately(user)
+            # 🔥 НОВАЯ ЛОГИКА - ПРОВЕРЯЕМ ЕСТЬ ЛИ УПОМИНАНИЕ ВРЕМЕНИ ОЖИДАНИЯ!
+            error_msg = str(e).lower()
+            # Проверяем есть ли в сообщении "wait of X seconds" - ЛЮБОЕ число!
+            import re
+            wait_match = re.search(r'wait of (\d+) seconds', error_msg)
+            # 🚨 ЕСЛИ ЕСТЬ УПОМИНАНИЕ ВРЕМЕНИ - ЭТО КРИТИЧЕСКИЙ ФЛУД!
+            if wait_match:
 
-            self.chat_thread.parent.processed_users[username] = user
+                wait_seconds = int(wait_match.group(1))
+                user.status = UserStatus.FLOOD_WAIT
+                user.last_attempt = datetime.now()
+                user.error_message = f"КРИТИЧЕСКИЙ FloodWait: {wait_seconds} секунд"
+                user.chat_link = self.chat_thread.chat_link
+                # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
+                if self.realtime_logger:
+                    self.realtime_logger.update_user_status_immediately(user)
+                self.chat_thread.parent.processed_users[username] = user
+                # 🚨 КРИТИЧЕСКИЙ ФЛУД - БЛОКИРУЕМ ЧАТ СРАЗУ!
+                logger.error(
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                    f"🚨 КРИТИЧЕСКИЙ ФЛУД {wait_seconds} секунд - БЛОКИРУЕМ ЧАТ НЕМЕДЛЕННО!")
 
-            # ВАЖНО: Логируем но НЕ ЖДЕМ!
-            logger.error(
-                f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] 🚫 ПОЛУЧЕН ФЛУД - ЗАВЕРШАЕМ АККАУНТ: {str(e)}")
+                return "CRITICAL_FLOOD"  # 🔥 НОВЫЙ тип результата!
+            else:
 
-            # Возвращаем специальный код для обработки
-            return "FLOOD_WAIT"
+                # 🔥 ОБЫЧНЫЙ ФЛУД БЕЗ ВРЕМЕНИ - только завершаем аккаунт
+                user.status = UserStatus.FLOOD_WAIT
+                user.last_attempt = datetime.now()
+                user.error_message = f"Обычный FloodWait: {str(e)}"
+                user.chat_link = self.chat_thread.chat_link
+                # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
+                if self.realtime_logger:
+                    self.realtime_logger.update_user_status_immediately(user)
+                self.chat_thread.parent.processed_users[username] = user
+                # ВАЖНО: Логируем но НЕ ЖДЕМ!
+                logger.error(
+                    f"[{self.chat_thread.parent.profile_name}]-[Поток-{self.chat_thread.chat_id}]-[{self.chat_thread.chat_link}]-[{self.current_account_name}] "
+                    f"🚫 ПОЛУЧЕН ОБЫЧНЫЙ ФЛУД - ЗАВЕРШАЕМ АККАУНТ: {str(e)}")
+
+                return "FLOOD_WAIT"
 
         except UserPrivacyRestrictedError:
             user.status = UserStatus.PRIVACY
@@ -1028,6 +1077,33 @@ class WorkerThread(threading.Thread):
 
                 self.chat_thread.parent.processed_users[username] = user
                 return "SPAM_BLOCK"
+
+            elif "One of the users you tried to add is already in too many channels/supergroups" in error_msg:
+                user.status = UserStatus.USER_ALREADY_CHATS
+                user.last_attempt = datetime.now()
+                user.error_message = "Юзер_уже_в_большом_количестве_групп"
+                user.chat_link = self.chat_thread.chat_link
+
+                # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
+                if self.realtime_logger:
+                    self.realtime_logger.update_user_status_immediately(user)
+
+                self.chat_thread.parent.processed_users[username] = user
+                return "USER_ALREADY_CHATS"
+
+            elif "The provided user is not a mutual contact" in error_msg:
+                user.status = UserStatus.PRIVACY
+                user.last_attempt = datetime.now()
+                user.error_message = "Приватные ограничения"
+                user.chat_link = self.chat_thread.chat_link
+
+                # КРИТИЧНО: НЕМЕДЛЕННО обновляем статус
+                if self.realtime_logger:
+                    self.realtime_logger.update_user_status_immediately(user)
+
+                self.chat_thread.parent.processed_users[username] = user
+                return "PRIVACY"
+
             else:
                 user.status = UserStatus.ERROR
                 user.last_attempt = datetime.now()

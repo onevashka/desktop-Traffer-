@@ -24,8 +24,8 @@ import os
     # Скрываем консоль
     console_window = kernel32.GetConsoleWindow()
     if console_window:
-        user32.ShowWindow(console_window, SW_HIDE)'''
-
+        user32.ShowWindow(console_window, SW_HIDE)
+'''
 # 1. ОТКЛЮЧАЕМ ВСЕ WARNINGS
 warnings.filterwarnings("ignore")
 warnings.simplefilter("ignore")
@@ -236,7 +236,7 @@ async def async_main():
     # 1. Создаем и показываем консоль логов
     #log_console = LogConsole()
     #log_console.show()
-    #logger.info("📋 Консоль логов открыта")
+    logger.info("📋 Консоль логов открыта")
 
     await asyncio.sleep(0.5)
 

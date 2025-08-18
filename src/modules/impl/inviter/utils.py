@@ -369,7 +369,6 @@ async def ensure_main_admin_ready_in_chat(main_admin_account, admin_rights_manag
         join_result = await main_admin_account.join(chat_link)
 
         if join_result == "FROZEN_ACCOUNT":
-            logger.error(f"❌ Главный админ заморожен!")
             return False
         elif join_result not in ["SUCCESS", "ALREADY_PARTICIPANT"]:
             logger.error(f"❌ Главный админ не смог зайти в {chat_link}: {join_result}")
